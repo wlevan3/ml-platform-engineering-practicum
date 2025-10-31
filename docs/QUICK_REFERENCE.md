@@ -73,6 +73,7 @@ ci/add-security-scan
 ```
 
 **Types:**
+
 - `feat` - New feature
 - `fix` - Bug fix
 - `infra` - Infrastructure
@@ -195,6 +196,7 @@ gh issue close 123
 ## Project Field Values Reference
 
 ### Component
+
 - 🎯 EKS Cluster
 - 📦 Model Registry
 - 🗄️ Feature Store
@@ -205,12 +207,14 @@ gh issue close 123
 - 🧠 Learning
 
 ### Priority
+
 - 🔴 Critical
 - 🟠 High
 - 🟡 Medium
 - 🟢 Low
 
 ### Status
+
 - 📋 Backlog
 - 🎯 Ready
 - 🚧 In Progress
@@ -219,6 +223,7 @@ gh issue close 123
 - 🧊 Blocked
 
 ### Complexity (1-5)
+
 - 1 = < 1 hour
 - 2 = 1-3 hours
 - 3 = Half day
@@ -227,11 +232,11 @@ gh issue close 123
 
 ## Links
 
-- **Repository:** https://github.com/wlevan3/ml-platform-engineering-practicum
-- **Project Board:** https://github.com/users/wlevan3/projects
-- **Issues:** https://github.com/wlevan3/ml-platform-engineering-practicum/issues
-- **Pull Requests:** https://github.com/wlevan3/ml-platform-engineering-practicum/pulls
-- **Actions:** https://github.com/wlevan3/ml-platform-engineering-practicum/actions
+- **Repository:** <https://github.com/wlevan3/ml-platform-engineering-practicum>
+- **Project Board:** <https://github.com/users/wlevan3/projects>
+- **Issues:** <https://github.com/wlevan3/ml-platform-engineering-practicum/issues>
+- **Pull Requests:** <https://github.com/wlevan3/ml-platform-engineering-practicum/pulls>
+- **Actions:** <https://github.com/wlevan3/ml-platform-engineering-practicum/actions>
 
 ## Keyboard Shortcuts (GitHub)
 

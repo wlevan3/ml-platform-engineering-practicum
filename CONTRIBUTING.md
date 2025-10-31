@@ -26,6 +26,7 @@ pre-commit run --all-files
 The pre-commit hooks automatically run on every commit and check for:
 
 **Security:**
+
 - **detect-secrets** - Finds hardcoded secrets and credentials
 - **detect-private-key** - Detects private SSH/PGP keys
 - **bandit** - Python security vulnerability scanner
@@ -33,6 +34,7 @@ The pre-commit hooks automatically run on every commit and check for:
 - **tfsec** - Terraform security scanner
 
 **Code Quality:**
+
 - **black** - Python code formatting
 - **ruff** - Fast Python linter
 - **actionlint** - GitHub Actions workflow validation
@@ -41,6 +43,7 @@ The pre-commit hooks automatically run on every commit and check for:
 **Note:** Python type checking with `mypy` should be run separately: `mypy app/`
 
 **General:**
+
 - **trailing-whitespace** - Removes trailing whitespace
 - **end-of-file-fixer** - Ensures files end with newline
 - **check-yaml** - Validates YAML syntax
@@ -79,6 +82,7 @@ When a hook fails:
 4. **Retry commit** - Commit again after fixes
 
 **Example: Secrets detected**
+
 ```bash
 # If detect-secrets finds a secret
 # 1. Remove or mask the secret
@@ -87,6 +91,7 @@ detect-secrets scan --baseline .secrets.baseline
 ```
 
 **Example: Dockerfile issues**
+
 ```bash
 # If hadolint fails
 # 1. Review Dockerfile warnings
@@ -95,6 +100,7 @@ detect-secrets scan --baseline .secrets.baseline
 ```
 
 **Example: Python security issues**
+
 ```bash
 # If bandit finds security issues
 # 1. Review the vulnerability report

@@ -4,9 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **personal learning project** building a production-grade ML platform from scratch. The goal is hands-on experience with infrastructure, MLOps, and platform engineering practices. The project follows production-like workflows (issues, PRs, CI/CD) to build professional engineering habits.
+This is a **personal learning project** building a production-grade ML platform from scratch. The goal is
+hands-on experience with infrastructure, MLOps, and platform engineering practices. The project follows
+production-like workflows (issues, PRs, CI/CD) to build professional engineering habits.
 
-**Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS, Terraform) coming in Phase 2+.
+**Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS,
+Terraform) coming in Phase 2+.
 
 ## Architecture
 
@@ -107,7 +110,7 @@ docker run -p 8000:8000 ml-platform-api:latest
 
 ### Branch Naming
 
-```
+```text
 <type>/<short-description>
 ```
 
@@ -117,7 +120,7 @@ Example: `feature/add-mlflow-integration`
 
 ### Commit Format (Conventional Commits)
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -128,6 +131,7 @@ Example: `feature/add-mlflow-integration`
 Types: `feat`, `fix`, `infra`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
 
 Examples:
+
 - `feat(model-registry): add MLflow integration`
 - `fix(api): resolve prediction timeout issue`
 - `infra(eks): upgrade cluster to v1.28`
@@ -147,7 +151,7 @@ Examples:
 
 Run the `pre-push-review` skill (Claude Code skill) to automatically check shell scripts and GitHub Actions:
 
-```
+```bash
 /pre-push-review
 ```
 
@@ -182,6 +186,7 @@ This runs `shellcheck` on `.sh/.bash` files and `actionlint` on `.github/workflo
 ### Infrastructure (Future)
 
 When Terraform is added:
+
 - Descriptive resource names with consistent prefixes
 - Tag all AWS resources: `Project`, `Environment`, `ManagedBy`
 - Use variables for reusable values
@@ -190,7 +195,7 @@ When Terraform is added:
 
 ## Project Structure
 
-```
+```text
 ml-platform-engineering-practicum/
 ├── .github/
 │   ├── workflows/           # CI/CD pipelines
@@ -220,6 +225,7 @@ ml-platform-engineering-practicum/
 ```
 
 **Future additions** (Phases 2+):
+
 - `terraform/` - Infrastructure as Code
 - `k8s/` - Kubernetes manifests
 - `scripts/` - Automation scripts
@@ -254,6 +260,15 @@ ml-platform-engineering-practicum/
   - No force pushes
   - No direct commits
 
+## Documentation Reference
+
+For detailed guidance on project workflows and management, refer to:
+
+- **docs/PROJECT_MANAGEMENT.md** - Complete guide to GitHub Projects setup, issue
+  templates, custom fields, automation workflows, and project board configuration
+- **docs/QUICK_REFERENCE.md** - Quick reference for Git commands, GitHub CLI, commit
+  conventions, project field values, and useful links
+
 ## Issue Templates and GitHub Projects
 
 The project uses **GitHub Projects** for tracking work:
@@ -263,7 +278,7 @@ The project uses **GitHub Projects** for tracking work:
 - **Component views** for organizing by platform component
 - **Roadmap view** for timeline visualization
 
-See [docs/PROJECT_MANAGEMENT.md](docs/PROJECT_MANAGEMENT.md) for details.
+See docs/PROJECT_MANAGEMENT.md for complete setup instructions.
 
 ## Learning Focus
 
@@ -275,6 +290,7 @@ This is a **learning project**, not a production service. Key goals:
 - Practice trade-off analysis and architectural thinking
 
 When making changes:
+
 - Consider production best practices (even for a learning project)
 - Document the "why" behind decisions
 - Reflect on trade-offs and alternatives
