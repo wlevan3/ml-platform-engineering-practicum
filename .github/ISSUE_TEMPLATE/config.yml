@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: ML Platform Engineering Documentation
+    url: https://github.com/wlevan3/ml-platform-engineering-practicum/blob/main/README.md
+    about: Review project documentation and roadmap
