@@ -2,8 +2,108 @@
 
 This document outlines the development workflow and contribution guidelines for this project. While this is a personal learning project, following production-grade practices helps build good habits for professional work.
 
+## Development Setup
+
+### Pre-Commit Hooks
+
+This project uses **pre-commit hooks** to catch issues locally before pushing to GitHub. This "shift-left" security approach provides faster feedback than waiting for CI/CD.
+
+#### Installation
+
+```bash
+# Install pre-commit (if not already installed)
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+
+# (Optional) Run on all files to verify setup
+pre-commit run --all-files
+```
+
+#### What Gets Checked
+
+The pre-commit hooks automatically run on every commit and check for:
+
+**Security:**
+- **detect-secrets** - Finds hardcoded secrets and credentials
+- **detect-private-key** - Detects private SSH/PGP keys
+- **bandit** - Python security vulnerability scanner
+- **hadolint** - Dockerfile security and best practices
+- **tfsec** - Terraform security scanner
+
+**Code Quality:**
+- **black** - Python code formatting
+- **ruff** - Fast Python linter
+- **mypy** - Python type checking (run separately)
+- **actionlint** - GitHub Actions workflow validation
+- **markdownlint** - Markdown style checking
+
+**General:**
+- **trailing-whitespace** - Removes trailing whitespace
+- **end-of-file-fixer** - Ensures files end with newline
+- **check-yaml** - Validates YAML syntax
+- **check-added-large-files** - Prevents large files (>1MB)
+- **check-merge-conflict** - Detects merge conflict markers
+
+#### Usage
+
+```bash
+# Hooks run automatically on commit
+git commit -m "Your commit message"
+
+# Skip hooks if needed (NOT recommended for security hooks)
+git commit -m "Your commit message" --no-verify
+
+# Run hooks manually on changed files
+pre-commit run
+
+# Run hooks on all files
+pre-commit run --all-files
+
+# Run a specific hook
+pre-commit run detect-secrets --all-files
+
+# Update hook versions
+pre-commit autoupdate
+```
+
+#### Handling Hook Failures
+
+When a hook fails:
+
+1. **Review the output** - Hooks explain what failed and why
+2. **Fix the issue** - Address the problem in your code
+3. **Stage the fixes** - `git add` the corrected files
+4. **Retry commit** - Commit again after fixes
+
+**Example: Secrets detected**
+```bash
+# If detect-secrets finds a secret
+# 1. Remove or mask the secret
+# 2. Update .secrets.baseline if it's a false positive:
+detect-secrets scan --baseline .secrets.baseline
+```
+
+**Example: Dockerfile issues**
+```bash
+# If hadolint fails
+# 1. Review Dockerfile warnings
+# 2. Fix issues (e.g., pin versions, use non-root user)
+# 3. Stage and commit
+```
+
+**Example: Python security issues**
+```bash
+# If bandit finds security issues
+# 1. Review the vulnerability report
+# 2. Fix the code (e.g., avoid shell=True, use parameterized queries)
+# 3. Add # nosec comment ONLY if false positive with justification
+```
+
 ## Table of Contents
 
+- [Development Setup](#development-setup)
 - [Development Workflow](#development-workflow)
 - [Branch Strategy](#branch-strategy)
 - [Commit Guidelines](#commit-guidelines)
