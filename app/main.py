@@ -91,11 +91,8 @@ async def predict(request: PredictionRequest):
     try:
         predicted_class, confidence, probabilities = model.predict(request.features)
 
-        if model.metadata is None:
-            raise RuntimeError("Model metadata is not loaded")
-
-        # Type narrowing: mypy now knows model.metadata is not None
-        assert model.metadata is not None, "Model metadata should be loaded"
+        # Type narrowing: is_loaded() guarantees metadata is not None, but mypy needs explicit assertion
+        assert model.metadata is not None
 
         return PredictionResponse(
             prediction=predicted_class,
