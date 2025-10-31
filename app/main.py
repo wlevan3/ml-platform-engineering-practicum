@@ -3,6 +3,8 @@ FastAPI application for serving iris classification predictions.
 """
 
 from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator, Dict
+
 from fastapi import FastAPI, HTTPException
 
 from app import __version__
@@ -11,7 +13,7 @@ from app.schemas import PredictionRequest, PredictionResponse, HealthResponse, M
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Load model on startup, clean up on shutdown."""
     # Startup
     model = get_model()
@@ -37,7 +39,7 @@ app = FastAPI(
 
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
-async def health_check():
+async def health_check() -> HealthResponse:
     """
     Health check endpoint.
 
@@ -50,7 +52,7 @@ async def health_check():
 
 
 @app.get("/model/info", response_model=ModelInfo, tags=["Model"])
-async def get_model_info():
+async def get_model_info() -> ModelInfo:
     """
     Get information about the loaded model.
 
@@ -71,7 +73,7 @@ async def get_model_info():
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Predictions"])
-async def predict(request: PredictionRequest):
+async def predict(request: PredictionRequest) -> PredictionResponse:
     """
     Make a prediction for iris flower classification.
 
@@ -90,21 +92,34 @@ async def predict(request: PredictionRequest):
 
     try:
         predicted_class, confidence, probabilities = model.predict(request.features)
-
-        return PredictionResponse(
-            prediction=predicted_class,
-            confidence=confidence,
-            probabilities=probabilities,
-            model_version=model.metadata["version"],
-        )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}") from e
+
+    try:
+        metadata = model.get_info()
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+
+    version = metadata.get("version")
+    if not isinstance(version, str):
+        raise HTTPException(
+            status_code=500, detail="Model metadata missing version string"
+        )
+
+    return PredictionResponse(
+        prediction=predicted_class,
+        confidence=confidence,
+        probabilities=probabilities,
+        model_version=version,
+    )
 
 
 @app.get("/", tags=["Root"])
-async def root():
+async def root() -> Dict[str, Any]:
     """Root endpoint with API information."""
     return {
         "name": "Iris Classification API",

@@ -3,10 +3,12 @@ ML model loading and prediction logic.
 """
 
 import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, cast
+
 import joblib
 import numpy as np
-from pathlib import Path
-from typing import Dict, List, Tuple
+from sklearn.base import ClassifierMixin
 
 
 class IrisModel:
@@ -26,9 +28,9 @@ class IrisModel:
         """
         self.model_path = Path(model_path)
         self.metadata_path = Path(metadata_path)
-        self.model = None
-        self.metadata = None
-        self.classes = None
+        self.model: Optional[ClassifierMixin] = None
+        self.metadata: Optional[Dict[str, Any]] = None
+        self.classes: Optional[List[str]] = None
 
     def load(self) -> None:
         """Load the model and metadata from disk."""
@@ -39,13 +41,30 @@ class IrisModel:
             raise FileNotFoundError(f"Metadata file not found: {self.metadata_path}")
 
         # Load model
-        self.model = joblib.load(self.model_path)
+        loaded_model = joblib.load(self.model_path)
+        if not isinstance(loaded_model, ClassifierMixin):
+            raise TypeError("Loaded model is not a scikit-learn classifier.")
+        self.model = loaded_model
 
         # Load metadata
         with open(self.metadata_path, "r") as f:
-            self.metadata = json.load(f)
+            metadata_raw = json.load(f)
 
-        self.classes = self.metadata["classes"]
+        if not isinstance(metadata_raw, dict):
+            raise ValueError("Model metadata must be a JSON object.")
+
+        metadata = cast(Dict[str, Any], metadata_raw)
+
+        classes = metadata.get("classes")
+        if not isinstance(classes, list) or not all(isinstance(label, str) for label in classes):
+            raise ValueError("Model metadata must define 'classes' as a list of strings.")
+
+        version = metadata.get("version")
+        if not isinstance(version, str):
+            raise ValueError("Model metadata must define 'version' as a string.")
+
+        self.metadata = metadata
+        self.classes = classes
 
     def predict(self, features: List[float]) -> Tuple[str, float, Dict[str, float]]:
         """
@@ -57,7 +76,10 @@ class IrisModel:
         Returns:
             Tuple of (predicted_class, confidence, probabilities_dict)
         """
-        if self.model is None:
+        model = self.model
+        classes = self.classes
+
+        if model is None or classes is None:
             raise RuntimeError("Model not loaded. Call load() first.")
 
         if len(features) != 4:
@@ -67,11 +89,11 @@ class IrisModel:
         X = np.array(features).reshape(1, -1)
 
         # Get prediction and probabilities
-        prediction = self.model.predict(X)[0]
-        probabilities = self.model.predict_proba(X)[0]
+        prediction = model.predict(X)[0]
+        probabilities = model.predict_proba(X)[0]
 
         # Get predicted class name
-        predicted_class = self.classes[prediction]
+        predicted_class = classes[prediction]
 
         # Get confidence (probability of predicted class)
         confidence = float(probabilities[prediction])
@@ -79,12 +101,12 @@ class IrisModel:
         # Create probabilities dictionary
         prob_dict = {
             class_name: float(prob)
-            for class_name, prob in zip(self.classes, probabilities)
+            for class_name, prob in zip(classes, probabilities)
         }
 
         return predicted_class, confidence, prob_dict
 
-    def get_info(self) -> Dict:
+    def get_info(self) -> Dict[str, Any]:
         """
         Get model information.
 
@@ -98,7 +120,11 @@ class IrisModel:
 
     def is_loaded(self) -> bool:
         """Check if model is loaded."""
-        return self.model is not None and self.metadata is not None
+        return (
+            self.model is not None
+            and self.metadata is not None
+            and self.classes is not None
+        )
 
 
 # Global model instance

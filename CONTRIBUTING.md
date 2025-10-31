@@ -187,8 +187,11 @@ This project uses **squash merging** exclusively:
 - Follow **PEP 8** style guide
 - Use `black` for formatting
 - Use `pylint` or `ruff` for linting
+- Static type checking with `mypy` (runs automatically via pre-commit)
 - Type hints for function signatures
 - Docstrings for modules, classes, and functions
+
+> **Type checking:** A `mypy` pre-commit hook runs on every commit. Run `pre-commit run mypy --all-files` (or `mypy app/`) to check locally. If you must bypass it, use `SKIP=mypy git commit ...`—avoid skipping unless absolutely necessary.
 
 ### Terraform
 
@@ -270,6 +273,7 @@ terraform plan
 pytest tests/
 black --check .
 ruff check .
+mypy app/
 
 # Kubernetes
 kubectl apply --dry-run=client -f manifests/
