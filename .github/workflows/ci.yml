@@ -15,11 +15,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check for secrets in code
-        uses: trufflesecurity/trufflehog@main
-        with:
-          extra_args: --only-verified
-
       - name: Markdown linting
         uses: DavidAnson/markdownlint-cli2-action@v16
         with:
@@ -199,6 +194,51 @@ jobs:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
 
+  gitleaks-scan:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep-scan:
+    name: Semgrep Security Analysis
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('**/*.py') != '' }}
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/python
+            p/owasp-top-ten
+
+      - name: Upload Semgrep SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+        if: always()
+
   pre-commit-checks:
     name: Pre-commit Checks
     runs-on: ubuntu-latest
@@ -222,7 +262,7 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, sonarcloud-analysis, security-scan]
+    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, sonarcloud-analysis, security-scan, gitleaks-scan, semgrep-scan]
     if: always()
 
     steps:
@@ -238,4 +278,6 @@ jobs:
           echo "| Python Linting | ${{ needs.python-lint.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Python Tests | ${{ needs.python-test.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| SonarCloud Analysis | ${{ needs.sonarcloud-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Security Scanning | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Scanning (Trivy) | ${{ needs.security-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scanning (Gitleaks) | ${{ needs.gitleaks-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Semgrep SAST | ${{ needs.semgrep-scan.result }} |" >> $GITHUB_STEP_SUMMARY
