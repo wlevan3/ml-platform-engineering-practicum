@@ -1,0 +1,92 @@
+name: Smart Review Comment Resolver
+
+on:
+  pull_request:
+    types: [synchronize]  # Triggered when new commits are pushed to PR
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  auto-resolve-outdated:
+    name: Auto-Resolve Outdated Review Comments
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Resolve outdated review comments
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { data: comments } = await github.rest.pulls.listReviewComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            console.log(`Found ${comments.length} review comments`);
+
+            let resolvedCount = 0;
+            let skippedCount = 0;
+
+            for (const comment of comments) {
+              // Skip if already part of a resolved thread (has replies)
+              if (comment.in_reply_to_id !== undefined) {
+                continue;
+              }
+
+              // Only process outdated comments
+              if (!comment.outdated) {
+                continue;
+              }
+
+              const isBot = comment.user.type === 'Bot';
+              const isCopilot = comment.user.login.includes('opilot');
+              const isMinorIssue =
+                comment.body.toLowerCase().includes('indentation') ||
+                comment.body.toLowerCase().includes('formatting') ||
+                comment.body.toLowerCase().includes('style') ||
+                comment.body.toLowerCase().includes('placement') ||
+                comment.body.toLowerCase().includes('moved to') ||
+                comment.body.toLowerCase().includes('should be at');
+
+              // Auto-resolve if:
+              // 1. Comment is outdated (code changed)
+              // 2. From a bot (Copilot, etc.)
+              // 3. About minor issues (formatting, style, etc.)
+              if (isBot && isMinorIssue) {
+                try {
+                  await github.rest.pulls.createReplyForReviewComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    pull_number: context.issue.number,
+                    comment_id: comment.id,
+                    body: `✅ **Auto-resolved**: Code has been updated. This comment is now outdated.\n\n_Automatically resolved by Smart Review Resolver workflow._`
+                  });
+
+                  resolvedCount++;
+                  console.log(`✅ Resolved comment ${comment.id}: "${comment.body.substring(0, 50)}..."`);
+                } catch (error) {
+                  console.error(`❌ Failed to resolve comment ${comment.id}: ${error.message}`);
+                }
+              } else {
+                skippedCount++;
+                const reason = !isBot ? 'human comment' : !isMinorIssue ? 'critical issue' : 'unknown';
+                console.log(`⏭️  Skipped comment ${comment.id} (${reason}): "${comment.body.substring(0, 50)}..."`);
+              }
+            }
+
+            console.log(`\n📊 Summary:`);
+            console.log(`   Total comments: ${comments.length}`);
+            console.log(`   Auto-resolved: ${resolvedCount}`);
+            console.log(`   Skipped (needs human review): ${skippedCount}`);
+
+            // Post summary as PR comment
+            if (resolvedCount > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `🤖 **Smart Review Resolver**: Auto-resolved ${resolvedCount} outdated review comment(s) about formatting/style issues.`
+              });
+            }
