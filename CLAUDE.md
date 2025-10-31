@@ -239,11 +239,27 @@ ml-platform-engineering-practicum/
 - Model loading uses **singleton pattern** to avoid reloading on each request
 - Metadata in `models/model_metadata.json` includes version, accuracy, features, classes
 
+#### Model Security (Pickle Deserialization)
+
+Models are serialized using `joblib` (which uses Python's `pickle` under the hood). While pickle deserialization can
+execute arbitrary code (CWE-502), current risk is **LOW** because:
+
+- **Source control**: Models trained locally via `train_model.py` in controlled environment
+- **No user input**: Model path is hardcoded (`models/iris_classifier.joblib`)
+- **Integrity verification**: SHA-256 hash verification prevents tampering
+  - Hash generated during training and stored in `model_metadata.json`
+  - Hash verified before loading in `app/model.py`
+  - Raises `ModelIntegrityError` if file corrupted or modified
+
+**Phase 3 migration**: Will use MLflow Model Registry + ONNX for production-grade security.
+See `docs/PICKLE_SECURITY.md` for detailed analysis and migration path.
+
 ### Security
 
 - **No secrets in code** - Use environment variables or AWS Secrets Manager
 - Pre-commit hook `detect-secrets` scans for accidental credential commits
-- CI includes Gitleaks (secrets), Trivy (vulnerabilities), Semgrep (SAST)
+- Pre-commit hook `semgrep` scans for security vulnerabilities (custom ruleset in `.semgrep.yml`)
+- CI includes Gitleaks (secrets), Trivy (vulnerabilities), Semgrep (comprehensive SAST rulesets)
 - GitHub Actions use **pinned SHA hashes** for security scanning actions
 
 ### CI/CD Behavior

@@ -48,7 +48,7 @@ repos:
         additional_dependencies:
           - pydantic
           - types-requests
-        args: [--ignore-missing-imports, --non-interactive]
+        args: [--ignore-missing-imports, --install-types, --non-interactive]
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
@@ -91,6 +91,20 @@ repos:
       - id: bandit
         args: ['-ll', '-i']  # Low severity level, ignore info messages
         exclude: ^tests/
+
+  # Semgrep SAST (Static Application Security Testing)
+  - repo: https://github.com/semgrep/semgrep
+    rev: v1.89.0
+    hooks:
+      - id: semgrep
+        name: Semgrep Security Scan
+        args:
+          - --config=.semgrep.yml  # Use custom focused ruleset for speed
+          - --error                # Only fail on ERROR severity findings
+          - --timeout=60           # Prevent hanging on complex files
+          - --verbose              # Show which rules are running
+        files: \.py$               # Only scan Python files
+        exclude: ^tests/           # Skip tests (covered by comprehensive CI scan)
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli

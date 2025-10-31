@@ -1,0 +1,160 @@
+# Semgrep Pre-commit Configuration
+# Fast, focused rules for critical security issues
+# Full comprehensive scanning happens in CI (p/security-audit, p/python, p/owasp-top-ten)
+
+rules:
+  # ============================================================================
+  # UNSAFE DESERIALIZATION (Critical for ML platforms using pickle/joblib)
+  # ============================================================================
+  - id: unsafe-pickle-deserialization
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: joblib.load(...)
+    message: |
+      Unsafe deserialization detected. Loading pickled/joblib data from untrusted sources
+      can execute arbitrary code. Validate and sanitize input sources.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A8: Insecure Deserialization"
+      category: security
+      likelihood: HIGH
+      impact: HIGH
+
+  # ============================================================================
+  # COMMAND INJECTION
+  # ============================================================================
+  - id: subprocess-shell-injection
+    pattern-either:
+      - pattern: subprocess.$FUNC(..., shell=True, ...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+    message: |
+      Command injection risk detected. Avoid shell=True and use argument lists instead.
+      If shell=True is necessary, use shlex.quote() to sanitize inputs.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A1: Injection"
+      category: security
+
+  # ============================================================================
+  # PATH TRAVERSAL (Important for model loading/file operations)
+  # ============================================================================
+  - id: path-traversal-open
+    pattern-either:
+      - pattern: open($X + $Y, ...)
+      - pattern: open(f"...{$X}...", ...)
+    message: |
+      Potential path traversal vulnerability. Validate file paths and use
+      os.path.abspath() or pathlib to normalize paths before file operations.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-22: Path Traversal"
+      owasp: "A5: Broken Access Control"
+      category: security
+
+  # ============================================================================
+  # SQL INJECTION (Future-proofing for database integration)
+  # ============================================================================
+  - id: sql-injection-format-string
+    pattern-either:
+      - pattern: $CURSOR.execute(f"...{$VAR}...", ...)
+      - pattern: $CURSOR.execute("..." + $VAR + "...", ...)
+      - pattern: $CURSOR.execute("..." % $VAR, ...)
+    message: |
+      SQL injection vulnerability. Use parameterized queries instead of string
+      formatting. Example: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A1: Injection"
+      category: security
+
+  # ============================================================================
+  # DANGEROUS FUNCTIONS
+  # ============================================================================
+  - id: dangerous-eval-exec
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: __import__($X)
+    message: |
+      Dangerous function detected. eval/exec can execute arbitrary code.
+      Use ast.literal_eval() for safe evaluation of literals, or refactor to avoid dynamic execution.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-95: Code Injection"
+      owasp: "A1: Injection"
+      category: security
+
+  # ============================================================================
+  # HARDCODED SECRETS
+  # ============================================================================
+  - id: hardcoded-password
+    pattern-regex: (password|passwd|pwd|secret|api_key|apikey|token|auth).*=.*['\"][^'\"]{8,}['\"]
+    message: |
+      Potential hardcoded secret detected. Use environment variables or a secrets
+      management service (AWS Secrets Manager, HashiCorp Vault, etc.).
+    languages: [python]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A2: Broken Authentication"
+      category: security
+
+  # ============================================================================
+  # INSECURE RANDOMNESS (for tokens, secrets, etc.)
+  # ============================================================================
+  - id: insecure-random-for-security
+    pattern-either:
+      - pattern: random.$FUNC(...)
+    message: |
+      Insecure randomness for security-sensitive operations. Use secrets module
+      instead: secrets.token_urlsafe(), secrets.token_hex(), etc.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-330: Use of Insufficiently Random Values"
+      category: security
+
+  # ============================================================================
+  # EXCEPTION HANDLING ANTI-PATTERNS
+  # ============================================================================
+  - id: bare-except
+    pattern: |
+      try:
+        ...
+      except:
+        ...
+    message: |
+      Bare except clause catches all exceptions including SystemExit and KeyboardInterrupt.
+      Specify exception types explicitly: except ValueError, except Exception, etc.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: best-practice
+
+  # ============================================================================
+  # LOGGING SENSITIVE DATA
+  # ============================================================================
+  - id: logging-sensitive-data
+    pattern-either:
+      - pattern: $LOGGER.$LEVEL($MSG, ..., password=$VAR, ...)
+      - pattern: $LOGGER.$LEVEL($MSG, ..., token=$VAR, ...)
+      - pattern: $LOGGER.$LEVEL($MSG, ..., secret=$VAR, ...)
+      - pattern: $LOGGER.$LEVEL($MSG, ..., api_key=$VAR, ...)
+    message: |
+      Potential logging of sensitive data. Avoid logging passwords, tokens, or secrets.
+      Redact sensitive information before logging.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-532: Information Exposure Through Log Files"
+      category: security
