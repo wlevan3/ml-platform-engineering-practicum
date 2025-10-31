@@ -1,0 +1,88 @@
+# Git and version control
+.git/
+.github/
+.gitignore
+.gitattributes
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python cache and artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# Development tools and IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD and pre-commit
+.pre-commit-config.yaml
+.github/
+
+# Tests
+tests/
+test_*.py
+*_test.py
+
+# Logs and temporary files
+*.log
+.env
+.env.*
+
+# Project management
+TODO
+TODO.md
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Jupyter notebooks (if any)
+.ipynb_checkpoints
+*.ipynb
+
+# Docker files (don't need these in the image)
+Dockerfile*
+docker-compose*.yml
+.dockerignore

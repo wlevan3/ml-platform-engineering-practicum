@@ -1,0 +1,51 @@
+# yamllint configuration for Kubernetes manifests and other YAML files
+# Note: GitHub Actions workflows (.github/) are linted separately by actionlint
+extends: default
+
+rules:
+  # Allow longer lines for YAML files (URLs, commands, etc.)
+  line-length:
+    max: 160
+    level: warning
+
+  # Standard 2-space indentation for YAML
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+  # Allow inline comments with single space
+  comments:
+    min-spaces-from-content: 1
+
+  # Allow document start (---) but don't require it
+  document-start:
+    present: false
+
+  # Allow common truthy values ('on', 'off', etc.) for general YAML compatibility
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: false
+
+  # Allow empty values (useful for Kubernetes manifests and other configs)
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: false
+
+  # Enforce no duplicate keys (standard YAML practice, required for Kubernetes)
+  key-duplicates: {}
+
+  # Brackets and braces styling
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+# Ignore patterns
+ignore: |
+  .venv/
+  venv/
+  node_modules/
+  .github/

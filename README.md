@@ -81,22 +81,26 @@ terraform init
 ## 🛠️ Technology Stack
 
 ### Infrastructure & Cloud
+
 - **AWS** - EKS, RDS, S3, IAM, VPC
 - **Terraform** - Infrastructure as Code
 - **Kubernetes** - Container orchestration
 
 ### ML Platform
+
 - **MLflow** - Model registry and experiment tracking
 - **Feast** _(planned)_ - Feature store
 - **Ray** _(planned)_ - Distributed computing
 
 ### CI/CD & Observability
+
 - **GitHub Actions** - CI/CD pipelines
 - **Prometheus** - Metrics collection
 - **Grafana** - Visualization
 - **ELK Stack** - Log aggregation
 
 ### Development Tools
+
 - **pre-commit** - Git hooks for code quality
 - **TFLint** - Terraform linting
 - **kubeval** - Kubernetes manifest validation
@@ -130,6 +134,7 @@ View all learnings in the [Project Board's Learning view](https://github.com/use
 ## 📈 Progress Tracking
 
 Track progress through:
+
 - **GitHub Projects** - Visual boards and roadmap
 - **Issues** - Detailed task tracking
 - **Pull Requests** - Code changes and reviews
@@ -138,6 +143,7 @@ Track progress through:
 ## 🎯 Roadmap
 
 ### Phase 1: Foundation & Setup ✅
+
 - [x] GitHub repository setup
 - [x] Branch protection and rulesets
 - [x] Issue templates and PR templates
@@ -145,6 +151,7 @@ Track progress through:
 - [x] GitHub Projects configuration
 
 ### Phase 2: EKS & Kubernetes
+
 - [ ] Terraform configuration for EKS
 - [ ] VPC and networking setup
 - [ ] Node groups and autoscaling
@@ -152,30 +159,35 @@ Track progress through:
 - [ ] Deploy sample workload
 
 ### Phase 3: Model Registry
+
 - [ ] MLflow deployment on EKS
 - [ ] S3 backend for artifacts
 - [ ] Authentication and access control
 - [ ] Integration testing
 
 ### Phase 4: Feature Store
+
 - [ ] Feature store architecture design
 - [ ] RDS deployment for metadata
 - [ ] Feature ingestion pipeline
 - [ ] Feature serving API
 
 ### Phase 5: CI/CD Integration
+
 - [ ] GitHub Actions workflows
 - [ ] Automated testing
 - [ ] Deployment automation
 - [ ] Rollback procedures
 
 ### Phase 6: Observability
+
 - [ ] Prometheus deployment
 - [ ] Grafana dashboards
 - [ ] Log aggregation (ELK)
 - [ ] Alerting setup
 
 ### Phase 7: Optimization & Polish
+
 - [ ] Cost optimization
 - [ ] Performance tuning
 - [ ] Security hardening
@@ -198,12 +210,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔗 Resources
 
 ### Learning Resources
+
 - [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
 - [Terraform Best Practices](https://www.terraform-best-practices.com/)
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [MLOps Community](https://mlops.community/)
 
 ### Related Projects
+
 - [MLflow](https://mlflow.org/)
 - [Feast Feature Store](https://feast.dev/)
 - [Kubeflow](https://www.kubeflow.org/)

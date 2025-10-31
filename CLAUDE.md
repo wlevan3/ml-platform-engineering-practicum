@@ -4,9 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **personal learning project** building a production-grade ML platform from scratch. The goal is hands-on experience with infrastructure, MLOps, and platform engineering practices. The project follows production-like workflows (issues, PRs, CI/CD) to build professional engineering habits.
+This is a **personal learning project** building a production-grade ML platform from scratch. The goal is
+hands-on experience with infrastructure, MLOps, and platform engineering practices. The project follows
+production-like workflows (issues, PRs, CI/CD) to build professional engineering habits.
 
-**Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS, Terraform) coming in Phase 2+.
+**Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS,
+Terraform) coming in Phase 2+.
 
 ## Architecture
 
@@ -107,7 +110,7 @@ docker run -p 8000:8000 ml-platform-api:latest
 
 ### Branch Naming
 
-```
+```text
 <type>/<short-description>
 ```
 
@@ -117,7 +120,7 @@ Example: `feature/add-mlflow-integration`
 
 ### Commit Format (Conventional Commits)
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -148,7 +151,7 @@ Examples:
 
 Run the `pre-push-review` skill (Claude Code skill) to automatically check shell scripts and GitHub Actions:
 
-```
+```bash
 /pre-push-review
 ```
 
@@ -192,7 +195,7 @@ When Terraform is added:
 
 ## Project Structure
 
-```
+```text
 ml-platform-engineering-practicum/
 ├── .github/
 │   ├── workflows/           # CI/CD pipelines
@@ -273,6 +276,15 @@ See `docs/PICKLE_SECURITY.md` for detailed analysis and migration path.
   - No force pushes
   - No direct commits
 
+## Documentation Reference
+
+For detailed guidance on project workflows and management, refer to:
+
+- **docs/PROJECT_MANAGEMENT.md** - Complete guide to GitHub Projects setup, issue
+  templates, custom fields, automation workflows, and project board configuration
+- **docs/QUICK_REFERENCE.md** - Quick reference for Git commands, GitHub CLI, commit
+  conventions, project field values, and useful links
+
 ## Issue Templates and GitHub Projects
 
 The project uses **GitHub Projects** for tracking work:
@@ -282,7 +294,7 @@ The project uses **GitHub Projects** for tracking work:
 - **Component views** for organizing by platform component
 - **Roadmap view** for timeline visualization
 
-See [docs/PROJECT_MANAGEMENT.md](docs/PROJECT_MANAGEMENT.md) for details.
+See docs/PROJECT_MANAGEMENT.md for complete setup instructions.
 
 ## Learning Focus
 
