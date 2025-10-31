@@ -36,6 +36,7 @@ jobs:
         uses: anthropics/claude-code-action@eaf3516749293b9a9be497ace1e44104b78eb1ee  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.CLAUDE_CODE_PAT }}
           prompt: |
             REPO: ${{ github.repository }}
             PR NUMBER: ${{ github.event.pull_request.number }}
