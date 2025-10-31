@@ -25,7 +25,7 @@ jobs:
   terraform-validate:
     name: Terraform Validation
     runs-on: ubuntu-latest
-    if: hashFiles('terraform/**/*.tf') != ''
+    if: ${{ hashFiles('terraform/**/*.tf') != '' }}
 
     steps:
       - name: Checkout code
@@ -65,7 +65,7 @@ jobs:
   kubernetes-validate:
     name: Kubernetes Validation
     runs-on: ubuntu-latest
-    if: hashFiles('k8s/**/*.yaml', 'k8s/**/*.yml') != ''
+    if: ${{ hashFiles('k8s/**/*.yaml', 'k8s/**/*.yml') != '' }}
 
     steps:
       - name: Checkout code
@@ -92,7 +92,7 @@ jobs:
   python-lint:
     name: Python Linting
     runs-on: ubuntu-latest
-    if: hashFiles('**/*.py') != ''
+    if: ${{ hashFiles('**/*.py') != '' }}
 
     steps:
       - name: Checkout code
@@ -119,7 +119,7 @@ jobs:
   python-test:
     name: Python Tests with Coverage
     runs-on: ubuntu-latest
-    if: hashFiles('**/*.py') != ''
+    if: ${{ hashFiles('**/*.py') != '' }}
 
     steps:
       - name: Checkout code
@@ -149,7 +149,7 @@ jobs:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
     needs: python-test
-    if: hashFiles('**/*.py') != ''
+    if: ${{ hashFiles('**/*.py') != '' }}
 
     steps:
       - name: Checkout code
@@ -215,7 +215,7 @@ jobs:
   semgrep-scan:
     name: Semgrep Security Analysis
     runs-on: ubuntu-latest
-    if: hashFiles('**/*.py') != ''
+    if: ${{ hashFiles('**/*.py') != '' }}
     permissions:
       security-events: write
       contents: read
