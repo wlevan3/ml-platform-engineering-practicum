@@ -30,11 +30,19 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Generate GitHub App Token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CLAUDE_CODE_APP_ID }}
+          private-key: ${{ secrets.CLAUDE_CODE_APP_PRIVATE_KEY }}
+
       - name: Run Claude Code
         id: claude
         uses: anthropics/claude-code-action@eaf3516749293b9a9be497ace1e44104b78eb1ee  # v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ steps.app-token.outputs.token }}
 
           # This is an optional setting that allows Claude to read CI results on PRs
           additional_permissions: |
