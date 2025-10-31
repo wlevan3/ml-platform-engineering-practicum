@@ -6,7 +6,7 @@ import json
 import joblib
 import numpy as np
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 
 class IrisModel:
@@ -43,10 +43,7 @@ class IrisModel:
 
         # Load metadata
         with open(self.metadata_path, "r") as f:
-            self.metadata = json.load(f)
-
-        # Type narrowing: json.load() never returns None, but mypy needs explicit assertion
-        assert self.metadata is not None
+            self.metadata = cast(Dict[str, Any], json.load(f))
         self.classes = self.metadata["classes"]
 
     def predict(self, features: List[float]) -> Tuple[str, float, Dict[str, float]]:

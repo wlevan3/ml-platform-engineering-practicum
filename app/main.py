@@ -3,6 +3,8 @@ FastAPI application for serving iris classification predictions.
 """
 
 from contextlib import asynccontextmanager
+from typing import Any, Dict, cast
+
 from fastapi import FastAPI, HTTPException
 
 from app import __version__
@@ -91,17 +93,14 @@ async def predict(request: PredictionRequest):
     try:
         predicted_class, confidence, probabilities = model.predict(request.features)
 
-        # Type narrowing: is_loaded() guarantees metadata is not None, but mypy needs explicit runtime check
-        if model.metadata is None:
-            raise HTTPException(
-                status_code=500, detail="Model metadata is missing after prediction"
-            )
+        # Type narrowing: is_loaded() guarantees metadata is not None
+        metadata = cast(Dict[str, Any], model.metadata)
 
         return PredictionResponse(
             prediction=predicted_class,
             confidence=confidence,
             probabilities=probabilities,
-            model_version=model.metadata["version"],
+            model_version=metadata["version"],
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
