@@ -88,7 +88,7 @@ brew install bfg  # macOS
 # or download from: https://rtyley.github.io/bfg-repo-cleaner/
 
 # Clone a fresh copy
-git clone --mirror https://github.com/your-repo.git
+git clone --mirror https://github.com/wlevan3/ml-platform-engineering-practicum.git
 
 # Remove secrets (replace YOUR-SECRET with the actual secret)
 bfg --replace-text passwords.txt repo.git  # using a file with secrets
