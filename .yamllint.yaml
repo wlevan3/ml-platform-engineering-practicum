@@ -1,0 +1,56 @@
+# yamllint configuration for GitHub Actions workflows and Kubernetes manifests
+extends: default
+
+rules:
+  # Allow longer lines for GitHub Actions workflows (URLs, commands, etc.)
+  line-length:
+    max: 160
+    level: warning
+
+  # Standard 2-space indentation for YAML
+  indentation:
+    spaces: 2
+    indent-sequences: true
+
+  # Allow inline comments with single space
+  comments:
+    min-spaces-from-content: 1
+
+  # Allow document start (---) but don't require it
+  document-start:
+    present: false
+
+  # GitHub Actions uses truthy values like 'on', which is valid
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: false
+
+  # Allow empty values (common in GitHub Actions conditionals)
+  empty-values:
+    forbid-in-block-mappings: false
+    forbid-in-flow-mappings: false
+
+  # Relaxed rules for trailing spaces (auto-fixed by other hooks)
+  trailing-spaces: enable
+
+  # Allow multiple documents in single file (useful for K8s manifests)
+  new-line-at-end-of-file: enable
+
+  # Kubernetes-friendly: allow duplicate keys in some contexts
+  key-duplicates: enable
+
+  # Brackets and braces styling
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+# Ignore patterns
+ignore: |
+  .venv/
+  venv/
+  node_modules/
+  .github/
