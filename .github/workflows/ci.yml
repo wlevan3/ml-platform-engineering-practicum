@@ -262,6 +262,8 @@ jobs:
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
+    # Note: Some jobs (python-*, sonarcloud, semgrep) have conditionals and may be skipped.
+    # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
     needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, sonarcloud-analysis, security-scan, gitleaks-scan, semgrep-scan]
     if: always()
 
