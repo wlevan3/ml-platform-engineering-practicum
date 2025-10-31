@@ -33,10 +33,17 @@ The project currently has a **simple ML inference service** as a foundation:
 
 ### Python Development
 
+**Important**: This project uses **Python 3.13** with **uv** for package management and a **.venv** virtual environment.
+
 ```bash
-# Setup virtual environment (Python 3.13)
-python -m venv .venv
+# Setup virtual environment (Python 3.13 with uv)
+uv venv .venv --python 3.13
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+uv pip install -r requirements.txt
+
+# Alternative: Standard venv (if uv not available)
+python3.13 -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
 
 # Train model (creates models/iris_classifier.joblib and metadata)

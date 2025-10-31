@@ -59,10 +59,7 @@ def test_model_info_endpoint(client):
 def test_predict_setosa(client):
     """Test prediction for iris setosa."""
     # Typical setosa measurements: short petals
-    response = client.post(
-        "/predict",
-        json={"features": [5.1, 3.5, 1.4, 0.2]}
-    )
+    response = client.post("/predict", json={"features": [5.1, 3.5, 1.4, 0.2]})
     assert response.status_code == 200
     data = response.json()
     assert data["prediction"] == "setosa"
@@ -75,10 +72,7 @@ def test_predict_setosa(client):
 def test_predict_versicolor(client):
     """Test prediction for iris versicolor."""
     # Typical versicolor measurements: medium petals
-    response = client.post(
-        "/predict",
-        json={"features": [5.9, 3.0, 4.2, 1.5]}
-    )
+    response = client.post("/predict", json={"features": [5.9, 3.0, 4.2, 1.5]})
     assert response.status_code == 200
     data = response.json()
     assert data["prediction"] == "versicolor"
@@ -89,10 +83,7 @@ def test_predict_versicolor(client):
 def test_predict_virginica(client):
     """Test prediction for iris virginica."""
     # Typical virginica measurements: long petals
-    response = client.post(
-        "/predict",
-        json={"features": [6.5, 3.0, 5.5, 2.0]}
-    )
+    response = client.post("/predict", json={"features": [6.5, 3.0, 5.5, 2.0]})
     assert response.status_code == 200
     data = response.json()
     assert data["prediction"] == "virginica"
@@ -103,28 +94,21 @@ def test_predict_virginica(client):
 def test_predict_invalid_features_count(client):
     """Test prediction with wrong number of features."""
     # Only 3 features instead of 4
-    response = client.post(
-        "/predict",
-        json={"features": [5.1, 3.5, 1.4]}
-    )
+    response = client.post("/predict", json={"features": [5.1, 3.5, 1.4]})
     assert response.status_code == 422  # Validation error
 
 
 def test_predict_invalid_features_type(client):
     """Test prediction with invalid feature types."""
     response = client.post(
-        "/predict",
-        json={"features": ["not", "a", "number", "list"]}
+        "/predict", json={"features": ["not", "a", "number", "list"]}
     )
     assert response.status_code == 422  # Validation error
 
 
 def test_predict_missing_features(client):
     """Test prediction with missing features field."""
-    response = client.post(
-        "/predict",
-        json={}
-    )
+    response = client.post("/predict", json={})
     assert response.status_code == 422  # Validation error
 
 

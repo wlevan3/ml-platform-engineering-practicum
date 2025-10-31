@@ -12,8 +12,11 @@ from typing import Dict, List, Tuple
 class IrisModel:
     """Iris classification model wrapper."""
 
-    def __init__(self, model_path: str = "models/iris_classifier.joblib",
-                 metadata_path: str = "models/model_metadata.json"):
+    def __init__(
+        self,
+        model_path: str = "models/iris_classifier.joblib",
+        metadata_path: str = "models/model_metadata.json",
+    ):
         """
         Initialize the model.
 
@@ -39,10 +42,10 @@ class IrisModel:
         self.model = joblib.load(self.model_path)
 
         # Load metadata
-        with open(self.metadata_path, 'r') as f:
+        with open(self.metadata_path, "r") as f:
             self.metadata = json.load(f)
 
-        self.classes = self.metadata['classes']
+        self.classes = self.metadata["classes"]
 
     def predict(self, features: List[float]) -> Tuple[str, float, Dict[str, float]]:
         """

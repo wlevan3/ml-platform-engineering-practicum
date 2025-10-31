@@ -37,6 +37,7 @@ Use descriptive branch names that follow this pattern:
 ```
 
 **Types:**
+
 - `feature/` - New functionality
 - `fix/` - Bug fixes
 - `infra/` - Infrastructure changes
@@ -45,6 +46,7 @@ Use descriptive branch names that follow this pattern:
 - `ci/` - CI/CD pipeline changes
 
 **Examples:**
+
 ```bash
 feature/add-model-registry
 fix/eks-node-scaling-issue
@@ -141,6 +143,7 @@ and data flow through the ML platform.
 ### Creating a PR
 
 1. Push your feature branch:
+
    ```bash
    git push -u origin feature/your-feature
    ```
@@ -164,6 +167,7 @@ Even when working solo, self-review is valuable:
 ### Merge Strategy
 
 This project uses **squash merging** exclusively:
+
 - Each PR becomes a single commit in `main`
 - Keeps history clean and easy to navigate
 - Commit message is generated from PR title and description
@@ -211,6 +215,45 @@ This project uses **squash merging** exclusively:
 - Use meaningful variable names
 - Quote variables to prevent word splitting
 
+### GitHub Actions
+
+#### Action Pinning Policy
+
+To prevent supply chain attacks, all third-party GitHub Actions **must be pinned to commit SHAs** with version comments:
+
+**GitHub-owned actions (safe with tags):**
+
+- `actions/*` (e.g., `actions/checkout@v4`)
+- `github/*` (e.g., `github/codeql-action/*@v3`)
+
+**Third-party actions (require SHA pinning):**
+
+```yaml
+# ❌ BAD - Mutable tag vulnerable to tag poisoning
+- uses: aquasecurity/trivy-action@master
+- uses: some-action/tool@v1
+
+# ✅ GOOD - Pinned to SHA with version comment
+- uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # master
+- uses: some-action/tool@a1b2c3d4e5f6...  # v1.2.3
+```
+
+#### Finding the Correct SHA
+
+To pin an action to a specific SHA:
+
+```bash
+# Get SHA for a specific tag
+gh api repos/OWNER/REPO/git/refs/tags/TAG_NAME --jq '.object.sha'
+
+# Example for aquasecurity/trivy-action@master
+gh api repos/aquasecurity/trivy-action/git/refs/heads/master --jq '.object.sha'
+```
+
+#### Updating Pinned Actions
+
+Dependabot automatically creates PRs to update pinned actions weekly. The SHA will be updated while the version comment remains for reference.
+
 ## Testing Requirements
 
 ### Local Testing
@@ -236,6 +279,7 @@ kubeval manifests/*.yaml
 ### CI/CD Testing
 
 Once CI/CD is set up:
+
 - All tests must pass before merge
 - Terraform plan must succeed
 - Security scans must pass
@@ -290,6 +334,7 @@ Once CI/CD is set up:
 ### Learning Reflections
 
 Use the "Learning Reflection" issue template to capture:
+
 - Key learnings and insights
 - Challenges encountered
 - Solutions and approaches

@@ -30,10 +30,7 @@ def train_model() -> None:
     # Train model
     print("\nTraining Random Forest classifier...")
     model = RandomForestClassifier(
-        n_estimators=100,
-        max_depth=3,
-        random_state=42,
-        n_jobs=-1
+        n_estimators=100, max_depth=3, random_state=42, n_jobs=-1
     )
     model.fit(X_train, y_train)
 
@@ -43,11 +40,7 @@ def train_model() -> None:
 
     print(f"\nModel accuracy: {accuracy:.4f}")
     print("\nClassification Report:")
-    print(classification_report(
-        y_test,
-        y_pred,
-        target_names=iris.target_names
-    ))
+    print(classification_report(y_test, y_pred, target_names=iris.target_names))
 
     # Save model
     models_dir = Path("models")
@@ -67,11 +60,11 @@ def train_model() -> None:
         "features": iris.feature_names,
         "classes": iris.target_names.tolist(),
         "training_samples": len(X_train),
-        "test_samples": len(X_test)
+        "test_samples": len(X_test),
     }
 
     metadata_path = models_dir / "model_metadata.json"
-    with open(metadata_path, 'w') as f:
+    with open(metadata_path, "w") as f:
         json.dump(metadata, f, indent=2)
     print(f"Metadata saved to: {metadata_path}")
 
