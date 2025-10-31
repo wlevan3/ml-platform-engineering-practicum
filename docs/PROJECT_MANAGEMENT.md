@@ -16,6 +16,7 @@ This guide explains how to set up and use GitHub Projects to manage the ML Platf
 ### Overview
 
 Use a single GitHub Project to track all work across the ML platform practicum:
+
 - Infrastructure tasks
 - Feature development
 - Bug fixes
@@ -60,6 +61,7 @@ Create multiple views to visualize work from different perspectives.
 **Purpose:** Track work status visually
 
 **Setup:**
+
 1. Click **"New view"** → **"Board"**
 2. Name: **"Status Board"**
 3. Group by: **Status**
@@ -78,6 +80,7 @@ Create multiple views to visualize work from different perspectives.
 **Purpose:** Organize by platform component
 
 **Setup:**
+
 1. Click **"New view"** → **"Board"**
 2. Name: **"By Component"**
 3. Group by: **Component** (custom field - see below)
@@ -96,6 +99,7 @@ Create multiple views to visualize work from different perspectives.
 **Purpose:** See all task details in spreadsheet format
 
 **Setup:**
+
 1. Click **"New view"** → **"Table"**
 2. Name: **"Detailed Table"**
 3. Visible columns:
@@ -116,6 +120,7 @@ Create multiple views to visualize work from different perspectives.
 **Purpose:** Plan work chronologically by phase
 
 **Setup:**
+
 1. Click **"New view"** → **"Roadmap"**
 2. Name: **"Practicum Roadmap"**
 3. Date field: **Phase** (custom iteration field)
@@ -129,6 +134,7 @@ This gives you a Gantt-chart style view of your practicum timeline.
 **Purpose:** Filter and review learning entries
 
 **Setup:**
+
 1. Click **"New view"** → **"Table"**
 2. Name: **"Learnings"**
 3. Filter: `label:learning` OR `Component:Learning`
@@ -155,6 +161,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - 🎯 EKS Cluster
 - 📦 Model Registry
 - 🗄️ Feature Store
@@ -170,6 +177,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - 🔴 Critical (blocking)
 - 🟠 High (important)
 - 🟡 Medium (nice to have)
@@ -182,6 +190,7 @@ Add custom fields to track ML platform-specific metadata.
 **Type:** Number
 **Range:** 1-5
 **Description:**
+
 - 1 = Very simple (< 1 hour)
 - 2 = Simple (1-3 hours)
 - 3 = Moderate (half day)
@@ -193,6 +202,7 @@ Add custom fields to track ML platform-specific metadata.
 **Type:** Iteration
 **Duration:** 2 weeks
 **Suggested phases:**
+
 - Phase 1: Foundation & Setup
 - Phase 2: EKS & Kubernetes
 - Phase 3: Model Registry
@@ -205,6 +215,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - 🧪 Development
 - 🎭 Staging
 - 🚀 Production
@@ -214,6 +225,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - Terraform
 - Kubernetes
 - Helm
@@ -225,6 +237,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - 💰 High (> $50/month)
 - 💵 Medium ($10-50/month)
 - 💸 Low (< $10/month)
@@ -234,6 +247,7 @@ Add custom fields to track ML platform-specific metadata.
 
 **Type:** Single select
 **Options:**
+
 - Kubernetes/EKS
 - Terraform/IaC
 - CI/CD & GitOps
@@ -266,6 +280,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Automatically add to project
 
 **Setup:**
+
 1. Go to project **Settings** → **Workflows**
 2. Enable **"Auto-add to project"**
 3. Configure:
@@ -279,6 +294,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Set Status to "Backlog" or "Ready"
 
 **Setup:**
+
 1. Enable **"Item added to project"** workflow
 2. Set field: **Status** = **Backlog**
 
@@ -288,6 +304,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Set Status to "In Review"
 
 **Setup:**
+
 1. Enable **"Pull request opened"** workflow
 2. Set field: **Status** = **In Review**
 
@@ -297,6 +314,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Set Status to "Done"
 
 **Setup:**
+
 1. Enable **"Pull request merged"** workflow
 2. Set field: **Status** = **Done**
 
@@ -306,6 +324,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Set Status to "Done"
 
 **Setup:**
+
 1. Enable **"Issue closed"** workflow
 2. Set field: **Status** = **Done**
 
@@ -315,6 +334,7 @@ GitHub Projects supports built-in automation. Here are recommended workflows:
 **Action:** Set Status back to "Ready" or "Backlog"
 
 **Setup:**
+
 1. Enable **"Pull request closed"** workflow
 2. Set field: **Status** = **Backlog**
 
@@ -370,12 +390,14 @@ gh issue create --template infrastructure.yml \
 Use labels in combination with project fields:
 
 **Priority labels:** (redundant with field, but useful for filtering)
+
 - `priority: critical`
 - `priority: high`
 - `priority: medium`
 - `priority: low`
 
 **Type labels:**
+
 - `type: feature`
 - `type: bug`
 - `type: infrastructure`
@@ -383,6 +405,7 @@ Use labels in combination with project fields:
 - `type: learning`
 
 **Status labels:** (auto-synced with project Status field)
+
 - `status: blocked`
 - `status: needs-review`
 
@@ -460,6 +483,7 @@ jobs:
 ---
 
 **Next Steps:**
+
 1. Create your project using the instructions above
 2. Set up the 5 recommended views
 3. Add the custom fields
