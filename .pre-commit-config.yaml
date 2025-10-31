@@ -65,7 +65,7 @@ repos:
     rev: 1.7.10
     hooks:
       - id: bandit
-        args: ['-ll', '-i']  # Low and low severity, ignore info
+        args: ['-ll', '-i']  # Low severity level, ignore info messages
         exclude: ^tests/
 
   # Markdown linting

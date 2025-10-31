@@ -35,9 +35,10 @@ The pre-commit hooks automatically run on every commit and check for:
 **Code Quality:**
 - **black** - Python code formatting
 - **ruff** - Fast Python linter
-- **mypy** - Python type checking (run separately)
 - **actionlint** - GitHub Actions workflow validation
 - **markdownlint** - Markdown style checking
+
+**Note:** Python type checking with `mypy` should be run separately: `mypy app/`
 
 **General:**
 - **trailing-whitespace** - Removes trailing whitespace
