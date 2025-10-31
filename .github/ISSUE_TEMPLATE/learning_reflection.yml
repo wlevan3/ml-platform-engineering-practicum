@@ -1,0 +1,107 @@
+name: Learning Reflection
+description: Document learnings, insights, and reflections from the practicum
+title: "[Learning]: "
+labels: ["documentation", "learning"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to capture learnings and reflections as you build the ML platform.
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic Area
+      description: What area does this learning relate to?
+      options:
+        - Kubernetes / EKS
+        - Infrastructure as Code (Terraform)
+        - CI/CD & GitOps
+        - ML Platform Architecture
+        - Feature Store Design
+        - Model Registry
+        - Observability & Monitoring
+        - AWS Services
+        - Security & IAM
+        - Cost Optimization
+        - General Platform Engineering
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What were you working on?
+      placeholder: "While implementing the feature store..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: learning
+    attributes:
+      label: Key Learning
+      description: What did you learn?
+      placeholder: "I learned that..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: challenge
+    attributes:
+      label: Challenge / Problem
+      description: What challenge or problem did you encounter?
+      placeholder: "The challenge was..."
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solution / Approach
+      description: How did you solve it or what approach did you take?
+      placeholder: "I solved it by..."
+
+  - type: textarea
+    id: insights
+    attributes:
+      label: Insights & Takeaways
+      description: What are your key insights or takeaways?
+      placeholder: |
+        - Design consideration: ...
+        - Trade-off between X and Y: ...
+        - Best practice: ...
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches
+      description: What other approaches did you consider? What are the trade-offs?
+      placeholder: "I also considered... but chose... because..."
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Helpful Resources
+      description: Links to documentation, articles, or examples that helped
+      placeholder: |
+        - [AWS EKS Best Practices](https://...)
+        - Stack Overflow discussion: ...
+
+  - type: textarea
+    id: future
+    attributes:
+      label: Future Exploration
+      description: What would you like to explore further?
+      placeholder: "I want to dive deeper into..."
+
+  - type: checkboxes
+    id: type
+    attributes:
+      label: Type of Learning
+      description: What kind of learning is this?
+      options:
+        - label: Technical concept
+        - label: Design pattern
+        - label: Best practice
+        - label: Anti-pattern / what not to do
+        - label: Troubleshooting technique
+        - label: Tool or technology

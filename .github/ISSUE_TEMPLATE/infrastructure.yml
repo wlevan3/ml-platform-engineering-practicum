@@ -1,0 +1,131 @@
+name: Infrastructure Task
+description: Track infrastructure changes, deployments, or configuration updates
+title: "[Infra]: "
+labels: ["infrastructure", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for infrastructure-related tasks and changes.
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Task Type
+      description: What type of infrastructure work is this?
+      options:
+        - New Infrastructure
+        - Configuration Update
+        - Resource Scaling
+        - Security Update
+        - Cost Optimization
+        - Migration
+        - Cleanup/Decommission
+        - Troubleshooting
+    validations:
+      required: true
+
+  - type: dropdown
+    id: service
+    attributes:
+      label: AWS Service / Component
+      description: Which service or component is involved?
+      options:
+        - EKS (Kubernetes)
+        - EC2 / ASG
+        - RDS / Database
+        - S3
+        - IAM / Security
+        - VPC / Networking
+        - CloudWatch / Logging
+        - Lambda
+        - ECR / Container Registry
+        - ALB / Load Balancer
+        - Multiple Services
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: What needs to be done and why?
+      placeholder: "Deploy new EKS cluster to support..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: resources
+    attributes:
+      label: Resources Affected
+      description: List the resources that will be created, modified, or deleted
+      placeholder: |
+        - EKS cluster: ml-platform-prod
+        - Node groups: ml-workers (t3.xlarge)
+        - RDS instance: feature-store-db
+    validations:
+      required: true
+
+  - type: textarea
+    id: terraform
+    attributes:
+      label: Terraform Changes
+      description: Describe Terraform changes needed
+      placeholder: |
+        Files to modify:
+        - terraform/eks/main.tf
+        - terraform/eks/variables.tf
+      render: terraform
+
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation Steps
+      description: How to verify the changes work correctly
+      placeholder: |
+        - [ ] terraform plan shows expected changes
+        - [ ] terraform apply succeeds
+        - [ ] kubectl get nodes shows new nodes
+        - [ ] Test workload deploys successfully
+    validations:
+      required: true
+
+  - type: textarea
+    id: rollback
+    attributes:
+      label: Rollback Plan
+      description: How to rollback if something goes wrong
+      placeholder: "Rollback procedure..."
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      description: Which environment is affected?
+      options:
+        - Development
+        - Staging
+        - Production
+        - All Environments
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: considerations
+    attributes:
+      label: Considerations
+      description: Important factors to consider
+      options:
+        - label: Cost impact assessed
+        - label: Security implications reviewed
+        - label: Downtime required
+        - label: Backup/snapshot created
+        - label: Documentation updated
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any other relevant information
+      placeholder: Related tickets, AWS documentation links, etc.

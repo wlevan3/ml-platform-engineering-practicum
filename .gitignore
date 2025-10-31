@@ -205,3 +205,90 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# ===========================
+# Infrastructure & DevOps
+# ===========================
+
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+terraform.tfplan
+tfplan
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+kustomization.yaml
+
+# AWS
+.aws/
+credentials
+*.pem
+
+# Helm
+*.tgz
+
+# Docker
+.dockerignore
+
+# ===========================
+# Security & Secrets
+# ===========================
+
+# Secrets
+secrets.yaml
+secrets.yml
+*.key
+*.crt
+*.csr
+id_rsa*
+.secrets.baseline
+
+# ===========================
+# MacOS & IDE
+# ===========================
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# ===========================
+# Temporary & Build Files
+# ===========================
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.bak
+*.backup
+
+# ===========================
+# Project Specific
+# ===========================
+
+# ML Platform artifacts
+mlruns/
+artifacts/
+models/
+
+# Data directories (if storing locally)
+data/
+datasets/
