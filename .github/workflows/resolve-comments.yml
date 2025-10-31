@@ -1,0 +1,22 @@
+name: "Auto-Resolve Outdated Comments"
+
+on:
+  pull_request:
+    types: [synchronize, opened, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  resolve-outdated:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Resolve outdated Copilot comments
+        uses: Ardiannn08/resolve-outdated-comment@v1.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filter-user: "Copilot"
+          mode: "resolve"
