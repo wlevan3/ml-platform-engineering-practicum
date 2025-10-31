@@ -1,27 +1,53 @@
-# Use Python 3.13 slim image for smaller size
-FROM python:3.13-slim
+# ==========================================
+# Stage 1: Builder - Install dependencies
+# ==========================================
+FROM python:3.13-slim AS builder
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies needed for building Python packages
+# Note: gcc may be needed for some Python packages, but g++ is typically unnecessary
+# as most ML packages (numpy, scikit-learn) ship pre-built wheels
 RUN apt-get update && apt-get install -y \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
+# Create virtual environment
+RUN python -m venv /opt/venv
+
+# Activate virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy requirements and install dependencies in the venv
 COPY requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# ==========================================
+# Stage 2: Runtime - Minimal production image
+# ==========================================
+FROM python:3.13-slim AS runtime
 
-# Copy application code
+# Set working directory
+WORKDIR /app
+
+# Copy virtual environment from builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Set environment to use the virtual environment
+ENV PATH="/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1
+
+# Copy application code and model artifacts
 COPY app/ ./app/
 COPY models/ ./models/
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
+
+# Switch to non-root user
 USER appuser
 
 # Expose port

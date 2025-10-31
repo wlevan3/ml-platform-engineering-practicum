@@ -6,7 +6,7 @@ import json
 import joblib
 import numpy as np
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 
 class IrisModel:
@@ -26,9 +26,9 @@ class IrisModel:
         """
         self.model_path = Path(model_path)
         self.metadata_path = Path(metadata_path)
-        self.model = None
-        self.metadata = None
-        self.classes = None
+        self.model: Optional[Any] = None
+        self.metadata: Optional[Dict[str, Any]] = None
+        self.classes: Optional[List[str]] = None
 
     def load(self) -> None:
         """Load the model and metadata from disk."""
@@ -43,8 +43,7 @@ class IrisModel:
 
         # Load metadata
         with open(self.metadata_path, "r") as f:
-            self.metadata = json.load(f)
-
+            self.metadata = cast(Dict[str, Any], json.load(f))
         self.classes = self.metadata["classes"]
 
     def predict(self, features: List[float]) -> Tuple[str, float, Dict[str, float]]:
@@ -59,6 +58,9 @@ class IrisModel:
         """
         if self.model is None:
             raise RuntimeError("Model not loaded. Call load() first.")
+
+        if self.classes is None:
+            raise RuntimeError("Model classes not loaded. Call load() first.")
 
         if len(features) != 4:
             raise ValueError(f"Expected 4 features, got {len(features)}")
