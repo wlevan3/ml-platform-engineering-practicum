@@ -14,10 +14,12 @@ Currently supported versions for security updates:
 **Please do not report security vulnerabilities through public GitHub issues.**
 
 Instead, please report them via:
+
 - **GitHub Security Advisories**: [Report a vulnerability](https://github.com/wlevan3/ml-platform-engineering-practicum/security/advisories/new)
-- **Email**: wlevan3@github.com
+- **Email**: <wlevan3@github.com>
 
 Please include:
+
 - Type of vulnerability
 - Full paths to source files related to the issue
 - Location of the affected code (tag/branch/commit or direct URL)
@@ -61,12 +63,87 @@ This repository implements several security measures:
 - Infrastructure as Code (IaC) security scanning
 - Branch protection rules requiring security checks to pass
 
+## Secret Remediation Process
+
+If you accidentally commit a secret or receive a secret scanning alert, follow these steps immediately:
+
+### 1. Rotate the Compromised Credential
+
+**CRITICAL**: Assume any secret pushed to GitHub has been compromised and must be rotated immediately.
+
+- **AWS Keys**: Deactivate the key in AWS IAM Console and generate a new one
+- **API Tokens**: Revoke the token in the service provider's dashboard
+- **Passwords**: Change the password immediately
+- **SSH Keys**: Remove the key from authorized systems and generate a new keypair
+
+### 2. Remove the Secret from Git History
+
+Secrets must be removed from the entire git history, not just the latest commit:
+
+#### Option A: Using BFG Repo-Cleaner (Recommended)
+
+```bash
+# Install BFG
+brew install bfg  # macOS
+# or download from: https://rtyley.github.io/bfg-repo-cleaner/
+
+# Clone a fresh copy
+git clone --mirror https://github.com/wlevan3/ml-platform-engineering-practicum.git
+
+# Remove secrets (replace YOUR-SECRET with the actual secret)
+bfg --replace-text passwords.txt repo.git  # using a file with secrets
+# or
+bfg --delete-files secret_file.txt repo.git  # delete specific files
+
+# Clean up and force push
+cd repo.git
+git reflog expire --expire=now --all && git gc --prune=now --aggressive
+git push --force
+```
+
+#### Option B: Using git-filter-repo
+
+```bash
+# Install git-filter-repo
+pip install git-filter-repo
+
+# Remove file from history
+git filter-repo --path path/to/secret/file.txt --invert-paths
+
+# Force push
+git push origin --force --all
+```
+
+### 3. Verify Secret Removal
+
+- Check the Security tab in GitHub to confirm the alert is resolved
+- Run `detect-secrets scan --baseline .secrets.baseline` locally to verify the secret is gone
+- Review recent commits to ensure the secret is not in any branch
+
+### 4. Document the Incident
+
+- Create a private incident report documenting:
+  - What secret was exposed
+  - When it was committed and discovered
+  - What systems/services were affected
+  - Actions taken (rotation, removal, verification)
+  - Lessons learned and preventive measures
+
+### 5. Monitor for Unauthorized Access
+
+- Review access logs for affected services (AWS CloudTrail, application logs, etc.)
+- Look for any suspicious activity during the exposure window
+- Set up monitoring alerts for the affected services
+
 ## Security Contacts
 
 For security-related questions or concerns, please contact:
-- **Primary**: wlevan3@github.com
+
+- **Primary**: <wlevan3@github.com>
 - **GitHub**: @wlevan3
 
 ## Acknowledgments
 
-We appreciate the security research community's efforts to responsibly disclose vulnerabilities. Security researchers who follow our disclosure process will be acknowledged in security advisories (unless they prefer to remain anonymous).
+We appreciate the security research community's efforts to responsibly disclose vulnerabilities.
+Security researchers who follow our disclosure process will be acknowledged in security advisories
+(unless they prefer to remain anonymous).
