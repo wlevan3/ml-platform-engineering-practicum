@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Markdown linting
-        uses: DavidAnson/markdownlint-cli2-action@v16
+        uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8  # v16
         with:
           globs: '**/*.md'
           config: '.markdownlint.json'
@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
         with:
           terraform_version: 1.7.0
 
@@ -51,7 +51,7 @@ jobs:
           terraform validate
 
       - name: TFLint
-        uses: terraform-linters/setup-tflint@v4
+        uses: terraform-linters/setup-tflint@6e87008f9dd1fe3e34e66aca6c97b4a69f72a7f4  # v4.0.0
         with:
           tflint_version: latest
 
@@ -83,7 +83,7 @@ jobs:
         continue-on-error: true
 
       - name: Lint Kubernetes manifests
-        uses: stackrox/kube-linter-action@v1
+        uses: stackrox/kube-linter-action@4586e0224d31e1aa7798b8cb2e3817c6a93ff2ec  # v1.0.7
         with:
           directory: k8s/
           config: .kube-linter.yaml
@@ -163,7 +163,7 @@ jobs:
           name: coverage-report
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@ba3875ecf642b2129de2b589510c81a8b53dbf4e  # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

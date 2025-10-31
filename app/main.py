@@ -7,12 +7,7 @@ from fastapi import FastAPI, HTTPException
 
 from app import __version__
 from app.model import get_model
-from app.schemas import (
-    PredictionRequest,
-    PredictionResponse,
-    HealthResponse,
-    ModelInfo
-)
+from app.schemas import PredictionRequest, PredictionResponse, HealthResponse, ModelInfo
 
 
 @asynccontextmanager
@@ -37,7 +32,7 @@ app = FastAPI(
     title="Iris Classification API",
     description="REST API for predicting iris flower species using machine learning",
     version=__version__,
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 
@@ -50,9 +45,7 @@ async def health_check():
     """
     model = get_model()
     return HealthResponse(
-        status="healthy",
-        model_loaded=model.is_loaded(),
-        version=__version__
+        status="healthy", model_loaded=model.is_loaded(), version=__version__
     )
 
 
@@ -72,7 +65,9 @@ async def get_model_info():
         info = model.get_info()
         return ModelInfo(**info)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving model info: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Error retrieving model info: {str(e)}"
+        )
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Predictions"])
@@ -100,7 +95,7 @@ async def predict(request: PredictionRequest):
             prediction=predicted_class,
             confidence=confidence,
             probabilities=probabilities,
-            model_version=model.metadata['version']
+            model_version=model.metadata["version"],
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -118,6 +113,6 @@ async def root():
             "health": "/health",
             "model_info": "/model/info",
             "predict": "/predict",
-            "docs": "/docs"
-        }
+            "docs": "/docs",
+        },
     }
