@@ -48,7 +48,7 @@ repos:
         additional_dependencies:
           - pydantic
           - types-requests
-        args: [--ignore-missing-imports, --install-types, --non-interactive]
+        args: [--ignore-missing-imports, --non-interactive]
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform

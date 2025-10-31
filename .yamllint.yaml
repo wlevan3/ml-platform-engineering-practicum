@@ -1,4 +1,5 @@
-# yamllint configuration for GitHub Actions workflows and Kubernetes manifests
+# yamllint configuration for Kubernetes manifests and other YAML files
+# Note: GitHub Actions workflows (.github/) are linted separately by actionlint
 extends: default
 
 rules:
