@@ -5,6 +5,7 @@ This script creates the initial model for the prediction service.
 """
 
 import joblib
+import json
 from pathlib import Path
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
@@ -70,7 +71,6 @@ def train_model() -> None:
     }
 
     metadata_path = models_dir / "model_metadata.json"
-    import json
     with open(metadata_path, 'w') as f:
         json.dump(metadata, f, indent=2)
     print(f"Metadata saved to: {metadata_path}")

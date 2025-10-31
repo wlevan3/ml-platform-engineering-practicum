@@ -4,7 +4,6 @@ FastAPI application for serving iris classification predictions.
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
 
 from app import __version__
 from app.model import get_model
