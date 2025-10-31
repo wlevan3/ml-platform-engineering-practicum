@@ -2,12 +2,14 @@
 ML model loading and prediction logic.
 """
 
-import hashlib
+import hmac
 import json
 import joblib
 import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
+
+from app.security import calculate_file_hash
 
 
 class ModelIntegrityError(Exception):
@@ -37,23 +39,6 @@ class IrisModel:
         self.metadata: Optional[Dict[str, Any]] = None
         self.classes: Optional[List[str]] = None
 
-    def _calculate_file_hash(self, filepath: Path) -> str:
-        """
-        Calculate SHA-256 hash of a file.
-
-        Args:
-            filepath: Path to the file to hash
-
-        Returns:
-            Hexadecimal string representation of the SHA-256 hash
-        """
-        sha256_hash = hashlib.sha256()
-        with open(filepath, "rb") as f:
-            # Read in chunks to handle large files efficiently
-            for byte_block in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(byte_block)
-        return sha256_hash.hexdigest()
-
     def load(self) -> None:
         """Load the model and metadata from disk with integrity verification."""
         if not self.model_path.exists():
@@ -69,8 +54,9 @@ class IrisModel:
         # Verify model file integrity if hash is present
         expected_hash = self.metadata.get("model_hash")
         if expected_hash:
-            actual_hash = self._calculate_file_hash(self.model_path)
-            if actual_hash != expected_hash:
+            actual_hash = calculate_file_hash(self.model_path)
+            # Use constant-time comparison to prevent timing attacks
+            if not hmac.compare_digest(expected_hash, actual_hash):
                 raise ModelIntegrityError(
                     f"Model file integrity verification failed!\n"
                     f"Expected hash: {expected_hash}\n"

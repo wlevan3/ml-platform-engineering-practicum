@@ -4,6 +4,7 @@ Unit tests for FastAPI endpoints.
 
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app.model import get_model
 
@@ -123,3 +124,118 @@ def test_openapi_docs(client):
     assert "/predict" in data["paths"]
     assert "/health" in data["paths"]
     assert "/model/info" in data["paths"]
+
+
+# Model Integrity Verification Tests
+
+
+def test_model_integrity_verification_detects_tampering():
+    """Test that hash verification detects model file tampering."""
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from app.model import IrisModel, ModelIntegrityError
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        metadata_path = Path(tmpdir) / "model_metadata.json"
+
+        # Copy original files
+        shutil.copy("models/iris_classifier.joblib", model_path)
+        shutil.copy("models/model_metadata.json", metadata_path)
+
+        # Corrupt the model file
+        with open(model_path, "ab") as f:
+            f.write(b"CORRUPTED_DATA")
+
+        # Attempt to load should raise ModelIntegrityError
+        model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
+        with pytest.raises(ModelIntegrityError) as exc_info:
+            model.load()
+
+        # Verify error message contains useful information
+        error_msg = str(exc_info.value)
+        assert "integrity verification failed" in error_msg.lower()
+        assert "expected hash" in error_msg.lower()
+        assert "actual hash" in error_msg.lower()
+
+
+def test_model_loads_successfully_with_valid_hash():
+    """Test that model loads when hash is valid."""
+    from app.model import IrisModel
+
+    model = IrisModel()
+    model.load()  # Should not raise
+
+    assert model.is_loaded()
+    assert model.metadata is not None
+    assert model.metadata.get("model_hash") is not None
+    assert len(model.metadata["model_hash"]) == 64  # SHA-256 hex length
+
+
+def test_hash_verification_happens_before_pickle_load():
+    """Test that hash is verified BEFORE attempting pickle deserialization."""
+    import shutil
+    import tempfile
+    from pathlib import Path
+    from unittest.mock import patch
+
+    from app.model import IrisModel, ModelIntegrityError
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        metadata_path = Path(tmpdir) / "model_metadata.json"
+
+        shutil.copy("models/iris_classifier.joblib", model_path)
+        shutil.copy("models/model_metadata.json", metadata_path)
+
+        # Corrupt model
+        with open(model_path, "ab") as f:
+            f.write(b"TAMPERED")
+
+        model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
+
+        # Mock joblib.load to verify it's never called
+        with patch("joblib.load") as mock_joblib:
+            with pytest.raises(ModelIntegrityError):
+                model.load()
+
+            # joblib.load should NOT be called when hash fails
+            mock_joblib.assert_not_called()
+
+
+def test_model_loads_without_hash_field():
+    """Test graceful handling when metadata lacks hash field."""
+    import json
+    import shutil
+    import tempfile
+    from pathlib import Path
+
+    from app.model import IrisModel
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        metadata_path = Path(tmpdir) / "model_metadata.json"
+
+        shutil.copy("models/iris_classifier.joblib", model_path)
+
+        # Create metadata WITHOUT hash field (simulate old metadata)
+        metadata = {
+            "model_name": "iris_classifier",
+            "model_version": "1.0.0",
+            "classes": ["setosa", "versicolor", "virginica"],
+            "features": [
+                "sepal_length",
+                "sepal_width",
+                "petal_length",
+                "petal_width",
+            ],
+        }
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f)
+
+        # Should load successfully (hash verification is optional)
+        model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
+        model.load()  # Should not raise
+        assert model.is_loaded()
