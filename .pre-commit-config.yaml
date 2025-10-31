@@ -20,6 +20,13 @@ repos:
     hooks:
       - id: actionlint
 
+  # YAML linting
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [--strict, -c, .yamllint.yaml]
+
   # Python formatting and linting
   - repo: https://github.com/psf/black
     rev: 24.10.0
@@ -33,6 +40,16 @@ repos:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
 
+  # Python type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.14.1
+    hooks:
+      - id: mypy
+        additional_dependencies:
+          - pydantic
+          - types-requests
+        args: [--ignore-missing-imports, --non-interactive]
+
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
     rev: v1.88.0
@@ -45,6 +62,13 @@ repos:
           - --hook-config=--path-to-file=README.md
           - --hook-config=--add-to-existing-file=true
           - --hook-config=--create-file-if-not-exist=true
+
+  # IaC security scanning (Dockerfile, Kubernetes, Terraform, etc.)
+  - repo: https://github.com/bridgecrewio/checkov
+    rev: 3.2.331
+    hooks:
+      - id: checkov
+        args: [--quiet, --framework, dockerfile, kubernetes, terraform]
 
   # Secrets detection
   - repo: https://github.com/Yelp/detect-secrets
