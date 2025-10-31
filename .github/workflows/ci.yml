@@ -215,7 +215,7 @@ jobs:
   semgrep-scan:
     name: Semgrep Security Analysis
     runs-on: ubuntu-latest
-    if: ${{ hashFiles('**/*.py') != '' }}
+    if: hashFiles('**/*.py') != ''
     permissions:
       security-events: write
       contents: read
