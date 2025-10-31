@@ -3,7 +3,7 @@
 extends: default
 
 rules:
-  # Allow longer lines for GitHub Actions workflows (URLs, commands, etc.)
+  # Allow longer lines for YAML files (URLs, commands, etc.)
   line-length:
     max: 160
     level: warning
@@ -21,24 +21,18 @@ rules:
   document-start:
     present: false
 
-  # GitHub Actions uses truthy values like 'on', which is valid
+  # Allow common truthy values ('on', 'off', etc.) for general YAML compatibility
   truthy:
     allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
     check-keys: false
 
-  # Allow empty values (common in GitHub Actions conditionals)
+  # Allow empty values (useful for Kubernetes manifests and other configs)
   empty-values:
     forbid-in-block-mappings: false
     forbid-in-flow-mappings: false
 
-  # Relaxed rules for trailing spaces (auto-fixed by other hooks)
-  trailing-spaces: enable
-
-  # Allow multiple documents in single file (useful for K8s manifests)
-  new-line-at-end-of-file: enable
-
-  # Kubernetes-friendly: allow duplicate keys in some contexts
-  key-duplicates: enable
+  # Enforce no duplicate keys (standard YAML practice, required for Kubernetes)
+  key-duplicates: {}
 
   # Brackets and braces styling
   brackets:
