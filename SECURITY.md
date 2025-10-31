@@ -117,7 +117,7 @@ git push origin --force --all
 ### 3. Verify Secret Removal
 
 - Check the Security tab in GitHub to confirm the alert is resolved
-- Run `detect-secrets scan` locally to verify the secret is gone
+- Run `detect-secrets scan --baseline .secrets.baseline` locally to verify the secret is gone
 - Review recent commits to ensure the secret is not in any branch
 
 ### 4. Document the Incident
