@@ -45,11 +45,8 @@ class IrisModel:
         with open(self.metadata_path, "r") as f:
             self.metadata = json.load(f)
 
-        if self.metadata is None:
-            raise RuntimeError("Failed to load metadata from JSON")
-
-        # Type narrowing: mypy now knows self.metadata is not None
-        assert self.metadata is not None, "Metadata should be loaded"
+        # Type narrowing: json.load() never returns None, but mypy needs explicit assertion
+        assert self.metadata is not None
         self.classes = self.metadata["classes"]
 
     def predict(self, features: List[float]) -> Tuple[str, float, Dict[str, float]]:

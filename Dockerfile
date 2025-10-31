@@ -7,9 +7,10 @@ FROM python:3.13-slim AS builder
 WORKDIR /app
 
 # Install system dependencies needed for building Python packages
+# Note: gcc may be needed for some Python packages, but g++ is typically unnecessary
+# as most ML packages (numpy, scikit-learn) ship pre-built wheels
 RUN apt-get update && apt-get install -y \
     gcc \
-    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Create virtual environment
