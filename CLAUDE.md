@@ -311,3 +311,4 @@ When making changes:
 - Document the "why" behind decisions
 - Reflect on trade-offs and alternatives
 - Don't just complete tasks—understand them deeply
+- after creating pr, run `gh pr $PR_NUMBER checks --watch, then after its done, review the new pr comments and address them.

@@ -35,6 +35,13 @@ def calculate_file_hash(filepath: Path, algorithm: str = "sha256") -> str:
         >>> len(hash_value)  # SHA-256 produces 64 hex characters
         64
     """
+    # Validate algorithm before processing file
+    if algorithm.lower() not in {a.lower() for a in hashlib.algorithms_available}:
+        raise ValueError(
+            f"Unsupported hash algorithm '{algorithm}'. "
+            f"Supported algorithms are: {', '.join(sorted(hashlib.algorithms_available))}"
+        )
+
     hash_obj = hashlib.new(algorithm)
     with open(filepath, "rb") as f:
         # Read in chunks to handle large files efficiently

@@ -54,7 +54,11 @@ class IrisModel:
         # Verify model file integrity if hash is present
         expected_hash = self.metadata.get("model_hash")
         if expected_hash:
-            actual_hash = calculate_file_hash(self.model_path)
+            # Use hash algorithm from metadata, default to sha256
+            # Normalize algorithm name: "SHA-256" -> "sha256"
+            hash_algorithm = self.metadata.get("hash_algorithm", "sha256")
+            hash_algorithm = hash_algorithm.lower().replace("-", "")
+            actual_hash = calculate_file_hash(self.model_path, algorithm=hash_algorithm)
             # Use constant-time comparison to prevent timing attacks
             if not hmac.compare_digest(expected_hash, actual_hash):
                 raise ModelIntegrityError(

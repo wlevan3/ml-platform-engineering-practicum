@@ -197,7 +197,7 @@ def test_hash_verification_happens_before_pickle_load():
         model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
 
         # Mock joblib.load to verify it's never called
-        with patch("joblib.load") as mock_joblib:
+        with patch("app.model.joblib.load") as mock_joblib:
             with pytest.raises(ModelIntegrityError):
                 model.load()
 
