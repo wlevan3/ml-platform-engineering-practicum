@@ -37,7 +37,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 1. Sign up for Claude Code at <https://claude.ai/code>
 2. Navigate to your profile settings
 3. Generate an OAuth token
-4. Add as repository secret: `CLAUDE_CODE_OAUTH_TOKEN`
+4. Add as repository secret: `CLAUDE_CODE_OAUTH_TOKEN`  <!-- pragma: allowlist secret -->
 
 **Rotation**:
 
@@ -66,7 +66,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 
 1. Create a GitHub App (see [Setup Instructions](#setup-instructions))
 2. Note the App ID from the app settings page
-3. Add as repository secret: `CLAUDE_CODE_APP_ID`
+3. Add as repository secret: `CLAUDE_CODE_APP_ID`  <!-- pragma: allowlist secret -->
 
 **Value**: `2213982` (for this repository's `claude-code-ml-platform` app)
 
@@ -103,7 +103,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 1. Create a GitHub App (see [Setup Instructions](#setup-instructions))
 2. Generate a private key from the app settings page
 3. Download the `.pem` file
-4. Add as repository secret: `CLAUDE_CODE_APP_PRIVATE_KEY`
+4. Add as repository secret: `CLAUDE_CODE_APP_PRIVATE_KEY`  <!-- pragma: allowlist secret -->
 
    ```bash
    gh secret set CLAUDE_CODE_APP_PRIVATE_KEY --body "$(cat path/to/key.pem)"
@@ -160,7 +160,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 1. Log in to <https://sonarcloud.io>
 2. Go to your project settings
 3. Generate a new token
-4. Add as repository secret: `SONAR_TOKEN`
+4. Add as repository secret: `SONAR_TOKEN`  <!-- pragma: allowlist secret -->
 
 **Rotation**:
 
