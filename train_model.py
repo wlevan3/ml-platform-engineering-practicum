@@ -4,7 +4,6 @@ Train a simple Random Forest classifier on the Iris dataset and save it.
 This script creates the initial model for the prediction service.
 """
 
-import hashlib
 import joblib
 import json
 from pathlib import Path
@@ -13,23 +12,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
 
-
-def calculate_file_hash(filepath: Path) -> str:
-    """
-    Calculate SHA-256 hash of a file.
-
-    Args:
-        filepath: Path to the file to hash
-
-    Returns:
-        Hexadecimal string representation of the SHA-256 hash
-    """
-    sha256_hash = hashlib.sha256()
-    with open(filepath, "rb") as f:
-        # Read in chunks to handle large files efficiently
-        for byte_block in iter(lambda: f.read(4096), b""):
-            sha256_hash.update(byte_block)
-    return sha256_hash.hexdigest()
+from app.security import calculate_file_hash
 
 
 def train_model() -> None:
