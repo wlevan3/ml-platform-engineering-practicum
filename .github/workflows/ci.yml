@@ -30,31 +30,47 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if terraform directory exists
+        id: check_terraform
+        run: |
+          if [ -d "terraform" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping Terraform validation - terraform/ directory does not exist yet"
+          fi
+
       - name: Setup Terraform
+        if: steps.check_terraform.outputs.exists == 'true'
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
         with:
           terraform_version: 1.7.0
 
       - name: Terraform Format Check
+        if: steps.check_terraform.outputs.exists == 'true'
         run: terraform fmt -check -recursive terraform/
         continue-on-error: true
 
       - name: Terraform Init
+        if: steps.check_terraform.outputs.exists == 'true'
         run: |
           cd terraform
           terraform init -backend=false
 
       - name: Terraform Validate
+        if: steps.check_terraform.outputs.exists == 'true'
         run: |
           cd terraform
           terraform validate
 
       - name: TFLint
+        if: steps.check_terraform.outputs.exists == 'true'
         uses: terraform-linters/setup-tflint@6e87008f9dd1fe3e34e66aca6c97b4a69f72a7f4  # v4.0.0
         with:
           tflint_version: latest
 
       - name: Run TFLint
+        if: steps.check_terraform.outputs.exists == 'true'
         run: |
           cd terraform
           tflint --init
@@ -69,18 +85,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if k8s directory exists
+        id: check_k8s
+        run: |
+          if [ -d "k8s" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping Kubernetes validation - k8s/ directory does not exist yet"
+          fi
+
       - name: Setup kubeval
+        if: steps.check_k8s.outputs.exists == 'true'
         run: |
           wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
           tar xf kubeval-linux-amd64.tar.gz
           sudo mv kubeval /usr/local/bin
 
       - name: Validate Kubernetes manifests
+        if: steps.check_k8s.outputs.exists == 'true'
         run: |
           find k8s \( -name '*.yaml' -o -name '*.yml' \) -print0 | xargs -0 kubeval --strict
         continue-on-error: true
 
       - name: Lint Kubernetes manifests
+        if: steps.check_k8s.outputs.exists == 'true'
         uses: stackrox/kube-linter-action@4586e0224d31e1aa7798b8cb2e3817c6a93ff2ec  # v1.0.7
         with:
           directory: k8s/
@@ -130,6 +159,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Train model for tests
+        run: python train_model.py
 
       - name: Run tests with coverage
         run: pytest
@@ -226,9 +258,10 @@ jobs:
             p/security-audit
             p/python
             p/owasp-top-ten
+          generateSarif: "1"
 
       - name: Upload Semgrep SARIF
-        if: always()
+        if: always() && hashFiles('semgrep.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
