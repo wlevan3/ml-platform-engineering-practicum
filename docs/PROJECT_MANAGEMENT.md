@@ -26,7 +26,7 @@ Use a single GitHub Project to track all work across the ML platform practicum:
 
 ### Recommended Project Name
 
-**"ML Platform Engineering Practicum"**
+"ML Platform Engineering Practicum"
 
 ## Setup Instructions
 
@@ -36,7 +36,8 @@ Use a single GitHub Project to track all work across the ML platform practicum:
 2. Click **"New project"**
 3. Choose **"Start from scratch"** or use a template
 4. Name it: **"ML Platform Engineering Practicum"**
-5. Add description: *"End-to-end ML platform implementation tracker: EKS, model registry, feature store, CI/CD, observability, and learnings"*
+5. Add description: *"End-to-end ML platform implementation tracker: EKS, model registry, feature store, CI/CD,
+   observability, and learnings"*
 6. Set visibility: **Public** or **Private** (your choice)
 7. Click **"Create project"**
 

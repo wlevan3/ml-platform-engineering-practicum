@@ -51,7 +51,8 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 
 ### CLAUDE_CODE_APP_ID
 
-**Purpose**: Identifies the GitHub App used to generate short-lived tokens for Claude Code to interact with GitHub (read PRs, post comments).
+**Purpose**: Identifies the GitHub App used to generate short-lived tokens for Claude Code to interact with
+GitHub (read PRs, post comments).
 
 **Type**: GitHub App ID (numeric)
 
@@ -80,7 +81,8 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 
 ### CLAUDE_CODE_APP_PRIVATE_KEY
 
-**Purpose**: Private key for the GitHub App, used to generate short-lived installation tokens (1-hour expiration) that allow Claude Code to authenticate with GitHub's API.
+**Purpose**: Private key for the GitHub App, used to generate short-lived installation tokens (1-hour expiration)
+that allow Claude Code to authenticate with GitHub's API.
 
 **Type**: RSA private key (PEM format)
 
@@ -174,7 +176,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
 
 ### Creating a GitHub App for Claude Code
 
-**Step 1: Create the GitHub App**
+### Step 1: Create the GitHub App
 
 1. Navigate to <https://github.com/settings/apps>
 2. Click **"New GitHub App"**
@@ -183,7 +185,7 @@ Claude Code workflows require two types of authentication: **Anthropic API authe
    - **Homepage URL**: `https://github.com/YOUR_USERNAME/ml-platform-engineering-practicum`
    - **Webhook**: Uncheck "Active" (not needed)
 
-**Step 2: Set Permissions**
+### Step 2: Set Permissions
 
 Configure **Repository permissions**:
 
@@ -192,15 +194,15 @@ Configure **Repository permissions**:
 - **Pull requests**: Read and write
 - **Metadata**: Read-only (auto-added)
 
-**Step 3: Installation Settings**
+### Step 3: Installation Settings
 
 - **Where can this GitHub App be installed?**: Only on this account
 
-**Step 4: Create the App**
+### Step 4: Create the App
 
 Click **"Create GitHub App"**
 
-**Step 5: Install the App**
+### Step 5: Install the App
 
 1. Click **"Install App"** in the left sidebar
 2. Select your account
@@ -208,7 +210,7 @@ Click **"Create GitHub App"**
 4. Select `ml-platform-engineering-practicum`
 5. Click **"Install"**
 
-**Step 6: Generate Private Key**
+### Step 6: Generate Private Key
 
 1. Go back to app settings: <https://github.com/settings/apps>
 2. Click on your app name
@@ -216,11 +218,11 @@ Click **"Create GitHub App"**
 4. Click **"Generate a private key"**
 5. Save the downloaded `.pem` file securely
 
-**Step 7: Get App ID**
+### Step 7: Get App ID
 
 On the app settings page, note the **App ID** at the top (e.g., `2213982`)
 
-**Step 8: Add Secrets to Repository**
+### Step 8: Add Secrets to Repository
 
 ```bash
 # Add App ID
