@@ -239,7 +239,7 @@ jobs:
           generateSarif: "1"
 
       - name: Upload Semgrep SARIF
-        if: always() && hashFiles('semgrep.sarif') != ''
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
@@ -270,7 +270,7 @@ jobs:
     # Note: Some jobs (python-*, semgrep) have conditionals and may be skipped.
     # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
     # Note: SonarCloud analysis runs via Automatic Analysis (GitHub App integration), not as a CI job.
-    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, security-scan, gitleaks-scan, semgrep-scan]
+    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks]
     if: always()
 
     steps:
@@ -289,4 +289,5 @@ jobs:
             echo "| Security Scanning (Trivy) | ${{ needs.security-scan.result }} |"
             echo "| Secret Scanning (Gitleaks) | ${{ needs.gitleaks-scan.result }} |"
             echo "| Semgrep SAST | ${{ needs.semgrep-scan.result }} |"
+            echo "| Pre-commit Checks | ${{ needs.pre-commit-checks.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
