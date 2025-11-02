@@ -74,7 +74,7 @@ pre-commit run detect-secrets --all-files
 pre-commit autoupdate
 ```
 
-#### Handling Hook Failures
+### Handling Hook Failures
 
 When a hook fails:
 
@@ -83,7 +83,7 @@ When a hook fails:
 3. **Stage the fixes** - `git add` the corrected files
 4. **Retry commit** - Commit again after fixes
 
-##### Example: Secrets detected
+#### Example: Secrets detected
 
 ```bash
 # If detect-secrets finds a secret
@@ -92,7 +92,7 @@ When a hook fails:
 detect-secrets scan --baseline .secrets.baseline
 ```
 
-##### Example: Dockerfile issues
+#### Example: Dockerfile issues
 
 ```bash
 # If hadolint fails
@@ -101,7 +101,7 @@ detect-secrets scan --baseline .secrets.baseline
 # 3. Stage and commit
 ```
 
-##### Example: Python security issues
+#### Example: Python security issues
 
 ```bash
 # If bandit finds security issues
