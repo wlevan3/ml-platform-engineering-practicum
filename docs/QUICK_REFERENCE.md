@@ -53,7 +53,7 @@ gh pr create --title "feat: Feature title" --body "Description" --web
 
 ### Branch Naming Conventions
 
-```
+```text
 feature/add-model-registry
 fix/eks-node-scaling
 infra/setup-rds-feature-store
@@ -64,7 +64,7 @@ ci/add-security-scan
 
 ### Commit Message Format
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>

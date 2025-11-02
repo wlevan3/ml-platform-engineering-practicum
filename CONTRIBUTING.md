@@ -1,12 +1,14 @@
 # Contributing to ML Platform Engineering Practicum
 
-This document outlines the development workflow and contribution guidelines for this project. While this is a personal learning project, following production-grade practices helps build good habits for professional work.
+This document outlines the development workflow and contribution guidelines for this project. While this is a
+personal learning project, following production-grade practices helps build good habits for professional work.
 
 ## Development Setup
 
 ### Pre-Commit Hooks
 
-This project uses **pre-commit hooks** to catch issues locally before pushing to GitHub. This "shift-left" security approach provides faster feedback than waiting for CI/CD.
+This project uses **pre-commit hooks** to catch issues locally before pushing to GitHub. This "shift-left"
+security approach provides faster feedback than waiting for CI/CD.
 
 #### Installation
 
@@ -72,7 +74,7 @@ pre-commit run detect-secrets --all-files
 pre-commit autoupdate
 ```
 
-#### Handling Hook Failures
+### Handling Hook Failures
 
 When a hook fails:
 
@@ -81,7 +83,7 @@ When a hook fails:
 3. **Stage the fixes** - `git add` the corrected files
 4. **Retry commit** - Commit again after fixes
 
-**Example: Secrets detected**
+#### Example: Secrets detected
 
 ```bash
 # If detect-secrets finds a secret
@@ -90,7 +92,7 @@ When a hook fails:
 detect-secrets scan --baseline .secrets.baseline
 ```
 
-**Example: Dockerfile issues**
+#### Example: Dockerfile issues
 
 ```bash
 # If hadolint fails
@@ -99,7 +101,7 @@ detect-secrets scan --baseline .secrets.baseline
 # 3. Stage and commit
 ```
 
-**Example: Python security issues**
+#### Example: Python security issues
 
 ```bash
 # If bandit finds security issues
@@ -139,7 +141,7 @@ This project follows a **production-like workflow** to practice real-world engin
 
 Use descriptive branch names that follow this pattern:
 
-```
+```text
 <type>/<short-description>
 ```
 
@@ -173,7 +175,7 @@ docs/add-architecture-diagram
 
 Follow **Conventional Commits** format for clear, semantic commit messages:
 
-```
+```text
 <type>(<scope>): <subject>
 
 <body>
@@ -359,7 +361,8 @@ gh api repos/aquasecurity/trivy-action/git/refs/heads/master --jq '.object.sha'
 
 #### Updating Pinned Actions
 
-Dependabot automatically creates PRs to update pinned actions weekly. The SHA will be updated while the version comment remains for reference.
+Dependabot automatically creates PRs to update pinned actions weekly. The SHA will be updated while the version
+comment remains for reference.
 
 ## Testing Requirements
 
@@ -459,7 +462,7 @@ Use the "Learning Reflection" issue template to capture:
 
 ### Project Structure
 
-```
+```text
 ml-platform-engineering-practicum/
 ├── .github/              # GitHub configuration
 │   ├── workflows/        # CI/CD workflows
@@ -484,4 +487,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Remember:** The goal of following these practices is not just to complete the project, but to build professional engineering habits that translate to real-world team environments.
+**Remember:** The goal of following these practices is not just to complete the project, but to build professional
+engineering habits that translate to real-world team environments.

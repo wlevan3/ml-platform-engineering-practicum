@@ -1,13 +1,15 @@
 # ML Platform Engineering Practicum
 
-> End-to-end ML platform implementation: EKS-based pipelines, model registry, CI/CD, feature store, and observability — with reflections on platform design.
+> End-to-end ML platform implementation: EKS-based pipelines, model registry, CI/CD, feature store, and
+> observability — with reflections on platform design.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI Pipeline](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml/badge.svg)](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml)
 
 ## 📋 About
 
-This repository documents my journey building a production-grade ML platform from scratch. The goal is to gain hands-on experience with:
+This repository documents my journey building a production-grade ML platform from scratch. The goal is to gain
+hands-on experience with:
 
 - **Infrastructure as Code** - Terraform for AWS resources
 - **Container Orchestration** - Kubernetes on AWS EKS
@@ -41,7 +43,7 @@ The ML platform consists of these core components:
 - **CI/CD Pipeline** - Automated testing and deployment
 - **Observability Stack** - Prometheus, Grafana, ELK stack
 
-_(Architecture diagram coming soon)_
+(Architecture diagram coming soon)
 
 ## 🚀 Getting Started
 
@@ -122,7 +124,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
 
 ## 📝 Learning Reflections
 
-A key part of this practicum is documenting learnings and design decisions. Use the **Learning Reflection** issue template to capture:
+A key part of this practicum is documenting learnings and design decisions. Use the **Learning Reflection** issue
+template to capture:
 
 - Key insights and takeaways
 - Challenges encountered and solutions

@@ -43,7 +43,7 @@ Closes #
 
 <!-- Paste relevant test output or screenshots -->
 
-```
+```text
 # Test output here
 ```
 
