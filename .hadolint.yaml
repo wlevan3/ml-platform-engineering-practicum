@@ -1,0 +1,23 @@
+# Hadolint Configuration for ML Platform Engineering Project
+# https://github.com/hadolint/hadolint
+
+# Ignored Rules with Rationale
+ignored:
+  # DL3008: Pin versions in apt get install
+  # Rationale: This is a Phase 1 learning project with a single internal service.
+  # Python dependencies are already fully pinned in requirements.txt for reproducibility.
+  # System package version pinning deferred to Phase 2+ when multi-service architecture
+  # emerges. Current risk is LOW (non-production, internal-only image).
+  # Will be revisited in Phase 2 when implementing production-grade Kubernetes deployment.
+  - DL3008
+
+  # DL3013: Pin versions in pip
+  # Rationale: Pip upgrades are necessary for Python 3.13 compatibility and security.
+  # Python package versions are fully pinned in requirements.txt (primary reproducibility lever).
+  # Full pip/system package pinning deferred to Phase 2+.
+  # Will be revisited in Phase 2 as part of comprehensive version management strategy.
+  - DL3013
+
+# Strictness level: warning (default)
+# This allows warnings but fails the build on errors (DL0000, DL4000+)
+strictness: warning
