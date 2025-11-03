@@ -2,11 +2,18 @@
 Unit tests for FastAPI endpoints.
 """
 
+import json
+import shutil
+import tempfile
+from pathlib import Path
+from unittest.mock import patch
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.model import get_model
+from app.model import get_model, IrisModel
+from app.security import calculate_file_hash
 
 
 @pytest.fixture(scope="module")
@@ -131,11 +138,7 @@ def test_openapi_docs(client):
 
 def test_model_integrity_verification_detects_tampering():
     """Test that hash verification detects model file tampering."""
-    import shutil
-    import tempfile
-    from pathlib import Path
-
-    from app.model import IrisModel, ModelIntegrityError
+    from app.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model_path = Path(tmpdir) / "iris_classifier.joblib"
@@ -163,7 +166,6 @@ def test_model_integrity_verification_detects_tampering():
 
 def test_model_loads_successfully_with_valid_hash():
     """Test that model loads when hash is valid."""
-    from app.model import IrisModel
 
     model = IrisModel()
     model.load()  # Should not raise
@@ -176,12 +178,7 @@ def test_model_loads_successfully_with_valid_hash():
 
 def test_hash_verification_happens_before_pickle_load():
     """Test that hash is verified BEFORE attempting pickle deserialization."""
-    import shutil
-    import tempfile
-    from pathlib import Path
-    from unittest.mock import patch
-
-    from app.model import IrisModel, ModelIntegrityError
+    from app.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model_path = Path(tmpdir) / "iris_classifier.joblib"
@@ -207,12 +204,6 @@ def test_hash_verification_happens_before_pickle_load():
 
 def test_model_loads_without_hash_field():
     """Test graceful handling when metadata lacks hash field."""
-    import json
-    import shutil
-    import tempfile
-    from pathlib import Path
-
-    from app.model import IrisModel
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model_path = Path(tmpdir) / "iris_classifier.joblib"
@@ -246,8 +237,6 @@ def test_model_loads_without_hash_field():
 
 def test_lifespan_handles_model_load_failure():
     """Test that lifespan properly handles model loading failures."""
-    from unittest.mock import patch
-    from fastapi.testclient import TestClient
 
     # Mock model.load() to raise an exception
     with patch("app.main.get_model") as mock_get_model:
@@ -262,7 +251,6 @@ def test_lifespan_handles_model_load_failure():
 
 def test_model_info_handles_generic_exception():
     """Test model info endpoint handles exceptions from get_info()."""
-    from unittest.mock import patch
 
     with patch("app.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
@@ -278,7 +266,6 @@ def test_model_info_handles_generic_exception():
 
 def test_predict_handles_generic_exception():
     """Test predict endpoint handles generic exceptions from model.predict()."""
-    from unittest.mock import patch
 
     with patch("app.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
@@ -294,7 +281,6 @@ def test_predict_handles_generic_exception():
 
 def test_model_load_with_missing_model_file():
     """Test that load() raises FileNotFoundError when model file doesn't exist."""
-    from app.model import IrisModel
 
     model = IrisModel(
         model_path="nonexistent/path/to/model.joblib",
@@ -307,7 +293,6 @@ def test_model_load_with_missing_model_file():
 
 def test_model_load_with_missing_metadata_file():
     """Test that load() raises FileNotFoundError when metadata file doesn't exist."""
-    from app.model import IrisModel
 
     model = IrisModel(
         model_path="models/iris_classifier.joblib",
@@ -320,7 +305,6 @@ def test_model_load_with_missing_metadata_file():
 
 def test_model_predict_when_model_not_loaded():
     """Test that predict() raises RuntimeError when model is not loaded."""
-    from app.model import IrisModel
 
     model = IrisModel()
     # Don't call model.load()
@@ -331,7 +315,6 @@ def test_model_predict_when_model_not_loaded():
 
 def test_model_predict_when_classes_not_loaded():
     """Test that predict() raises RuntimeError when classes are not loaded."""
-    from app.model import IrisModel
 
     model = IrisModel()
     model.model = "dummy_model"  # Set model but not classes
@@ -342,7 +325,6 @@ def test_model_predict_when_classes_not_loaded():
 
 def test_model_get_info_when_metadata_not_loaded():
     """Test that get_info() raises RuntimeError when metadata is not loaded."""
-    from app.model import IrisModel
 
     model = IrisModel()
     # Don't call model.load()
@@ -353,8 +335,6 @@ def test_model_get_info_when_metadata_not_loaded():
 
 def test_calculate_file_hash_with_missing_file():
     """Test that calculate_file_hash raises exception for non-existent files."""
-    from pathlib import Path
-    from app.security import calculate_file_hash
 
     with pytest.raises((FileNotFoundError, OSError)):
         calculate_file_hash(Path("nonexistent/file.txt"))
