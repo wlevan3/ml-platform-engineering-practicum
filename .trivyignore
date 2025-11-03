@@ -67,12 +67,16 @@ CVE-2024-56433     # login.defs subordinate ID config (not used at runtime)
 TEMP-0628843-DBAD28 # shadow-utils related to CVE-2005-4890 (ancient, not exploitable)
 
 # -----------------------------------------------------------------------------
-# CATEGORY 6: sqlite - 1 alert (LOW severity only, MEDIUM handled separately)
-# Justification: SQL not exposed to users, crafted queries not possible
+# CATEGORY 6: sqlite - 2 alerts (1 LOW, 1 MEDIUM)
+# Justification: SQL not exposed to users, FTS5 extension not used
 # - Application uses sklearn models, not sqlite directly
 # - No user-provided SQL queries
+# - No database layer or SQLite usage in FastAPI REST API
+# - FTS5 (Full-Text Search) extension not used by application
+# - SQLite library dormant in Debian base image
 # -----------------------------------------------------------------------------
 CVE-2021-45346     # sqlite crafted query info disclosure (SQL not exposed)
+CVE-2025-7709      # sqlite FTS5 integer overflow (FTS5 not used by application)
 
 # -----------------------------------------------------------------------------
 # CATEGORY 7: tar - 2 alerts
@@ -111,8 +115,9 @@ TEMP-0841856-B18BAF # sudo privilege escalation (sudo not installed)
 
 # ===========================================================================
 # NOTES:
-# - All above CVEs are LOW severity with no fixes available in Debian 13
-# - MEDIUM severity CVEs are NOT in this file (must be fixed or justified separately)
+# - 25 LOW severity CVEs suppressed (no fixes available in Debian 13)
+# - 1 MEDIUM severity CVE suppressed (CVE-2025-7709 - FTS5 not used by application)
+# - CVE-2025-8869 (MEDIUM) FIXED via pip 25.3 upgrade (not in this file)
 # - Re-evaluate when switching base images (e.g., python:3.14, Alpine, Distroless)
 # - Monitor Debian Security Tracker: https://security-tracker.debian.org/
 # ===========================================================================
