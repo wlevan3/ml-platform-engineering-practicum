@@ -55,10 +55,16 @@ jobs:
             - Security concerns
             - Test coverage
 
+            **Special Instructions for Dependency Updates:**
+            - When reviewing dependency/version updates, ALWAYS verify version numbers are valid using available tools
+            - Use `gh release list -R <owner>/<repo> -L 5` to check if versions exist
+            - Use WebSearch or WebFetch to verify latest releases if your knowledge cutoff is outdated
+            - Do NOT flag versions as invalid based solely on your training data cutoff date
+
             Use the repository's CLAUDE.md for guidance on style and conventions. Be constructive and helpful in your feedback.
 
             Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
 
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
-          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh release list:*),WebSearch,WebFetch"'
