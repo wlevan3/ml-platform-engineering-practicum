@@ -177,7 +177,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Configure AWS credentials using OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -302,6 +302,40 @@ permissions:
 ---
 
 ## Security Best Practices
+
+### 0. Pin GitHub Actions to Commit SHAs
+
+**Recommended approach:** Pin all GitHub Actions to specific commit SHAs instead of version tags for better security.
+
+**Why SHA pinning is important:**
+
+- **Immutability**: Version tags can be moved to point to different commits, but commit SHAs are permanent
+- **Supply chain security**: Prevents maintainers from retroactively modifying released versions
+- **Reproducibility**: Ensures consistent behavior across workflow runs
+- **Transparency**: Makes it clear exactly which code version is executing
+
+**Example (implemented in this project):**
+
+```yaml
+# ❌ Less secure - version tag can be changed
+uses: aws-actions/configure-aws-credentials@v4
+
+# ✅ More secure - pinned to specific commit SHA
+uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+```
+
+**Benefits:**
+
+- Even if the v4.3.1 tag is compromised, your workflow continues using the verified commit
+- Version comment (`# v4.3.1`) provides human-readable context
+- GitHub Dependabot can still update SHA pins automatically
+
+**Trade-offs:**
+
+- Requires updating SHAs when new versions release (automated by Dependabot)
+- Less readable than version tags (mitigated by inline comments)
+
+---
 
 ### 1. Scope Role Permissions (Least Privilege)
 
@@ -432,7 +466,7 @@ permissions:
 # ...
 
 - name: Configure AWS credentials using OIDC
-  uses: aws-actions/configure-aws-credentials@v4
+  uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
   with:
     role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
     aws-region: us-west-2
