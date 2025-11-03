@@ -10,6 +10,18 @@
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 
+## 🏆 Code Quality
+
+This project maintains high code quality standards using **SonarCloud** for continuous analysis:
+
+- **Quality Gate**: ✅ Passing (A-rated on all metrics)
+- **Coverage Target**: 90% (gate requirement: 80%)
+- **Integration**: Automatic Analysis via GitHub App
+- **Philosophy**: "Clean as You Code" - focus on new code quality
+
+All pull requests are automatically scanned for bugs, vulnerabilities, code smells, and security hotspots.
+See [SonarCloud Quality Standards](docs/SONARCLOUD_QUALITY_STANDARDS.md) for detailed metrics and thresholds.
+
 ## 📋 About
 
 This repository documents my journey building a production-grade ML platform from scratch. The goal is to gain
