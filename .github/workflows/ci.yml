@@ -313,7 +313,6 @@ jobs:
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'  # Fail build on HIGH/CRITICAL findings
-          version: 'v0.67.2'  # Explicitly pin Trivy version
 
       - name: Upload Trivy image results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -331,7 +330,6 @@ jobs:
           output: 'trivy-builder-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          version: 'v0.67.2'
 
       - name: Upload Trivy builder results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -349,7 +347,6 @@ jobs:
           output: 'trivy-runtime-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-          version: 'v0.67.2'
 
       - name: Upload Trivy runtime results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
