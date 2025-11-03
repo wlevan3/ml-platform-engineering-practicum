@@ -24,7 +24,7 @@ Current Phase: Foundation & Setup (Phase 1)
 ### Testing
 - Use pytest with fixtures
 - FastAPI TestClient for API testing
-- Coverage target: 80%+
+- Coverage target: 90% (project goal, exceeds 80% gate requirement)
 - Test file naming: `test_*.py`
 
 ### Commit Format (Conventional Commits)
