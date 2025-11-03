@@ -41,14 +41,21 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
 
   # Python type checking
+  # Note: Using explicit additional_dependencies instead of --install-types for:
+  # - Deterministic behavior (no dynamic downloads from PyPI)
+  # - Faster execution (no 10-30s download on first run)
+  # - Offline compatibility (no network dependency)
+  # Type coverage: FastAPI, pydantic, numpy, httpx ship with inline types
+  # joblib-stubs provides type stubs for joblib (no native types)
+  # sklearn ignored in mypy.ini (sklearn-stubs v0.0.3 has bugs)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
-          - pydantic
-          - types-requests
-        args: [--ignore-missing-imports, --install-types, --non-interactive]
+          - pydantic  # Required for mypy to understand pydantic models
+          - joblib-stubs==1.5.2.0.20250831  # Type stubs for joblib
+          # No args needed - mypy reads configuration from mypy.ini
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
