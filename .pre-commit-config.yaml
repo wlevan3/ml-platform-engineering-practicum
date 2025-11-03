@@ -54,7 +54,7 @@ repos:
       - id: mypy
         additional_dependencies:
           - pydantic  # Required for mypy to understand pydantic models
-          - joblib-stubs  # Type stubs for joblib
+          - joblib-stubs==1.5.2.0.20250831  # Type stubs for joblib
           # No args needed - mypy reads configuration from mypy.ini
 
   # Terraform formatting and security
