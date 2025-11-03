@@ -9,7 +9,9 @@
 
 ## Executive Summary
 
-The Alpine migration investigation revealed that **Alpine is NOT the optimal choice** for scientific Python workloads despite initial assumptions. While technically functional and offering improved security, the trade-offs significantly undermine the stated goals.
+The Alpine migration investigation revealed that **Alpine is NOT the optimal choice** for
+scientific Python workloads despite initial assumptions. While technically functional and offering
+improved security, the trade-offs significantly undermine the stated goals.
 
 ### Key Findings
 
@@ -23,7 +25,8 @@ The Alpine migration investigation revealed that **Alpine is NOT the optimal cho
 
 ### Verdict
 
-**The security benefit (66.67% CVE reduction) does NOT justify the 2x build time penalty and 22% size reduction shortfall for a scientific Python stack.**
+**The security benefit (66.67% CVE reduction) does NOT justify the 2x build time penalty
+and 22% size reduction shortfall for a scientific Python stack.**
 
 **Recommendation**: Continue using Debian + `.trivyignore` approach for acceptable security posture with superior build performance.
 
@@ -85,7 +88,7 @@ Alpine achieved only **22% size reduction** (758MB → 590MB = 168MB saved) beca
 
 **Debian (python:3.13-slim):**
 
-```
+```text
 Total: 3 vulnerabilities
 - HIGH: 1
 - MEDIUM: 2
@@ -94,7 +97,7 @@ Total: 3 vulnerabilities
 
 **Alpine (python:3.13-alpine):**
 
-```
+```text
 Total: 1 vulnerability
 - HIGH: 0
 - MEDIUM: 1 (CVE-2025-8869 - pip, fixed in both)
@@ -113,7 +116,10 @@ Total: 1 vulnerability
 
 #### Security Verdict
 
-Alpine provides **significant security improvements** by eliminating 2 of 3 vulnerabilities, including the sole HIGH severity issue. However, Debian's current CVE profile with `.trivyignore` suppressions is already acceptable for a containerized ML service with no exploitable attack surface.
+Alpine provides **significant security improvements** by eliminating 2 of 3 vulnerabilities,
+including the sole HIGH severity issue. However, Debian's current CVE profile with
+`.trivyignore` suppressions is already acceptable for a containerized ML service with no
+exploitable attack surface.
 
 ### 3. Build Time Comparison
 
@@ -132,7 +138,8 @@ Alpine provides **significant security improvements** by eliminating 2 of 3 vuln
 - **No caching**: First-time compilation for every package without wheels
 - **CI/CD impact**: 2x build time = 2x GitHub Actions minutes consumed per PR
 
-**Build Time Verdict**: Alpine's 2x build time penalty is **unacceptable** for CI/CD workflows, significantly slowing development velocity and increasing infrastructure costs.
+**Build Time Verdict**: Alpine's 2x build time penalty is **unacceptable** for CI/CD workflows,
+significantly slowing development velocity and increasing infrastructure costs.
 
 ### 4. Functional Testing Results
 
@@ -246,7 +253,7 @@ RUN adduser -D -u 1000 appuser && \
 
 #### Error 1: Alpine User Creation Incompatibility
 
-```
+```text
 #15 ERROR: /bin/sh: useradd: not found (exit code: 127)
 ```
 
@@ -255,7 +262,7 @@ RUN adduser -D -u 1000 appuser && \
 
 #### Error 2: Missing libgomp.so.1 (OpenMP)
 
-```
+```text
 ImportError: Error loading shared library libgomp.so.1: No such file or directory
 ```
 
@@ -264,7 +271,7 @@ ImportError: Error loading shared library libgomp.so.1: No such file or director
 
 #### Error 3: Missing libstdc++.so.6 (C++ Standard Library)
 
-```
+```text
 ImportError: Error loading shared library libstdc++.so.6: No such file or directory
 ```
 
@@ -372,7 +379,8 @@ Alpine only achieved 22% reduction because:
 3. ❌ **Binary bloat from source compilation**: Compiled binaries larger than pre-built wheels (~85MB penalty)
 4. ❌ **Application code dwarfs OS size**: ~500MB of Python packages vs ~5MB OS
 
-**Key Insight**: The assumption that smaller base OS = proportionally smaller image is **invalid for data science/ML workloads** where application dependencies dominate.
+**Key Insight**: The assumption that smaller base OS = proportionally smaller image is
+**invalid for data science/ML workloads** where application dependencies dominate.
 
 ### Lessons Learned
 
