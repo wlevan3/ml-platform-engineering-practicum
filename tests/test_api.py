@@ -239,3 +239,122 @@ def test_model_loads_without_hash_field():
         model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
         model.load()  # Should not raise
         assert model.is_loaded()
+
+
+# Error Handling Tests for Coverage Improvement
+
+
+def test_lifespan_handles_model_load_failure():
+    """Test that lifespan properly handles model loading failures."""
+    from unittest.mock import patch
+    from fastapi.testclient import TestClient
+
+    # Mock model.load() to raise an exception
+    with patch("app.main.get_model") as mock_get_model:
+        mock_model = mock_get_model.return_value
+        mock_model.load.side_effect = RuntimeError("Model file corrupted")
+
+        # Creating TestClient should raise during lifespan startup
+        with pytest.raises(RuntimeError, match="Model file corrupted"):
+            with TestClient(app):
+                pass
+
+
+def test_model_info_handles_generic_exception():
+    """Test model info endpoint handles exceptions from get_info()."""
+    from unittest.mock import patch
+
+    with patch("app.main.get_model") as mock_get_model:
+        mock_model = mock_get_model.return_value
+        mock_model.is_loaded.return_value = True
+        mock_model.get_info.side_effect = Exception("Unexpected error")
+
+        with TestClient(app) as client:
+            response = client.get("/model/info")
+            assert response.status_code == 500
+            assert "Error retrieving model info" in response.json()["detail"]
+            assert "Unexpected error" in response.json()["detail"]
+
+
+def test_predict_handles_generic_exception():
+    """Test predict endpoint handles generic exceptions from model.predict()."""
+    from unittest.mock import patch
+
+    with patch("app.main.get_model") as mock_get_model:
+        mock_model = mock_get_model.return_value
+        mock_model.is_loaded.return_value = True
+        mock_model.predict.side_effect = Exception("Model inference failed")
+
+        with TestClient(app) as client:
+            response = client.post("/predict", json={"features": [5.1, 3.5, 1.4, 0.2]})
+            assert response.status_code == 500
+            assert "Prediction error" in response.json()["detail"]
+            assert "Model inference failed" in response.json()["detail"]
+
+
+def test_model_load_with_missing_model_file():
+    """Test that load() raises FileNotFoundError when model file doesn't exist."""
+    from app.model import IrisModel
+
+    model = IrisModel(
+        model_path="nonexistent/path/to/model.joblib",
+        metadata_path="models/model_metadata.json",
+    )
+
+    with pytest.raises(FileNotFoundError, match="Model file not found"):
+        model.load()
+
+
+def test_model_load_with_missing_metadata_file():
+    """Test that load() raises FileNotFoundError when metadata file doesn't exist."""
+    from app.model import IrisModel
+
+    model = IrisModel(
+        model_path="models/iris_classifier.joblib",
+        metadata_path="nonexistent/path/to/metadata.json",
+    )
+
+    with pytest.raises(FileNotFoundError, match="Metadata file not found"):
+        model.load()
+
+
+def test_model_predict_when_model_not_loaded():
+    """Test that predict() raises RuntimeError when model is not loaded."""
+    from app.model import IrisModel
+
+    model = IrisModel()
+    # Don't call model.load()
+
+    with pytest.raises(RuntimeError, match="Model not loaded"):
+        model.predict([5.1, 3.5, 1.4, 0.2])
+
+
+def test_model_predict_when_classes_not_loaded():
+    """Test that predict() raises RuntimeError when classes are not loaded."""
+    from app.model import IrisModel
+
+    model = IrisModel()
+    model.model = "dummy_model"  # Set model but not classes
+
+    with pytest.raises(RuntimeError, match="Model classes not loaded"):
+        model.predict([5.1, 3.5, 1.4, 0.2])
+
+
+def test_model_get_info_when_metadata_not_loaded():
+    """Test that get_info() raises RuntimeError when metadata is not loaded."""
+    from app.model import IrisModel
+
+    model = IrisModel()
+    # Don't call model.load()
+
+    with pytest.raises(RuntimeError, match="Model not loaded"):
+        model.get_info()
+
+
+def test_calculate_file_hash_with_missing_file():
+    """Test that calculate_file_hash raises exception for non-existent files."""
+    from pathlib import Path
+    from app.security import calculate_file_hash
+
+    with pytest.raises((FileNotFoundError, OSError)):
+        calculate_file_hash(Path("nonexistent/file.txt"))
