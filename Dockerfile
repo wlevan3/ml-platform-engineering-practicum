@@ -21,7 +21,8 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy requirements and install dependencies in the venv
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip && \
+# FIX CVE-2025-8869: Upgrade pip to 25.3 (fixes symlink extraction vulnerability)
+RUN pip install --no-cache-dir --upgrade pip==25.3 && \
     pip install --no-cache-dir -r requirements.txt
 
 # ==========================================

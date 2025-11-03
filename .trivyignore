@@ -1,0 +1,118 @@
+# .trivyignore
+# ===========================================================================
+# Trivy vulnerability exceptions for ml-platform-api Docker image
+#
+# All CVEs listed here are LOW severity with no fixes available in Debian 13
+# (Trixie) base image. Each exception is justified based on exploitability
+# analysis in our containerized ML inference service context.
+#
+# Review Policy: Re-evaluate quarterly or when base image major version changes
+# Last Updated: 2025-11-03
+# Next Review: 2026-02-03 (3 months)
+# Tracking: Part of security alert remediation
+# ===========================================================================
+
+# -----------------------------------------------------------------------------
+# CATEGORY 1: glibc (GNU C Library) - 14 alerts
+# Justification: All require specific attack vectors not present in container
+# - No user-provided regex patterns (CVE-2019-9192, CVE-2018-20796)
+# - No malicious ELF execution (CVE-2019-1010023 - ldd not used)
+# - ASLR bypasses not relevant (isolated container, no local shell access)
+# - glob() not exposed to user input (CVE-2010-4756)
+# -----------------------------------------------------------------------------
+CVE-2019-9192      # uncontrolled recursion in regexec (no user regex)
+CVE-2019-1010025   # pthread heap address disclosure (not exploitable remotely)
+CVE-2019-1010024   # ASLR bypass (no local access)
+CVE-2019-1010023   # ldd code execution (ldd not used by app)
+CVE-2019-1010022   # stack guard bypass (requires local exploit chain)
+CVE-2018-20796     # regex recursion (duplicate of CVE-2019-9192)
+CVE-2010-4756      # glob() DoS (glob not exposed to user input)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 2: util-linux (System Utilities) - 9 alerts
+# Justification: Interactive utilities not used in containerized service
+# - chfn/chsh not used (no interactive user management)
+# - Container runs as non-root user 'appuser' (no privilege escalation vector)
+# - libreadline not compiled in python:3.13-slim build
+# -----------------------------------------------------------------------------
+CVE-2022-0563      # chfn/chsh file disclosure (utilities not used)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 3: systemd - 6 alerts
+# Justification: systemd not used as init system in container
+# - Container uses Docker entrypoint directly (CMD in Dockerfile)
+# - Sealed credentials feature not used (CVE-2023-31437-39)
+# - SELinux not enabled in container (CVE-2013-4392)
+# -----------------------------------------------------------------------------
+CVE-2023-31439     # systemd sealed credential modification (systemd not used)
+CVE-2023-31438     # systemd sealed credential truncation (systemd not used)
+CVE-2023-31437     # systemd sealed credential modification (systemd not used)
+CVE-2013-4392      # systemd TOCTOU race (systemd not used, no SELinux)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 4: ncurses (Terminal Library) - 4 alerts
+# Justification: No terminal UI or ncurses usage
+# - FastAPI REST API service (no terminal interface)
+# - No user input processed by ncurses functions
+# -----------------------------------------------------------------------------
+CVE-2025-6141      # ncurses stack buffer overflow (ncurses not used)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 5: shadow-utils (User Management) - 2 alerts
+# Justification: User creation only at build time, no runtime user management
+# - login.defs only affects useradd during Docker build
+# - No subordinate UID/GID mapping used (CVE-2024-56433)
+# -----------------------------------------------------------------------------
+CVE-2024-56433     # login.defs subordinate ID config (not used at runtime)
+TEMP-0628843-DBAD28 # shadow-utils related to CVE-2005-4890 (ancient, not exploitable)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 6: sqlite - 1 alert (LOW severity only, MEDIUM handled separately)
+# Justification: SQL not exposed to users, crafted queries not possible
+# - Application uses sklearn models, not sqlite directly
+# - No user-provided SQL queries
+# -----------------------------------------------------------------------------
+CVE-2021-45346     # sqlite crafted query info disclosure (SQL not exposed)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 7: tar - 2 alerts
+# Justification: tar not used interactively, only in Docker build
+# - setuid/setgid warnings not relevant (CVE-2005-2541)
+# - rmt command not used (TEMP-0290435-0B57B5)
+# -----------------------------------------------------------------------------
+CVE-2005-2541      # tar setuid/setgid warning (tar not used at runtime)
+TEMP-0290435-0B57B5 # tar rmt command side effects (rmt not used)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 8: apt - 2 alerts
+# Justification: No package installation at runtime
+# - apt only used during Docker build
+# - apt-key not used (CVE-2011-3374)
+# -----------------------------------------------------------------------------
+CVE-2011-3374      # apt-key validation (apt not used at runtime)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 9: coreutils - 2 alerts
+# Justification: Utilities not exposed to user input
+# - sort key specification buffer under-read (CVE-2025-5278) requires crafted input
+# - chown/chgrp race condition (CVE-2017-18018) not exploitable (files owned by appuser)
+# -----------------------------------------------------------------------------
+CVE-2025-5278      # coreutils sort buffer under-read (sort not exposed to users)
+CVE-2017-18018     # coreutils chown/chgrp race (not used at runtime)
+
+# -----------------------------------------------------------------------------
+# CATEGORY 10: Miscellaneous - 3 alerts
+# Justification: Not used or not exploitable in container context
+# -----------------------------------------------------------------------------
+CVE-2011-4116      # perl File::Temp (perl not used by application)
+TEMP-0517018-A83CE6 # sysvinit installer flaw (sysvinit not used, systemd-based)
+CVE-2007-5686      # initscripts permissions (not used in container)
+TEMP-0841856-B18BAF # sudo privilege escalation (sudo not installed)
+
+# ===========================================================================
+# NOTES:
+# - All above CVEs are LOW severity with no fixes available in Debian 13
+# - MEDIUM severity CVEs are NOT in this file (must be fixed or justified separately)
+# - Re-evaluate when switching base images (e.g., python:3.14, Alpine, Distroless)
+# - Monitor Debian Security Tracker: https://security-tracker.debian.org/
+# ===========================================================================
