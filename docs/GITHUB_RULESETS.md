@@ -227,7 +227,7 @@ project. Infrastructure jobs (Terraform/K8s) will be added as required checks wh
 1. Create a Dockerfile with intentional security issues:
 
    ```dockerfile
-   FROM ubuntu:18.04  # EOL version with vulnerabilities
+   FROM ubuntu:20.04  # Intentionally outdated/EOL version to trigger security checks
    RUN apt-get update && apt-get install -y curl
    USER root  # Running as root
    ```
@@ -243,7 +243,7 @@ project. Infrastructure jobs (Terraform/K8s) will be added as required checks wh
    ```
 
 3. **Expected Behavior**:
-   - Trivy scan detects HIGH/CRITICAL vulnerabilities in ubuntu:18.04
+   - Trivy scan detects HIGH/CRITICAL vulnerabilities in ubuntu:20.04
    - GitHub Security tab shows alerts
    - PR cannot be merged until issues resolved
 
