@@ -39,10 +39,9 @@ The pre-commit hooks automatically run on every commit and check for:
 
 - **black** - Python code formatting
 - **ruff** - Fast Python linter
+- **mypy** - Python type checking
 - **actionlint** - GitHub Actions workflow validation
 - **markdownlint** - Markdown style checking
-
-**Note:** Python type checking with `mypy` should be run separately: `mypy app/`
 
 **General:**
 
@@ -69,6 +68,7 @@ pre-commit run --all-files
 
 # Run a specific hook
 pre-commit run detect-secrets --all-files
+pre-commit run mypy --all-files
 
 # Update hook versions
 pre-commit autoupdate
@@ -520,8 +520,11 @@ terraform plan
 
 # Python
 pytest tests/
-black --check .
-ruff check .
+# Note: black, ruff, and mypy run automatically via pre-commit hooks
+# To run manually:
+# black --check .
+# ruff check .
+# mypy app/
 
 # Kubernetes
 kubectl apply --dry-run=client -f manifests/
