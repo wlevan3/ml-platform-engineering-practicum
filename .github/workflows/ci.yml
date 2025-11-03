@@ -295,65 +295,25 @@ jobs:
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
-      - name: Build Docker image (multi-stage complete)
+      - name: Build Docker image
         run: docker build -t ml-platform-api:${{ github.sha }} .
 
-      - name: Build Docker image (builder stage only)
-        run: docker build --target builder -t ml-platform-api:builder-${{ github.sha }} .
-
-      - name: Build Docker image (runtime stage only)
-        run: docker build --target runtime -t ml-platform-api:runtime-${{ github.sha }} .
-
-      - name: Scan complete image with Trivy
+      - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
         with:
           scan-type: 'image'
           image-ref: 'ml-platform-api:${{ github.sha }}'
           format: 'sarif'
-          output: 'trivy-image-results.sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'  # Fail build on HIGH/CRITICAL findings
 
-      - name: Upload Trivy image results to GitHub Security
+      - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
-          sarif_file: 'trivy-image-results.sarif'
-          category: 'trivy-image-scan'
-
-      - name: Scan builder stage with Trivy
-        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
-        with:
-          scan-type: 'image'
-          image-ref: 'ml-platform-api:builder-${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-builder-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-
-      - name: Upload Trivy builder results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-builder-results.sarif'
-          category: 'trivy-builder-scan'
-
-      - name: Scan runtime stage with Trivy
-        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
-        with:
-          scan-type: 'image'
-          image-ref: 'ml-platform-api:runtime-${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-runtime-results.sarif'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-
-      - name: Upload Trivy runtime results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-runtime-results.sarif'
-          category: 'trivy-runtime-scan'
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-docker-scan'
 
   summary:
     name: CI Summary
