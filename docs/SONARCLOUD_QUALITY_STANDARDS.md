@@ -454,10 +454,16 @@ def get_user_by_email(email):
     cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
     return cursor.fetchone()
 
-# After: Refactored (no duplication)
+# After: Refactored (no duplication, with field validation)
 def get_user(field, value):
+    # Whitelist approach to prevent SQL injection
+    allowed_fields = {"id", "email"}
+    if field not in allowed_fields:
+        raise ValueError(f"Invalid field name: {field}")
+
     connection = get_db_connection()
     cursor = connection.cursor()
+    # Safe: field is validated against whitelist before interpolation
     cursor.execute(f"SELECT * FROM users WHERE {field} = %s", (value,))
     return cursor.fetchone()
 
