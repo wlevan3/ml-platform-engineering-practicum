@@ -313,6 +313,9 @@ For detailed guidance on project workflows and management, refer to:
 - **docs/ALPINE_MIGRATION_ANALYSIS.md** - Alpine Linux Docker base image investigation findings
   and decision analysis. Documents why Alpine is not optimal for scientific Python workloads
   despite security benefits. Key learning: application dependencies dominate image size for ML platforms.
+- **docs/AWS_OIDC_SETUP.md** - AWS OIDC authentication setup for GitHub Actions. Explains
+  how to configure OpenID Connect between GitHub Actions and AWS IAM for secure,
+  credential-free deployments using temporary tokens instead of long-lived access keys.
 
 ## Issue Templates and GitHub Projects
 
