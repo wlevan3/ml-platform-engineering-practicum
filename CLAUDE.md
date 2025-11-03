@@ -92,7 +92,8 @@ The CI pipeline (`.github/workflows/ci.yml`) runs automatically on PRs and pushe
 - **Python linting** (Black, Ruff) - Only if `.py` files exist
 - **Python tests with coverage** - Only if `.py` files exist
 - **SonarCloud analysis** - Code quality and security (requires tests)
-- **Security scanning** - Trivy (filesystem), Gitleaks (secrets), Semgrep (SAST)
+- **Security scanning** - Trivy (filesystem + Docker images), Gitleaks (secrets), Semgrep (SAST)
+- **Docker image scanning** - Builds and scans Docker images (builder + runtime stages) with fail-fast on HIGH/CRITICAL
 
 Jobs with conditionals (`if: hashFiles()`) will show as "skipped" in summary when their files don't exist.
 
@@ -104,6 +105,15 @@ docker build -t ml-platform-api:latest .
 
 # Run container
 docker run -p 8000:8000 ml-platform-api:latest
+
+# Scan for vulnerabilities (local)
+trivy image ml-platform-api:latest --severity HIGH,CRITICAL
+
+# Build and scan multi-stage targets
+docker build --target builder -t ml-platform-api:builder .
+docker build --target runtime -t ml-platform-api:runtime .
+trivy image ml-platform-api:builder --severity HIGH,CRITICAL
+trivy image ml-platform-api:runtime --severity HIGH,CRITICAL
 ```
 
 ## Commit and PR Workflow
@@ -265,8 +275,14 @@ See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration 
 - **No secrets in code** - Use environment variables or AWS Secrets Manager
 - Pre-commit hook `detect-secrets` scans for accidental credential commits
 - Pre-commit hook `semgrep` scans for security vulnerabilities (custom ruleset in `.semgrep.yml`)
-- CI includes Gitleaks (secrets), Trivy (vulnerabilities), Semgrep (comprehensive SAST rulesets)
+- CI includes Gitleaks (secrets), Trivy (filesystem + container images), Semgrep (comprehensive SAST rulesets)
+- **Container security** - Trivy scans Docker images with fail-fast on HIGH/CRITICAL vulnerabilities
+  - Scans OS packages, Python dependencies, and Dockerfile best practices
+  - Separate scans for builder and runtime stages
+  - Results uploaded to GitHub Security tab
 - GitHub Actions use **pinned SHA hashes** for security scanning actions
+
+**Vulnerability handling**: See `docs/VULNERABILITY_REMEDIATION.md` for workflow on handling Trivy findings.
 
 ### CI/CD Behavior
 
@@ -290,6 +306,9 @@ For detailed guidance on project workflows and management, refer to:
   templates, custom fields, automation workflows, and project board configuration
 - **docs/QUICK_REFERENCE.md** - Quick reference for Git commands, GitHub CLI, commit
   conventions, project field values, and useful links
+- **docs/VULNERABILITY_REMEDIATION.md** - Workflow for handling security vulnerabilities
+  detected by Trivy, including remediation steps, .trivyignore usage, and debugging
+- **docs/PICKLE_SECURITY.md** - Model deserialization security analysis and skops.io migration
 
 ## Issue Templates and GitHub Projects
 
