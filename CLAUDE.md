@@ -239,20 +239,26 @@ ml-platform-engineering-practicum/
 - Model loading uses **singleton pattern** to avoid reloading on each request
 - Metadata in `models/model_metadata.json` includes version, accuracy, features, classes
 
-#### Model Security (Pickle Deserialization)
+#### Model Security (Secure Deserialization)
 
-Models are serialized using `joblib` (which uses Python's `pickle` under the hood). While pickle deserialization can
-execute arbitrary code (CWE-502), current risk is **LOW** because:
+Models are serialized using **skops.io** (v0.13.0+), which provides pickle-free deserialization to address CWE-502:
 
+- **Execution safety**: skops.io prevents arbitrary code execution during deserialization
 - **Source control**: Models trained locally via `train_model.py` in controlled environment
-- **No user input**: Model path is hardcoded (`models/iris_classifier.joblib`)
-- **Integrity verification**: SHA-256 hash verification prevents tampering
+- **No user input**: Model path is hardcoded (`models/iris_classifier.skops`)
+- **Integrity verification**: SHA-256 hash verification detects tampering
   - Hash generated during training and stored in `model_metadata.json`
   - Hash verified before loading in `app/model.py`
   - Raises `ModelIntegrityError` if file corrupted or modified
 
-**Phase 3 migration**: Will use MLflow Model Registry + ONNX for production-grade security.
-See `docs/PICKLE_SECURITY.md` for detailed analysis and migration path.
+**Security Model**:
+
+- **Hash verification** = File integrity (detects tampering/corruption)
+- **skops.io** = Execution safety (prevents code execution, addresses CWE-502)
+- These protections are complementary, not redundant
+
+**Phase 3 migration**: Will integrate with MLflow Model Registry using custom PyFunc wrapper.
+See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration decisions.
 
 ### Security
 

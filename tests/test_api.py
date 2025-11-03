@@ -141,11 +141,11 @@ def test_model_integrity_verification_detects_tampering():
     from app.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
         # Copy original files
-        shutil.copy("models/iris_classifier.joblib", model_path)
+        shutil.copy("models/iris_classifier.skops", model_path)
         shutil.copy("models/model_metadata.json", metadata_path)
 
         # Corrupt the model file
@@ -176,15 +176,15 @@ def test_model_loads_successfully_with_valid_hash():
     assert len(model.metadata["model_hash"]) == 64  # SHA-256 hex length
 
 
-def test_hash_verification_happens_before_pickle_load():
-    """Test that hash is verified BEFORE attempting pickle deserialization."""
+def test_hash_verification_happens_before_model_load():
+    """Test that hash is verified BEFORE attempting model deserialization."""
     from app.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
-        shutil.copy("models/iris_classifier.joblib", model_path)
+        shutil.copy("models/iris_classifier.skops", model_path)
         shutil.copy("models/model_metadata.json", metadata_path)
 
         # Corrupt model
@@ -193,23 +193,23 @@ def test_hash_verification_happens_before_pickle_load():
 
         model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
 
-        # Mock joblib.load to verify it's never called
-        with patch("app.model.joblib.load") as mock_joblib:
+        # Mock sio.load to verify it's never called
+        with patch("app.model.sio.load") as mock_sio:
             with pytest.raises(ModelIntegrityError):
                 model.load()
 
-            # joblib.load should NOT be called when hash fails
-            mock_joblib.assert_not_called()
+            # sio.load should NOT be called when hash fails
+            mock_sio.assert_not_called()
 
 
 def test_model_loads_without_hash_field():
     """Test graceful handling when metadata lacks hash field."""
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        model_path = Path(tmpdir) / "iris_classifier.joblib"
+        model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
-        shutil.copy("models/iris_classifier.joblib", model_path)
+        shutil.copy("models/iris_classifier.skops", model_path)
 
         # Create metadata WITHOUT hash field (simulate old metadata)
         metadata = {
@@ -283,7 +283,7 @@ def test_model_load_with_missing_model_file():
     """Test that load() raises FileNotFoundError when model file doesn't exist."""
 
     model = IrisModel(
-        model_path="nonexistent/path/to/model.joblib",
+        model_path="nonexistent/path/to/model.skops",
         metadata_path="models/model_metadata.json",
     )
 
@@ -295,7 +295,7 @@ def test_model_load_with_missing_metadata_file():
     """Test that load() raises FileNotFoundError when metadata file doesn't exist."""
 
     model = IrisModel(
-        model_path="models/iris_classifier.joblib",
+        model_path="models/iris_classifier.skops",
         metadata_path="nonexistent/path/to/metadata.json",
     )
 

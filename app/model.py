@@ -4,10 +4,11 @@ ML model loading and prediction logic.
 
 import hmac
 import json
-import joblib
-import numpy as np
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
+
+import numpy as np
+import skops.io as sio
 
 from app.security import calculate_file_hash
 
@@ -23,7 +24,7 @@ class IrisModel:
 
     def __init__(
         self,
-        model_path: str = "models/iris_classifier.joblib",
+        model_path: str = "models/iris_classifier.skops",
         metadata_path: str = "models/model_metadata.json",
     ):
         """
@@ -68,13 +69,25 @@ class IrisModel:
                     f"The model file may have been corrupted or tampered with."
                 )
 
-        # Security Note: Using joblib.load() with locally trained model
+        # Security: Using skops.io.load() - pickle-free deserialization
+        # Hash verification (above): Ensures file integrity (detects tampering)
+        # skops.io: Provides execution safety (prevents code execution, addresses CWE-502)
         # Source: train_model.py (controlled environment)
-        # Protection: SHA-256 hash verification (see above)
-        # Risk: Low - model path hardcoded, integrity verified
-        # Future: Will migrate to MLflow Model Registry (Phase 3)
-        # nosemgrep: unsafe-pickle-deserialization
-        self.model = joblib.load(self.model_path)
+        # Validation: Check for untrusted types before loading
+        untrusted_types = sio.get_untrusted_types(file=self.model_path)
+        if untrusted_types:
+            # For locally trained models, untrusted_types should be empty
+            # If not empty, model contains types outside sklearn/numpy defaults
+            raise ModelIntegrityError(
+                f"Model contains untrusted types: {untrusted_types}\n"
+                f"This model may not have been trained in a controlled environment. "
+                f"Review these types before loading or retrain the model."
+            )
+        # Load with only default trusted types (sklearn, numpy, scipy, etc.)
+        # untrusted_types=[] is most secure: only allows standard ML library types
+        # Passing empty list explicitly documents security-by-default intent
+        # nosemgrep: skops-untrusted-load (validated above: untrusted_types checked)
+        self.model = sio.load(self.model_path, trusted=untrusted_types)
 
         self.classes = self.metadata["classes"]
 

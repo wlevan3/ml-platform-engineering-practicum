@@ -4,13 +4,14 @@ Train a simple Random Forest classifier on the Iris dataset and save it.
 This script creates the initial model for the prediction service.
 """
 
-import joblib
 import json
 from pathlib import Path
+
+import skops.io as sio
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
 
 from app.security import calculate_file_hash
 
@@ -48,8 +49,8 @@ def train_model() -> None:
     models_dir = Path("models")
     models_dir.mkdir(exist_ok=True)
 
-    model_path = models_dir / "iris_classifier.joblib"
-    joblib.dump(model, model_path)
+    model_path = models_dir / "iris_classifier.skops"
+    sio.dump(model, model_path)
     print(f"\nModel saved to: {model_path}")
 
     # Calculate model file hash for integrity verification
@@ -67,7 +68,7 @@ def train_model() -> None:
         "classes": iris.target_names.tolist(),
         "training_samples": len(X_train),
         "test_samples": len(X_test),
-        "model_file": "iris_classifier.joblib",
+        "model_file": "iris_classifier.skops",
         "model_hash": model_hash,
         "hash_algorithm": "SHA-256",
     }
