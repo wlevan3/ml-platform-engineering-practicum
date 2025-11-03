@@ -45,14 +45,15 @@ repos:
   # - Deterministic behavior (no dynamic downloads from PyPI)
   # - Faster execution (no 10-30s download on first run)
   # - Offline compatibility (no network dependency)
-  # - All third-party packages (fastapi, numpy, joblib) ship with inline types
+  # Configuration in mypy.ini uses per-module ignores for sklearn/joblib only
+  # (most dependencies like fastapi, pydantic, numpy have excellent type coverage)
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
           - pydantic  # Required for mypy to understand pydantic models
-        args: [--ignore-missing-imports]
+          # No args needed - mypy reads configuration from mypy.ini
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
