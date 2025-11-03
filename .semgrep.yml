@@ -29,11 +29,18 @@ rules:
   # SKOPS UNTRUSTED LOAD (Security best practice)
   # ============================================================================
   - id: skops-untrusted-load
-    pattern: skops.io.load(..., trusted=False, ...)
+    pattern-either:
+      - pattern: sio.load($PATH, trusted=$TYPES)
+      - pattern: skops.io.load($PATH, trusted=$TYPES)
+    pattern-not-inside: |
+      $TYPES = sio.get_untrusted_types(...)
+      if $TYPES:
+        ...
+      ...
     message: |
-      Using trusted=False requires explicit type allowlist. Ensure you specify
-      allowed types to prevent potential security issues. For locally trained
-      models in controlled environments, trusted=True is acceptable.
+      Ensure untrusted types are obtained via get_untrusted_types() and validated
+      before loading. Best practice: check that untrusted_types is empty for locally
+      trained models in controlled environments.
     languages: [python]
     severity: INFO
     metadata:

@@ -73,9 +73,17 @@ class IrisModel:
         # Hash verification (above): Ensures file integrity (detects tampering)
         # skops.io: Provides execution safety (prevents code execution, addresses CWE-502)
         # Source: train_model.py (controlled environment)
-        # trusted parameter: Gets untrusted types from file, which should be empty
-        # for locally trained models. If types are present, review before loading.
+        # Validation: Check for untrusted types before loading
         untrusted_types = sio.get_untrusted_types(file=self.model_path)
+        if untrusted_types:
+            # For locally trained models, untrusted_types should be empty
+            # If not empty, model contains types outside sklearn/numpy defaults
+            raise ModelIntegrityError(
+                f"Model contains untrusted types: {untrusted_types}\n"
+                f"This model may not have been trained in a controlled environment. "
+                f"Review these types before loading or retrain the model."
+            )
+        # Load with empty untrusted_types list (all types are trusted defaults)
         self.model = sio.load(self.model_path, trusted=untrusted_types)
 
         self.classes = self.metadata["classes"]
