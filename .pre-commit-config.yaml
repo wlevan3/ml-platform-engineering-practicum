@@ -41,14 +41,18 @@ repos:
         args: [--fix, --exit-non-zero-on-fix]
 
   # Python type checking
+  # Note: Using explicit additional_dependencies instead of --install-types for:
+  # - Deterministic behavior (no dynamic downloads from PyPI)
+  # - Faster execution (no 10-30s download on first run)
+  # - Offline compatibility (no network dependency)
+  # - All third-party packages (fastapi, numpy, joblib) ship with inline types
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
-          - pydantic
-          - types-requests
-        args: [--ignore-missing-imports, --install-types, --non-interactive]
+          - pydantic  # Required for mypy to understand pydantic models
+        args: [--ignore-missing-imports]
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
