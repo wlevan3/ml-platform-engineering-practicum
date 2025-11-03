@@ -65,14 +65,17 @@ The ML platform consists of these core components:
 
 ### Prerequisites
 
-- AWS Account with appropriate permissions
-- `terraform` >= 1.7.0
-- `kubectl` >= 1.28
-- `aws-cli` >= 2.0
-- `helm` >= 3.0
+- Python 3.13+
+- Docker Desktop
+- Minikube (for local K8s deployment)
+- kubectl >= 1.28
+- (Future) AWS Account with appropriate permissions
+- (Future) `terraform` >= 1.7.0
+- (Future) `aws-cli` >= 2.0
+- (Future) `helm` >= 3.0
 - `gh` CLI (for GitHub integration)
 
-### Setup
+### Local Development Setup
 
 ```bash
 # Clone repository
@@ -82,12 +85,69 @@ cd ml-platform-engineering-practicum
 # Install pre-commit hooks
 pre-commit install
 
-# Configure AWS credentials
-aws configure
+# Setup Python environment
+python3.13 -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
 
-# Initialize Terraform (when available)
-cd terraform
-terraform init
+# Train the ML model
+python train_model.py
+
+# Run locally with uvicorn
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Docker Deployment
+
+```bash
+# Build Docker image
+docker build -t ml-platform-api:latest .
+
+# Run container
+docker run -p 8000:8000 ml-platform-api:latest
+
+# Test endpoints
+curl http://localhost:8000/health
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+```
+
+### Kubernetes Deployment (Minikube)
+
+```bash
+# Install Minikube (macOS)
+brew install minikube
+
+# Start Minikube cluster
+minikube start --cpus=4 --memory=6144 --driver=docker
+
+# Build and load image into Minikube
+docker build -t ml-platform-api:latest .
+minikube image load ml-platform-api:latest
+
+# Deploy to Kubernetes
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+
+# Wait for pods to be ready
+kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=120s
+
+# Get service URL and test
+minikube service ml-platform-api --url
+# Use the URL from above to test:
+curl <SERVICE_URL>/health
+curl -X POST <SERVICE_URL>/predict \
+  -H "Content-Type: application/json" \
+  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+
+# View pod status and logs
+kubectl get pods
+kubectl logs -l app=ml-platform-api --all-containers=true
+kubectl describe pods -l app=ml-platform-api
+
+# Stop Minikube when done
+minikube stop
 ```
 
 ## 📚 Documentation
