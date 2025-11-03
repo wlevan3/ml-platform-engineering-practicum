@@ -12,6 +12,17 @@ The `main-protection` ruleset enforces automated security and quality checks on 
 **Target**: `refs/heads/main`
 **Enforcement**: Active
 
+## Prerequisites
+
+The branch protection rules rely on existing CI/CD workflows that are already configured in this repository:
+
+- **`.github/workflows/ci.yml`**: Main CI pipeline containing all required status checks (Python tests, security scans,
+  Docker builds, linting)
+- **`.github/workflows/codeql.yml`**: CodeQL security analysis workflow
+
+These workflow files are version-controlled and maintained as part of the repository. If you're setting up branch
+protection in a new repository, ensure these workflows exist and are properly configured before enabling the rulesets.
+
 ## Configured Protections
 
 ### 1. Branch Protection Rules
