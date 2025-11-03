@@ -16,9 +16,11 @@ spec:
         app: ml-platform-api
         version: v1
     spec:
+      # Disable service account automounting for security (SonarCloud kubernetes:S6865)
+      automountServiceAccountToken: false
       containers:
         - name: ml-platform-api
-          image: ml-platform-api:latest
+          image: ml-platform-api:v1.0.0  # Use versioned tag (SonarCloud kubernetes:S6596)
           imagePullPolicy: Never  # Use local image (Minikube)
           ports:
             - containerPort: 8000
@@ -30,6 +32,7 @@ spec:
             requests:
               memory: "256Mi"
               cpu: "250m"
+              ephemeral-storage: "1Gi"  # Ephemeral storage request (SonarCloud kubernetes:S6897)
             limits:
               memory: "512Mi"
               cpu: "500m"
