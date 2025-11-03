@@ -419,6 +419,7 @@ model = safe_joblib_load("models/iris_classifier.joblib")
 | **MLflow Registry** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | MLflow server | 3 |
 | **Safetensors** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | None | Now |
 | **ONNX** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | None | 2-3 |
+| **skops (skops.io)** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | None | Now |
 | **Restricted Unpickler** | ⭐⭐⭐ | ⭐⭐⭐⭐ | None | Now |
 
 ---
