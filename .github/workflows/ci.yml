@@ -305,7 +305,7 @@ jobs:
         run: docker build --target runtime -t ml-platform-api:runtime-${{ github.sha }} .
 
       - name: Scan complete image with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # master
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
         with:
           scan-type: 'image'
           image-ref: 'ml-platform-api:${{ github.sha }}'
@@ -313,6 +313,7 @@ jobs:
           output: 'trivy-image-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'  # Fail build on HIGH/CRITICAL findings
+          version: 'v0.67.2'  # Explicitly pin Trivy version
 
       - name: Upload Trivy image results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -322,7 +323,7 @@ jobs:
           category: 'trivy-image-scan'
 
       - name: Scan builder stage with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
         with:
           scan-type: 'image'
           image-ref: 'ml-platform-api:builder-${{ github.sha }}'
@@ -330,6 +331,7 @@ jobs:
           output: 'trivy-builder-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
+          version: 'v0.67.2'
 
       - name: Upload Trivy builder results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
@@ -339,7 +341,7 @@ jobs:
           category: 'trivy-builder-scan'
 
       - name: Scan runtime stage with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8
+        uses: aquasecurity/trivy-action@6e7b7d1fd3e4fef0c5fa8cce1229c54b2c9bd0d8  # v0.24.0 (Trivy v0.67.2)
         with:
           scan-type: 'image'
           image-ref: 'ml-platform-api:runtime-${{ github.sha }}'
@@ -347,6 +349,7 @@ jobs:
           output: 'trivy-runtime-results.sarif'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
+          version: 'v0.67.2'
 
       - name: Upload Trivy runtime results to GitHub Security
         uses: github/codeql-action/upload-sarif@v3
