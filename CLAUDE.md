@@ -225,7 +225,8 @@ ml-platform-engineering-practicum/
 │   └── test_api.py         # FastAPI endpoint tests
 ├── docs/                    # Documentation
 │   ├── PROJECT_MANAGEMENT.md
-│   └── QUICK_REFERENCE.md
+│   ├── QUICK_REFERENCE.md
+│   └── ALPINE_MIGRATION_ANALYSIS.md
 ├── train_model.py          # Model training script
 ├── requirements.txt        # Python dependencies
 ├── pytest.ini              # Pytest and coverage config
@@ -309,6 +310,9 @@ For detailed guidance on project workflows and management, refer to:
 - **docs/VULNERABILITY_REMEDIATION.md** - Workflow for handling security vulnerabilities
   detected by Trivy, including remediation steps, .trivyignore usage, and debugging
 - **docs/PICKLE_SECURITY.md** - Model deserialization security analysis and skops.io migration
+- **docs/ALPINE_MIGRATION_ANALYSIS.md** - Alpine Linux Docker base image investigation findings
+  and decision analysis. Documents why Alpine is not optimal for scientific Python workloads
+  despite security benefits. Key learning: application dependencies dominate image size for ML platforms.
 
 ## Issue Templates and GitHub Projects
 
