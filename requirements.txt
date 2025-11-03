@@ -7,7 +7,6 @@ pydantic-settings==2.7.1
 
 # ML model
 scikit-learn==1.6.1
-joblib==1.4.2
 skops>=0.13.0  # Secure pickle-free model serialization (addresses CWE-502)
 numpy==2.2.2
 
@@ -20,4 +19,3 @@ pytest-cov==6.0.0
 black==24.10.0
 ruff==0.9.1
 mypy==1.18.2
-joblib-stubs==1.5.2.0.20250831  # Type stubs for joblib
