@@ -176,8 +176,8 @@ def test_model_loads_successfully_with_valid_hash():
     assert len(model.metadata["model_hash"]) == 64  # SHA-256 hex length
 
 
-def test_hash_verification_happens_before_pickle_load():
-    """Test that hash is verified BEFORE attempting pickle deserialization."""
+def test_hash_verification_happens_before_model_load():
+    """Test that hash is verified BEFORE attempting model deserialization."""
     from app.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:

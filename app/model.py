@@ -83,7 +83,10 @@ class IrisModel:
                 f"This model may not have been trained in a controlled environment. "
                 f"Review these types before loading or retrain the model."
             )
-        # Load with empty untrusted_types list (all types are trusted defaults)
+        # Load with only default trusted types (sklearn, numpy, scipy, etc.)
+        # untrusted_types=[] is most secure: only allows standard ML library types
+        # Passing empty list explicitly documents security-by-default intent
+        # nosemgrep: skops-untrusted-load (validated above: untrusted_types checked)
         self.model = sio.load(self.model_path, trusted=untrusted_types)
 
         self.classes = self.metadata["classes"]
