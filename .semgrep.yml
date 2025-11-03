@@ -11,9 +11,11 @@ rules:
       - pattern: pickle.loads(...)
       - pattern: pickle.load(...)
       - pattern: joblib.load(...)
+    pattern-not: skops.io.load(...)
     message: |
       Unsafe deserialization detected. Loading pickled/joblib data from untrusted sources
-      can execute arbitrary code. Validate and sanitize input sources.
+      can execute arbitrary code. Consider using skops.io.load() for secure, pickle-free
+      deserialization of scikit-learn models.
     languages: [python]
     severity: ERROR
     metadata:
@@ -22,6 +24,20 @@ rules:
       category: security
       likelihood: HIGH
       impact: HIGH
+
+  # ============================================================================
+  # SKOPS UNTRUSTED LOAD (Security best practice)
+  # ============================================================================
+  - id: skops-untrusted-load
+    pattern: skops.io.load(..., trusted=False, ...)
+    message: |
+      Using trusted=False requires explicit type allowlist. Ensure you specify
+      allowed types to prevent potential security issues. For locally trained
+      models in controlled environments, trusted=True is acceptable.
+    languages: [python]
+    severity: INFO
+    metadata:
+      category: security-best-practice
 
   # ============================================================================
   # COMMAND INJECTION

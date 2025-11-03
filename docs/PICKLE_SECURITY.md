@@ -305,7 +305,63 @@ pred = sess.run(None, {input_name: features})
 
 ---
 
-### Solution 5: Restricted Unpickler (Allowlist)
+### Solution 5: skops.io (Recommended for scikit-learn Models) ⭐
+
+**Concept:** Use `skops` library - official scikit-learn recommendation for pickle-free serialization.
+
+```bash
+pip install skops>=0.13.0
+```
+
+```python
+# train_model.py
+import skops.io as sio
+from sklearn.ensemble import RandomForestClassifier
+
+model = train_model()
+sio.dump(model, "models/iris_classifier.skops")
+```
+
+```python
+# app/model.py
+import skops.io as sio
+
+# Option 1: Trusted mode (for locally trained models)
+model = sio.load("models/iris_classifier.skops", trusted=True)
+
+# Option 2: Explicit type allowlist (production recommended)
+model = sio.load(
+    "models/iris_classifier.skops",
+    trusted=["sklearn.ensemble._forest.RandomForestClassifier", "numpy.ndarray"]
+)
+```
+
+**Pros:**
+
+- ✅ **Cannot execute arbitrary code** (by design - no pickle)
+- ✅ Official scikit-learn recommendation (v0.13.0+)
+- ✅ Drop-in replacement for joblib (minimal code changes)
+- ✅ Supports all scikit-learn estimators
+- ✅ Compatible with Python 3.13 + scikit-learn 1.6.1
+- ✅ Active development and community support
+
+**Cons:**
+
+- ⚠️ Pre-1.0 version (API may change)
+- ⚠️ No native MLflow support (requires custom PyFunc wrapper)
+- ⚠️ Newer library (less battle-tested than joblib)
+
+**When to Use:**
+
+- ✅ Immediate CWE-502 remediation needed
+- ✅ scikit-learn models (RandomForest, SVM, etc.)
+- ✅ Want minimal code changes from joblib
+- ✅ Can tolerate pre-1.0 API changes
+- ⚠️ MLflow integration requires custom wrapper (Phase 3 planning)
+
+---
+
+### Solution 6: Restricted Unpickler (Allowlist)
 
 **Concept:** Create a custom unpickler that only allows safe classes.
 

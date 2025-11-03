@@ -8,6 +8,7 @@ pydantic-settings==2.7.1
 # ML model
 scikit-learn==1.6.1
 joblib==1.4.2
+skops>=0.13.0  # Secure pickle-free model serialization (addresses CWE-502)
 numpy==2.2.2
 
 # Testing
