@@ -1,0 +1,42 @@
+name: Test AWS OIDC Authentication
+
+on:
+  workflow_dispatch: # Allow manual trigger for testing
+  push:
+    branches:
+      - infra/issue-15-oidc-aws # Only run on this feature branch
+
+permissions:
+  id-token: write # Required for OIDC authentication
+  contents: read  # Required to checkout code
+
+jobs:
+  test-oidc:
+    name: Test OIDC Authentication
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          aws-region: us-west-2
+          role-session-name: GitHubActions-OIDC-Test
+
+      - name: Verify AWS identity
+        run: |
+          echo "Testing AWS OIDC authentication..."
+          aws sts get-caller-identity
+
+      - name: Test AWS access - List S3 buckets
+        run: |
+          echo "Listing S3 buckets to verify permissions..."
+          aws s3 ls
+
+      - name: Test AWS access - List EC2 instances
+        run: |
+          echo "Listing EC2 instances in us-west-2..."
+          aws ec2 describe-instances --region us-west-2 --query 'Reservations[*].Instances[*].[InstanceId,State.Name,InstanceType]' --output table
