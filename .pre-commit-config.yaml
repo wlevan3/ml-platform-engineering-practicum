@@ -111,7 +111,10 @@ repos:
           - --timeout=60           # Prevent hanging on complex files
           - --verbose              # Show which rules are running
         files: \.py$               # Only scan Python files
-        exclude: ^tests/           # Skip tests (covered by comprehensive CI scan)
+        # Exclude tests for pre-commit speed optimization
+        # Tests are scanned comprehensively in CI (see .github/workflows/ci.yml)
+        # Rationale: Developer feedback speed > comprehensive pre-commit coverage
+        exclude: ^tests/
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
