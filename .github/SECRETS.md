@@ -155,7 +155,20 @@ that allow Claude Code to authenticate with GitHub's API.
 
 **Used In**:
 
-- `.github/workflows/ci.yml` - SonarCloud analysis job
+- Reserved for future CI-based analysis (Phase 3+)
+- **NOT currently used** - SonarCloud runs via Automatic Analysis (GitHub App)
+
+**Current Integration**:
+
+- SonarCloud uses **Automatic Analysis** (no token needed)
+- Analysis triggered automatically on PR/push via GitHub App
+- See [SonarCloud Quality Standards](../docs/SONARCLOUD_QUALITY_STANDARDS.md) for details
+
+**Future Use** (Phase 3 - MLflow Integration):
+
+- Will migrate to CI-based analysis for finer control
+- Token will be used in `.github/workflows/ci.yml` job
+- Trade-off: More control but requires secret management
 
 **Setup**:
 

@@ -238,6 +238,14 @@ gh issue close 123
 - **Pull Requests:** <https://github.com/wlevan3/ml-platform-engineering-practicum/pulls>
 - **Actions:** <https://github.com/wlevan3/ml-platform-engineering-practicum/actions>
 
+### Code Quality
+
+- **SonarCloud Dashboard:** <https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum>
+- **Quality Gate:** <https://sonarcloud.io/project/quality_gate?id=wlevan3_ml-platform-engineering-practicum>
+- **Project Issues:** <https://sonarcloud.io/project/issues?id=wlevan3_ml-platform-engineering-practicum>
+- **Quality Standards:** [SONARCLOUD_QUALITY_STANDARDS.md](SONARCLOUD_QUALITY_STANDARDS.md)
+- **Coverage Target:** 90% (gate requirement: 80%)
+
 ## Keyboard Shortcuts (GitHub)
 
 - `g` + `i` - Go to Issues

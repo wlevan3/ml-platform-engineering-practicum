@@ -110,9 +110,151 @@ detect-secrets scan --baseline .secrets.baseline
 # 3. Add # nosec comment ONLY if false positive with justification
 ```
 
+### Code Quality Standards (SonarCloud)
+
+This project uses **SonarCloud** for automated code quality and security analysis. Every PR is automatically
+scanned, and quality metrics are visible via badges in the README.
+
+#### What is SonarCloud?
+
+SonarCloud is a cloud-based static analysis platform that identifies bugs, vulnerabilities, code smells, and
+security hotspots in your code. It provides continuous code quality feedback on every pull request.
+
+#### Quality Gate: "Sonar way" (Default)
+
+All new code must meet these thresholds:
+
+- ✅ **No new bugs** (Reliability Rating = A)
+- ✅ **No new vulnerabilities** (Security Rating = A)
+- ✅ **Minimal technical debt** (Maintainability Rating = A)
+- ✅ **Test coverage ≥ 80%** for new code (Project target: **90%**)
+- ✅ **Code duplication ≤ 3%** in new code
+- ✅ **All Security Hotspots reviewed** (100%)
+
+**Important**: Quality gate requirements apply to **new code** only (your PR changes), not the entire codebase.
+This "Clean as You Code" philosophy prevents new technical debt without requiring you to fix historical issues.
+
+#### Integration Method
+
+SonarCloud runs via **Automatic Analysis (GitHub App)**:
+
+- Analysis triggers automatically on every PR push and merge to `main`
+- No CI job configuration needed
+- No secrets required in local environment
+- Results appear in PR status checks within 1-2 minutes
+
+**Future**: Will migrate to CI-based analysis in Phase 3+ for finer control when integrating with MLflow.
+
+#### Viewing Your Results
+
+##### Option 1: PR Status Checks
+
+```bash
+# Check PR status (including SonarCloud)
+gh pr checks
+
+# Watch checks in real-time
+gh pr checks --watch
+```
+
+##### Option 2: SonarCloud Dashboard
+
+- Click any quality badge in README
+- Direct link: [Project Dashboard](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+- Filter by "New Code" to see issues in your PR
+
+##### Option 3: PR Comments
+
+- SonarCloud bot comments on PRs with quality gate status
+- Inline comments on specific lines if issues found
+
+#### Addressing Issues
+
+**When Quality Gate Fails** ❌:
+
+1. **Review Issues**: Click "Details" on failed SonarCloud check in PR
+2. **Prioritize by Severity**:
+   - ⛔ **Blocker**: Fix immediately (app-breaking bugs, critical security)
+   - 🔴 **Critical**: Fix before merge (likely bugs, vulnerabilities)
+   - 🟠 **Major**: Fix or document why deferring
+   - 🟡 **Minor/Info**: Fix if time permits
+3. **Fix Locally**: Address issues in your code
+4. **Test**: Run `pytest` and verify coverage `pytest --cov=app`
+5. **Push**: Commit and push fixes → SonarCloud re-analyzes automatically
+6. **Verify**: Check that Quality Gate passes ✅
+
+**Common Issues**:
+
+**Coverage Below 80%**:
+
+```bash
+# Check coverage locally
+pytest --cov=app --cov-report=term-missing
+
+# Add tests for uncovered lines
+# Re-run to verify coverage increases
+```
+
+**Code Duplication > 3%**:
+
+```bash
+# Refactor duplicated blocks into shared functions
+# Extract common logic to reduce duplication
+```
+
+**Bugs/Vulnerabilities**:
+
+```bash
+# Fix the issue (e.g., add null checks, use parameterized queries)
+# SonarCloud provides specific guidance for each issue
+```
+
+#### Issue Types
+
+- **Bugs** 🐛: Code that will likely break at runtime (e.g., null pointer, division by zero)
+- **Vulnerabilities** 🔓: Security flaws attackers can exploit (e.g., SQL injection, hardcoded secrets)
+- **Code Smells** 🧼: Maintainability issues making code harder to change (e.g., complex functions, dead code)
+- **Security Hotspots** ⚠️: Security-sensitive code requiring review (e.g., authentication, cryptography)
+
+#### IDE Integration (Optional but Recommended)
+
+Install **SonarLint** extension for real-time feedback as you code:
+
+- **VS Code**: Install "SonarLint" extension from marketplace
+- **PyCharm**: Install "SonarLint" plugin
+- **Benefit**: See issues before committing (faster feedback loop)
+
+```bash
+# After installing SonarLint
+# 1. Open IDE settings
+# 2. Connect to SonarCloud (optional)
+# 3. Bind to project: wlevan3_ml-platform-engineering-practicum
+# 4. Start coding → Issues appear inline with fixes
+```
+
+#### Detailed Documentation
+
+For comprehensive guidance on SonarCloud integration, see:
+
+- **[SonarCloud Quality Standards](docs/SONARCLOUD_QUALITY_STANDARDS.md)** - Complete guide to:
+  - Quality Gate thresholds and ratings (A-E scale)
+  - Issue types and severity levels
+  - Step-by-step remediation workflows
+  - New Code vs Overall Code philosophy
+  - Integration details and future migration plans
+  - FAQ and learning reflections
+
+**Quick Links**:
+
+- [SonarCloud Dashboard](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+- [Quality Gate Details](https://sonarcloud.io/project/quality_gate?id=wlevan3_ml-platform-engineering-practicum)
+- [Project Issues](https://sonarcloud.io/project/issues?id=wlevan3_ml-platform-engineering-practicum)
+
 ## Table of Contents
 
 - [Development Setup](#development-setup)
+  - [Pre-Commit Hooks](#pre-commit-hooks)
+  - [Code Quality Standards (SonarCloud)](#code-quality-standards-sonarcloud)
 - [Development Workflow](#development-workflow)
 - [Branch Strategy](#branch-strategy)
 - [Commit Guidelines](#commit-guidelines)
