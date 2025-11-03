@@ -18,3 +18,4 @@ pytest-cov==6.0.0
 black==24.10.0
 ruff==0.9.1
 mypy==1.14.1
+joblib-stubs==1.5.2.0.20250831  # Type stubs for joblib
