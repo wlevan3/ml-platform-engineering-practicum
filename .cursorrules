@@ -1,0 +1,238 @@
+# Cursor AI Rules for ML Platform Engineering Practicum
+
+## Project Overview
+This is a personal learning project building a production-grade ML platform from scratch.
+Focus: Hands-on experience with infrastructure, MLOps, and platform engineering practices.
+Current Phase: Foundation & Setup (Phase 1)
+
+## Technology Stack
+- Python 3.13 with `uv` package manager (.venv virtual environment)
+- FastAPI for REST API
+- Pre-commit hooks for code quality (see .pre-commit-config.yaml)
+- Docker for containerization
+- Future: AWS EKS, Terraform, MLflow (Phases 2+)
+
+## Code Standards
+
+### Python
+- Follow PEP 8 via Black (line length: 88)
+- Use type hints for function signatures
+- Docstrings for modules, classes, and public functions
+- Exception handling with specific exceptions, never bare `except:`
+- Pydantic models for data validation
+
+### Testing
+- Use pytest with fixtures
+- FastAPI TestClient for API testing
+- Coverage target: 80%+
+- Test file naming: `test_*.py`
+
+### Commit Format (Conventional Commits)
+```
+<type>(<scope>): <subject>
+```
+Types: feat, fix, infra, docs, style, refactor, test, chore, ci
+
+Example: `feat(model-registry): add MLflow integration`
+
+## Critical: Dependency and Version Handling
+
+### DO NOT Flag Versions as Invalid Based on Training Data Cutoff
+
+**IMPORTANT**: Your training data may be outdated. DO NOT assume versions are invalid just because they're newer than your knowledge cutoff.
+
+#### Guidelines:
+1. ✅ **Trust version verification evidence**: If the user or tools have verified versions, don't second-guess
+2. ✅ **Suggest verification, don't assume**: Offer commands like `gh release list -R owner/repo -L 5`
+3. ✅ **Check semantic versioning**: Flag actual invalid patterns (e.g., `1.2.3.4.5`)
+4. ❌ **Don't use outdated knowledge**: Don't say "latest version is X" if your data is old
+5. ❌ **Don't be overly cautious**: Newer versions are expected in active projects
+
+#### Example Good Responses:
+```
+✅ GOOD: "To verify this version exists, you can run:
+gh release list -R psf/black -L 5"
+
+✅ GOOD: "Consider checking the release notes for breaking changes:
+https://github.com/psf/black/releases"
+
+❌ BAD: "Black 25.9.0 seems invalid - latest version I know is 24.10.0.
+Please verify this version exists."
+```
+
+#### When to Raise Real Concerns:
+- ✅ Version doesn't follow semver
+- ✅ Major version jump without documentation
+- ✅ Dependency conflicts detected
+- ✅ Security vulnerabilities in old versions
+- ❌ Version is newer than your training data
+
+## Development Commands
+
+### Setup
+```bash
+uv venv .venv --python 3.13
+source .venv/bin/activate
+uv pip install -r requirements.txt
+```
+
+### Run Application
+```bash
+# Train model
+python train_model.py
+
+# Run FastAPI server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run tests
+pytest
+pytest -v
+pytest -k "test_health"
+
+# Code quality
+black .
+ruff check . --fix
+mypy app/
+
+# Pre-commit
+pre-commit run --all-files
+```
+
+### Docker
+```bash
+docker build -t ml-platform-api:latest .
+docker run -p 8000:8000 ml-platform-api:latest
+```
+
+## File Patterns
+
+### Don't Modify Without Reason
+- `.github/workflows/*.yml` - CI/CD pipelines (requires testing)
+- `.pre-commit-config.yaml` - Hook versions (use `pre-commit autoupdate`)
+- `Dockerfile` - Container config (requires rebuild)
+- `requirements.txt` - Dependencies (requires reinstall)
+
+### Always Read First
+- `CLAUDE.md` - Project-specific instructions
+- `README.md` - Project overview
+- `docs/PROJECT_MANAGEMENT.md` - GitHub Projects setup
+- `docs/QUICK_REFERENCE.md` - Common commands
+
+## FastAPI Patterns
+
+### Current Patterns in Use
+- Singleton pattern for model loading (`app/model.py:get_model()`)
+- Lifespan events for startup/shutdown logic
+- Dependency injection for shared resources
+- HTTPException for error responses
+- Response models for all endpoints
+
+### Example Usage
+```python
+# Singleton model loading
+@lru_cache()
+def get_model() -> RandomForestClassifier:
+    """Load model (cached singleton)"""
+    model_path = Path("models/iris_classifier.joblib")
+    return joblib.load(model_path)
+
+# API endpoint with response model
+@app.post("/predict", response_model=PredictionResponse)
+async def predict(request: PredictionRequest):
+    """Make prediction with proper error handling"""
+    model = get_model()
+    # ... implementation
+```
+
+## Security Notes
+
+### Model Security (Pickle/Joblib)
+- Models use joblib (pickle-based) serialization
+- SHA-256 hash verification prevents tampering
+- Current risk: LOW (controlled environment)
+- Phase 3 migration: MLflow + ONNX for production
+- See `docs/PICKLE_SECURITY.md` for details
+
+### General Security
+- No secrets in code - use environment variables
+- Pre-commit hooks scan for secrets (detect-secrets, gitleaks)
+- CI includes Trivy, Semgrep, CodeQL scanning
+
+## Code Generation Preferences
+
+### When Suggesting Code
+1. **Match existing patterns**: Review similar code in the project first
+2. **Include type hints**: All function signatures need types
+3. **Add docstrings**: Explain what, not how (code shows how)
+4. **Handle errors**: Use specific exceptions with meaningful messages
+5. **Write tests**: Include pytest tests for new features
+6. **Follow conventions**: Check CLAUDE.md for project-specific rules
+
+### When Refactoring
+1. **Preserve functionality**: Don't change behavior without explicit request
+2. **Maintain compatibility**: Keep existing API contracts
+3. **Update tests**: Ensure tests still pass and add new ones
+4. **Document changes**: Explain the "why" of refactoring
+
+## Tone and Approach
+
+### Be Educational
+- Explain rationale behind suggestions
+- Provide learning context (this is a learning project)
+- Link to documentation and resources
+- Teach best practices, don't just fix
+
+### Be Pragmatic
+- Balance "production-grade" with "learning project"
+- Don't over-engineer for current scale
+- Suggest iterative improvements
+- Acknowledge trade-offs
+
+### Be Objective
+- Use facts and evidence
+- Don't make assumptions about validity based on outdated data
+- Suggest verification rather than assuming incorrectness
+- Be honest about knowledge limitations
+
+## Project Phases (Reference)
+
+### Current: Phase 1 - Foundation
+- ✅ Python ML service (FastAPI)
+- ✅ Model training and inference
+- ✅ Docker containerization
+- ✅ CI/CD pipeline
+- ✅ Code quality tools
+
+### Future Phases
+- Phase 2: AWS EKS deployment
+- Phase 3: MLflow integration
+- Phase 4: Monitoring and observability
+- Phase 5: Feature store (Feast)
+- Phase 6: Advanced ML operations
+- Phase 7: Platform automation
+
+## Important Files to Reference
+
+When working with this project, always check:
+- `CLAUDE.md` - Detailed project instructions
+- `README.md` - Quick start and overview
+- `pytest.ini` - Test configuration
+- `.pre-commit-config.yaml` - Code quality hooks
+- `app/main.py` - API structure
+- `app/model.py` - Model loading patterns
+- `tests/test_api.py` - Testing patterns
+
+## What NOT to Do
+
+- ❌ Don't suggest adding features outside current phase
+- ❌ Don't flag versions as invalid without verification
+- ❌ Don't ignore existing patterns in the codebase
+- ❌ Don't create files without being asked (especially .md files)
+- ❌ Don't assume your training data is current for version info
+- ❌ Don't suggest enterprise solutions for learning-scale problems
+- ❌ Don't modify working code without a specific reason
+
+## Remember
+
+This is a **learning project**. The goal is understanding, not just completion.
+Always explain the "why" behind suggestions and help build strong engineering habits.
