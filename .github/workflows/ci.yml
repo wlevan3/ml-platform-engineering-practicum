@@ -117,7 +117,7 @@ jobs:
         continue-on-error: true
 
   kubernetes-security-scan:
-    name: Kubernetes Security Scanning (kubesec)
+    name: Kubernetes Security Scanning (Trivy)
     runs-on: ubuntu-latest
     permissions:
       security-events: write
@@ -134,24 +134,26 @@ jobs:
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Skipping kubesec scanning - k8s/ directory does not exist yet"
+            echo "⚠️ Skipping Kubernetes manifest scanning - k8s/ directory does not exist yet"
           fi
 
-      - name: Run kubesec scanner on manifests
+      - name: Run Trivy security scanner on Kubernetes manifests
         if: steps.check_k8s.outputs.exists == 'true'
-        uses: controlplaneio/kubesec-action@main
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1 (Trivy v0.65.0)
         with:
-          directory: k8s/
-          format: sarif
-          output: kubesec-results.sarif
-        continue-on-error: true
+          scan-type: 'config'
+          scan-ref: 'k8s/'
+          format: 'sarif'
+          output: 'trivy-k8s-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+        continue-on-error: true  # TODO: Change to false in Phase 2 once all findings are remediated
 
-      - name: Upload kubesec results to GitHub Security
+      - name: Upload Trivy results to GitHub Security
         if: steps.check_k8s.outputs.exists == 'true' && always()
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: kubesec-results.sarif
-          category: kubesec-scan
+          sarif_file: trivy-k8s-results.sarif
+          category: trivy-k8s-scan
         continue-on-error: true
 
   python-lint:

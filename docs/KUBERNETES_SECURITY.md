@@ -3,14 +3,16 @@
 ## Overview
 
 This document details the Kubernetes security scanning and hardening implementation for the
-ml-platform-engineering-practicum project. It covers manifest scanning with kubesec, cluster
+ml-platform-engineering-practicum project. It covers manifest scanning with Trivy, cluster
 assessment with kube-bench, Pod Security Standards enforcement, and RBAC validation.
 
 ## Security Scanning Tools
 
-### 1. Kubesec - Manifest Security Scanning
+### 1. Trivy - Manifest Security Scanning
 
-**Purpose**: Automated security scanning of Kubernetes manifests to identify misconfigurations and security risks.
+**Purpose**: Automated security scanning of Kubernetes manifests to identify misconfigurations, CVEs, and security risks.
+
+**Version**: aquasecurity/trivy-action v0.33.1 (Trivy v0.65.0, commit: b6643a29, updated: 2025-11-04)
 
 **Integration**: GitHub Actions CI/CD pipeline (`kubernetes-security-scan` job in `.github/workflows/ci.yml`)
 
@@ -243,22 +245,25 @@ rules:
 
 ## Security Audit Results
 
-### kubesec Scan Findings
+### Trivy Scan Findings
 
-When running kubesec locally:
+When running Trivy locally on Kubernetes manifests:
 
 ```bash
-# Scan all manifests
-kubesec scan k8s/*.yaml
+# Scan all manifests with config scan
+trivy config k8s/
 
-# Example output format:
-# Score (10 = most secure, 0 = least secure)
-# k8s/deployment.yaml: 9 (PASS)
-# k8s/service.yaml: 10 (PASS)
-# k8s/namespace.yaml: 10 (PASS)
+# Scan with specific severity levels
+trivy config --severity CRITICAL,HIGH,MEDIUM k8s/
+
+# Output in table format (default)
+trivy config --format table k8s/
+
+# Output in JSON for parsing
+trivy config --format json k8s/ | jq
 ```
 
-**Expected Score**: 8-9 (High security, minimal vulnerabilities)
+**Expected Results**: Minimal CRITICAL/HIGH findings with proper security contexts configured
 
 - Non-root execution
 - Security context hardening
@@ -324,20 +329,21 @@ Expected results when running against cluster:
 
 ## Remediation Workflow
 
-When kubesec or kube-bench find issues:
+When Trivy or kube-bench find issues:
 
-### For kubesec Findings
+### For Trivy Manifest Scan Findings
 
 1. **CRITICAL/HIGH severity**:
    - Fix immediately in manifest
    - Update `k8s/*.yaml` with security improvements
-   - Test locally with kubeval/kube-linter
+   - Test locally with `trivy config k8s/`
    - Commit with detailed explanation
 
 2. **MEDIUM severity**:
    - Evaluate trade-offs between security and functionality
    - Document decision in commit message
    - Add comment in manifest explaining reasoning
+   - Consider suppression with `.trivyignore` if false positive
 
 3. **LOW severity**:
    - Consider for next iteration
@@ -364,12 +370,14 @@ All security scan results are integrated with GitHub Security tab:
 **Accessing Results**:
 
 1. Go to repository `Settings` > `Security`
-2. View `Code scanning` for kubesec findings
-3. Each alert shows:
+2. View `Code scanning` for Trivy Kubernetes manifest findings
+3. Filter by category: `trivy-k8s-scan`
+4. Each alert shows:
    - Manifest file and line number
-   - Severity level
-   - Description of security issue
+   - Severity level (CRITICAL, HIGH, MEDIUM)
+   - Description of security issue or misconfiguration
    - Recommended remediation steps
+   - CVE information (if applicable)
 
 **Alert Management**:
 
@@ -415,11 +423,13 @@ Security controls are visible and manageable:
 - Health probes show container readiness
 - Resource limits prevent silent failures
 - Security context documented in manifests
-- kubesec scanning integrated into CI/CD
+- Trivy config scanning integrated into CI/CD for continuous security validation
 
 ## References
 
-- [Kubesec.io](https://kubesec.io/) - Manifest security scoring
+- [Trivy](https://trivy.dev/) - Comprehensive security scanner for containers and IaC
+- [Trivy K8s Scanning](https://aquasecurity.github.io/trivy/latest/docs/scanner/misconfiguration/kubernetes/)
+  \- Kubernetes manifest scanning documentation
 - [Kube-bench](https://github.com/aquasecurity/kube-bench) - CIS benchmark assessment
 - [Pod Security Standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/) - PSS documentation
 - [NIST Application Container Security](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-190.pdf)
