@@ -6,6 +6,9 @@ on:
   push:
     branches: [main]
 
+env:
+  DOCKER_IMAGE_ARTIFACT: docker-image-${{ github.sha }}
+
 jobs:
   lint-and-validate:
     name: Lint and Validate
@@ -502,7 +505,7 @@ jobs:
       - name: Upload Docker image artifact
         uses: actions/upload-artifact@v4
         with:
-          name: docker-image-${{ github.sha }}
+          name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp/ml-platform-api.tar
           retention-days: 1  # Short-lived, just for CI pipeline
 
@@ -531,20 +534,20 @@ jobs:
 
       # Note: Docker image is reused from docker-build-scan job via artifact sharing
       # This avoids rebuilding the image (saves 2-5 minutes per CI run)
-      # Keep artifact name in sync with docker-build-scan job
+      # Artifact name defined in workflow-level env for consistency
       - name: Download Docker image artifact
         uses: actions/download-artifact@v4
         with:
-          name: docker-image-${{ github.sha }}
+          name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp
 
       - name: Load Docker image
         run: docker load -i /tmp/ml-platform-api.tar
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@7ccf588e3cf120243ec3abf53f33e63c7c7bfc03  # v0.20.9
+        uses: anchore/sbom-action/download-syft@8e94d75ddd33f69f691467e42275782e4bfefe84  # v0.20.9
         with:
-          syft-version: v1.18.1
+          syft-version: v1.37.0
 
       - name: Generate SBOM for Docker image (SPDX JSON)
         run: |
