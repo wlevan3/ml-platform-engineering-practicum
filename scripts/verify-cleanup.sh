@@ -533,6 +533,10 @@ verify_dynamodb_tables() {
 verify_cloudwatch_logs() {
 	log_section "Checking CloudWatch Log Groups"
 
+	# NOTE: CloudWatch Logs does not support tag-based filtering via AWS CLI/API
+	# (unlike EC2, VPCs, etc.). Pattern matching is the only available method.
+	# This is an AWS service limitation, not a script design choice.
+
 	local log_groups
 	log_groups=$(aws logs describe-log-groups --region "$AWS_REGION" --query 'logGroups[].logGroupName' --output json | jq -r '.[]')
 

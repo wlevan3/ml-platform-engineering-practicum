@@ -3,7 +3,8 @@
 # AWS Nuclear Cleanup Script - Layer 2 Deletion Strategy
 #
 # WARNING: This script FORCE-DELETES all AWS resources tagged with the project.
-# Only use this when Terraform destroy fails. No confirmation prompts.
+# Only use this when Terraform destroy fails. 10-second countdown before deletion
+# (Ctrl+C to abort).
 #
 # Usage:
 #   ./scripts/aws-nuclear-cleanup.sh

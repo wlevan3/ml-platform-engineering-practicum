@@ -34,10 +34,12 @@ resource "kubernetes_resource_quota" "ml_platform_compute" {
       "pods" = "12" # 10 from HPA + 2 buffer for rolling updates (see k8s/hpa.yaml)
 
       # CPU limits (conservative for cost control)
-      "requests.cpu"    = "4000m" # 4 vCPUs total (enough for 10 pods @ 400m each)
-      "limits.cpu"      = "8000m" # 8 vCPUs max (enough for 10 pods @ 800m each)
-      "requests.memory" = "10Gi"  # 10 GB total (enough for 10 pods @ 1Gi each)
-      "limits.memory"   = "20Gi"  # 20 GB max (enough for 10 pods @ 2Gi each)
+      # Pod actual requests: 250m CPU, 256Mi memory (see k8s/deployment.yaml:48-51)
+      # Pod actual limits: 500m CPU, 512Mi memory (see k8s/deployment.yaml:52-55)
+      "requests.cpu"    = "4000m" # 4 vCPUs total (enough for 16 pods @ 250m each, allows HPA scaling headroom)
+      "limits.cpu"      = "8000m" # 8 vCPUs max (enough for 16 pods @ 500m each)
+      "requests.memory" = "10Gi"  # 10 GB total (enough for ~40 pods @ 256Mi each, generous buffer)
+      "limits.memory"   = "20Gi"  # 20 GB max (enough for ~40 pods @ 512Mi each)
 
       # Storage limits (prevent PVC bloat)
       "persistentvolumeclaims"     = "5"     # Max 5 PVCs
