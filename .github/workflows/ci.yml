@@ -496,6 +496,16 @@ jobs:
           path: trivy-results.sarif
           retention-days: 5
 
+      - name: Save Docker image for SBOM generation
+        run: docker save ml-platform-api:${{ github.sha }} -o /tmp/ml-platform-api.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
+          path: /tmp/ml-platform-api.tar
+          retention-days: 1  # Short-lived, just for CI pipeline
+
   sbom-generation:
     name: SBOM Generation (Syft)
     runs-on: ubuntu-latest
@@ -519,11 +529,20 @@ jobs:
           pip install -r requirements.txt
           python train_model.py
 
-      - name: Build Docker image
-        run: docker build -t ml-platform-api:${{ github.sha }} .
+      # Note: Docker image is reused from docker-build-scan job via artifact sharing
+      # This avoids rebuilding the image (saves 2-5 minutes per CI run)
+      # Keep artifact name in sync with docker-build-scan job
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image-${{ github.sha }}
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load -i /tmp/ml-platform-api.tar
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@d94f46e13c6c62f59525ac9a1e147a99dc0b9bf5  # v0.17.0
+        uses: anchore/sbom-action/download-syft@7ccf588e3cf120243ec3abf53f33e63c7c7bfc03  # v0.20.9
         with:
           syft-version: v1.18.1
 

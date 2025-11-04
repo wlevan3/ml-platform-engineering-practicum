@@ -128,6 +128,9 @@ brew install syft  # macOS
 # OR
 curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
+# Verify installation
+syft version
+
 # Generate SBOM for Docker image
 syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 syft ml-platform-api:latest -o cyclonedx-json --file sbom-docker-cyclonedx.json
