@@ -94,6 +94,7 @@ The CI pipeline (`.github/workflows/ci.yml`) runs automatically on PRs and pushe
 - **SonarCloud analysis** - Code quality and security (requires tests)
 - **Security scanning** - Trivy (filesystem + Docker images), Gitleaks (secrets), Semgrep (SAST)
 - **Docker image scanning** - Builds and scans Docker images (builder + runtime stages) with fail-fast on HIGH/CRITICAL
+- **SBOM generation** - Creates Software Bill of Materials (SPDX + CycloneDX formats) for Docker images and Python app
 
 Jobs with conditionals (`if: hashFiles()`) will show as "skipped" in summary when their files don't exist.
 
@@ -115,6 +116,36 @@ docker build --target runtime -t ml-platform-api:runtime .
 trivy image ml-platform-api:builder --severity HIGH,CRITICAL
 trivy image ml-platform-api:runtime --severity HIGH,CRITICAL
 ```
+
+### SBOM (Software Bill of Materials)
+
+SBOMs provide a complete inventory of software components for vulnerability management and compliance.
+See [docs/SBOM_GENERATION.md](./docs/SBOM_GENERATION.md) for comprehensive documentation.
+
+```bash
+# Install Syft (required for local SBOM generation)
+brew install syft  # macOS
+# OR
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+
+# Generate SBOM for Docker image
+syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
+syft ml-platform-api:latest -o cyclonedx-json --file sbom-docker-cyclonedx.json
+
+# Generate SBOM for Python application
+syft dir:. -o spdx-json --file sbom-python-spdx.json
+syft dir:. -o cyclonedx-json --file sbom-python-cyclonedx.json
+
+# View SBOM in terminal (human-readable)
+syft ml-platform-api:latest
+
+# Scan SBOM for vulnerabilities with Grype
+brew install grype  # macOS
+grype sbom:sbom-docker-cyclonedx.json --severity high,critical
+```
+
+**CI/CD Integration**: SBOMs are automatically generated in CI and uploaded as artifacts (90-day retention).
+Access them from the Actions tab → Workflow run → Artifacts section.
 
 ## Commit and PR Workflow
 
@@ -309,6 +340,9 @@ For detailed guidance on project workflows and management, refer to:
   conventions, project field values, and useful links
 - **docs/VULNERABILITY_REMEDIATION.md** - Workflow for handling security vulnerabilities
   detected by Trivy, including remediation steps, .trivyignore usage, and debugging
+- **docs/SBOM_GENERATION.md** - Software Bill of Materials (SBOM) generation using Syft.
+  Covers SBOM formats (SPDX, CycloneDX), compliance requirements (EO 14028, EU CRA),
+  CI/CD integration, local generation commands, and vulnerability scanning workflows
 - **docs/PICKLE_SECURITY.md** - Model deserialization security analysis and skops.io migration
 - **docs/ALPINE_MIGRATION_ANALYSIS.md** - Alpine Linux Docker base image investigation findings
   and decision analysis. Documents why Alpine is not optimal for scientific Python workloads
