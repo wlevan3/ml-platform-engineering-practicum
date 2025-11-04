@@ -107,9 +107,8 @@ log_success "✓ Kubernetes manifests found"
 # ============================================================================
 log_step "2/8 - Starting Minikube Cluster"
 
-MINIKUBE_STATUS=$(minikube status -f '{{.Host}}' 2>/dev/null || echo "Stopped")
-
-if [[ "$MINIKUBE_STATUS" == "Running" ]]; then
+# Use exit code-based check (more robust than parsing output)
+if minikube status >/dev/null 2>&1; then
 	log_success "✓ Minikube is already running"
 	minikube status
 else
@@ -166,8 +165,8 @@ docker build -t "$DOCKER_IMAGE" .
 
 log_success "✓ Docker image built: $DOCKER_IMAGE"
 
-# Verify image exists
-if ! docker images "$DOCKER_IMAGE" | grep -q "v1.0.0"; then
+# Verify image exists (tag-agnostic check)
+if ! docker inspect "$DOCKER_IMAGE" >/dev/null 2>&1; then
 	error_exit "Docker image not found after build"
 fi
 
@@ -185,7 +184,11 @@ if [[ "$CLEAN_DEPLOY" == true ]]; then
 	kubectl delete -f k8s/ --ignore-not-found=true
 
 	log_info "Waiting for pods to terminate..."
-	kubectl wait --for=delete pod -l app="$DEPLOYMENT_NAME" --timeout=60s || true
+	if ! kubectl wait --for=delete pod -l app="$DEPLOYMENT_NAME" --timeout=60s; then
+		log_warning "Pod termination timed out or failed; proceeding anyway (may cause conflicts)"
+	else
+		log_success "✓ Pods terminated cleanly"
+	fi
 
 	log_success "✓ Cleanup complete"
 else
@@ -253,15 +256,21 @@ log_step "8/8 - Running End-to-End Tests"
 
 log_info "Getting service URL..."
 # Get Minikube IP and NodePort (avoids tunnel requirement on macOS Docker driver)
-MINIKUBE_IP=$(minikube ip)
-NODE_PORT=$(kubectl get service "$DEPLOYMENT_NAME" -o jsonpath='{.spec.ports[0].nodePort}')
-SERVICE_URL="http://${MINIKUBE_IP}:${NODE_PORT}"
-
-if [[ -z "$SERVICE_URL" ]]; then
-	error_exit "Failed to get service URL"
+MINIKUBE_IP=$(minikube ip 2>/dev/null || true)
+if [[ -z "$MINIKUBE_IP" ]]; then
+	error_exit "Failed to get Minikube IP address"
 fi
 
+NODE_PORT=$(kubectl get service "$DEPLOYMENT_NAME" -o jsonpath='{.spec.ports[0].nodePort}' 2>/dev/null || true)
+if [[ -z "$NODE_PORT" ]]; then
+	error_exit "Failed to get NodePort for service $DEPLOYMENT_NAME"
+fi
+
+SERVICE_URL="http://${MINIKUBE_IP}:${NODE_PORT}"
 log_success "✓ Service URL: $SERVICE_URL"
+
+# Global flag to track test failures
+test_failed=false
 
 # Test function
 run_test() {
@@ -293,7 +302,7 @@ run_test() {
 	else
 		log_error "  ✗ Status: $status (expected $expected_status)"
 		log_error "  Response: $body"
-		return 1
+		test_failed=true # Set flag instead of returning
 	fi
 }
 
@@ -331,6 +340,11 @@ run_test "Invalid input (missing features)" "/predict" "POST" \
 
 # Test 9: OpenAPI docs
 run_test "OpenAPI docs" "/openapi.json" "GET" "" "200"
+
+# Check if any test failed
+if [[ "$test_failed" == true ]]; then
+	error_exit "One or more tests failed"
+fi
 
 log_success "✓ All tests completed"
 

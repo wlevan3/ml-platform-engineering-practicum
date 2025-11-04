@@ -52,28 +52,39 @@ spec:
               ephemeral-storage: "2Gi"  # Prevent unlimited ephemeral storage consumption
 
           # Health Probe Philosophy: FAIL-FAST
+          # - Startup: Handles slow model loading (one-time, generous timeout)
           # - Liveness: Process alive (always passes if HTTP responds)
           # - Readiness: Model loaded + ready for traffic (503 if not ready)
           # - Startup failure: Container crashes and restarts (fail-fast approach)
           # - Alternative: Keep alive but not ready (degraded-state) - not used here
           # - Rationale: Fail-fast ensures problems are visible and fixed quickly
 
-          # Liveness probe - checks if container is alive
+          # Startup probe - handles slow model loading during container startup
+          # Once this passes, liveness/readiness probes take over with shorter delays
+          # This eliminates the "blind period" where issues go undetected
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12  # Max startup time: 10s + (5s * 12) = 70 seconds
+
+          # Liveness probe - checks if container is alive (AFTER startup completes)
           livenessProbe:
             httpGet:
               path: /health/live
               port: http  # Use named port reference for maintainability
-            initialDelaySeconds: 30  # Allow time for ML model loading at startup
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 5  # Lenient threshold (50s grace) to avoid false restarts
+            failureThreshold: 3  # Faster detection post-startup (30s grace period)
 
-          # Readiness probe - checks if container is ready to serve traffic
+          # Readiness probe - checks if container is ready to serve traffic (AFTER startup completes)
           readinessProbe:
             httpGet:
               path: /health/ready
               port: http  # Use named port reference for maintainability
-            initialDelaySeconds: 30  # Allow time for model loading; aligns with startup behavior
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3

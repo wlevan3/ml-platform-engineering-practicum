@@ -74,7 +74,8 @@ class ReadinessResponse(BaseModel):
     """
 
     status: Literal["ready"] = Field(
-        ..., description="Readiness status - always 'ready' when responding with 200"
+        default="ready",
+        description="Readiness status - always 'ready' when responding with 200",
     )
     model_loaded: bool = Field(..., description="Whether the ML model is loaded")
     version: str = Field(..., description="API version")
