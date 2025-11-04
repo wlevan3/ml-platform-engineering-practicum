@@ -11,6 +11,23 @@ production-like workflows (issues, PRs, CI/CD) to build professional engineering
 **Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS,
 Terraform) coming in Phase 2+.
 
+## Learning Focus
+
+This is a **learning project**, not a production service. Key goals:
+
+- Build professional engineering habits (PRs, code review, CI/CD)
+- Gain hands-on experience with ML infrastructure
+- Document learnings and design decisions (use Learning Reflection issue template)
+- Practice trade-off analysis and architectural thinking
+
+**Development philosophy**:
+
+- Consider production best practices (even for a learning project)
+- Document the "why" behind decisions
+- Reflect on trade-offs and alternatives
+- Don't just complete tasks—understand them deeply
+- After creating a PR, monitor CI checks: `gh pr checks $PR_NUMBER --watch`. Once complete, review any automated PR comments and address them
+
 ## Architecture
 
 ### Current Implementation
@@ -49,7 +66,7 @@ python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 
-# Train model (creates models/iris_classifier.joblib and metadata)
+# Train model (creates models/iris_classifier.skops and metadata)
 python train_model.py
 
 # Run FastAPI server locally
@@ -92,11 +109,12 @@ The CI pipeline (`.github/workflows/ci.yml`) runs automatically on PRs and pushe
 - **Python linting** (Black, Ruff) - Only if `.py` files exist
 - **Python tests with coverage** - Only if `.py` files exist
 - **SonarCloud analysis** - Code quality and security (requires tests)
-- **Security scanning** - Trivy (filesystem + Docker images), Gitleaks (secrets), Semgrep (SAST)
-- **Docker image scanning** - Builds and scans Docker images (builder + runtime stages) with fail-fast on HIGH/CRITICAL
+- **Security scanning** - Multiple tools for comprehensive coverage (see Security section for details)
 - **SBOM generation** - Creates Software Bill of Materials (SPDX + CycloneDX formats) for Docker images and Python app
 
 Jobs with conditionals (`if: hashFiles()`) will show as "skipped" in summary when their files don't exist.
+
+**Note**: For comprehensive security scanning details (Trivy, Gitleaks, Semgrep) and vulnerability handling, see the **Security** section below.
 
 ### Docker
 
@@ -150,6 +168,123 @@ grype sbom:sbom-docker-cyclonedx.json --severity HIGH,CRITICAL
 **CI/CD Integration**: SBOMs are automatically generated in CI and uploaded as artifacts (90-day retention).
 Access them from the Actions tab → Workflow run → Artifacts section.
 
+## Troubleshooting
+
+### Common Issues
+
+#### Model Not Found Error
+
+**Problem**: `FileNotFoundError: Model file not found: models/iris_classifier.skops`
+
+**Solution**:
+```bash
+# Train the model first
+python train_model.py
+
+# Verify model files exist
+ls -la models/
+```
+
+#### Model Integrity Error
+
+**Problem**: `ModelIntegrityError: Model file integrity verification failed`
+
+**Solution**:
+```bash
+# Retrain the model (hash mismatch indicates corruption or manual edit)
+python train_model.py
+
+# If issue persists, check if model file was modified manually
+git status models/
+```
+
+#### Pre-commit Hook Failures
+
+**Problem**: Pre-commit hooks fail on commit
+
+**Solution**:
+```bash
+# Run pre-commit manually to see detailed errors
+pre-commit run --all-files
+
+# Auto-fix formatting issues
+black .
+ruff check . --fix
+
+# Update hook versions if needed
+pre-commit autoupdate
+```
+
+#### CI/CD Job Failures
+
+**Problem**: CI jobs fail unexpectedly
+
+**Solution**:
+```bash
+# Run tests locally first
+pytest -v
+
+# Check code quality locally
+black --check .
+ruff check .
+mypy app/
+
+# View CI logs in GitHub Actions tab for specific error details
+```
+
+#### Docker Build Failures
+
+**Problem**: Docker image build fails
+
+**Solution**:
+```bash
+# Build with verbose output
+docker build -t ml-platform-api:latest . --progress=plain
+
+# Check Dockerfile syntax
+docker build --check -t ml-platform-api:latest .
+
+# Clean build cache if needed
+docker builder prune
+```
+
+#### Import Errors in Tests
+
+**Problem**: `ModuleNotFoundError` when running pytest
+
+**Solution**:
+```bash
+# Ensure virtual environment is activated
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+
+# Reinstall dependencies
+uv pip install -r requirements.txt
+
+# Verify installation
+python -c "import fastapi; import sklearn; print('OK')"
+```
+
+#### Port Already in Use
+
+**Problem**: `Address already in use` when running uvicorn
+
+**Solution**:
+```bash
+# Find process using port 8000
+lsof -i :8000  # macOS/Linux
+netstat -ano | findstr :8000  # Windows
+
+# Kill the process or use a different port
+uvicorn app.main:app --reload --port 8001
+```
+
+### Getting Help
+
+- **Documentation**: Check `docs/` directory for detailed guides
+- **CI logs**: GitHub Actions tab → Failed workflow → Job details
+- **Security issues**: See `docs/VULNERABILITY_REMEDIATION.md`
+- **Git issues**: See `docs/QUICK_REFERENCE.md` for common commands
+
 ## Commit and PR Workflow
 
 ### Branch Naming
@@ -190,6 +325,59 @@ Examples:
 5. Self-review your changes
 6. Ensure CI passes
 7. **Squash merge** to `main` (keeps history clean)
+
+#### Handling Merge Conflicts
+
+If your branch has conflicts with `main`:
+
+```bash
+# Update your local main branch
+git checkout main
+git pull origin main
+
+# Switch back to feature branch
+git checkout your-feature-branch
+
+# Rebase on latest main (preferred for clean history)
+git rebase main
+
+# If conflicts occur, resolve them in your editor
+# Then continue rebase
+git add <resolved-files>
+git rebase --continue
+
+# Force push (rebase rewrites history)
+git push --force-with-lease origin your-feature-branch
+
+# Alternative: Merge (creates merge commit)
+git merge main
+git push origin your-feature-branch
+```
+
+**Tip**: Use `--force-with-lease` instead of `--force` to prevent overwriting others' work.
+
+#### When to Create Issues vs. Direct Changes
+
+**Create an issue first** when:
+- Implementing new features (use Feature Request template)
+- Fixing non-trivial bugs (use Bug Report template)
+- Making infrastructure changes (use Infrastructure Change template)
+- Documenting learning reflections (use Learning Reflection template)
+- Changes require discussion or architectural decisions
+- Work will take multiple commits or sessions
+
+**Skip issue creation** for:
+- Typo fixes in documentation
+- Updating dependencies (minor version bumps)
+- Fixing broken links
+- Small refactoring with no functional changes
+- Documentation improvements (grammar, formatting)
+
+**Workflow**:
+```bash
+# For issues: Create issue → Create branch → Make changes → Create PR → Link issue
+# For direct changes: Create branch → Make changes → Create PR
+```
 
 ### Before Creating PRs
 
@@ -253,7 +441,7 @@ ml-platform-engineering-practicum/
 │   ├── model.py            # Model loading/inference (singleton)
 │   └── schemas.py          # Pydantic models
 ├── models/                  # Model artifacts (gitignored except metadata)
-│   ├── iris_classifier.joblib  # Trained model
+│   ├── iris_classifier.skops   # Trained model (skops format)
 │   └── model_metadata.json     # Model metadata
 ├── tests/                   # Test suite
 │   └── test_api.py         # FastAPI endpoint tests
@@ -307,6 +495,8 @@ See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration 
 
 ### Security
 
+#### Secret Management
+
 - **No secrets in code** - Use environment variables or AWS Secrets Manager
 - Pre-commit hook `detect-secrets` scans for accidental credential commits
 - Pre-commit hook `semgrep` scans for security vulnerabilities (custom ruleset in `.semgrep.yml`)
@@ -323,7 +513,31 @@ See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration 
   - Supports Kubernetes admission controllers (Sigstore Policy Controller, Kyverno)
 - GitHub Actions use **pinned SHA hashes** for security scanning actions
 
-**Vulnerability handling**: See `docs/VULNERABILITY_REMEDIATION.md` for workflow on handling Trivy findings.
+#### Security Scanning (Multi-Layer Approach)
+
+The project uses multiple security scanning tools for defense in depth:
+
+1. **Pre-commit Hooks** (local development)
+   - `detect-secrets` - Prevents accidental credential commits
+   - `semgrep` - SAST scanning with custom ruleset (`.semgrep.yml`)
+
+2. **CI Pipeline** (automated on PRs/pushes)
+   - **Trivy** - Filesystem + container image scanning
+     - Scans OS packages, Python dependencies, and Dockerfile best practices
+     - Separate scans for builder and runtime stages
+     - Fail-fast on HIGH/CRITICAL vulnerabilities
+     - Results uploaded to GitHub Security tab
+   - **Gitleaks** - Comprehensive secret detection
+   - **Semgrep** - Advanced SAST with comprehensive rulesets
+   - **SonarCloud** - Code quality and security analysis
+
+3. **GitHub Actions Security**
+   - Security scanning actions use **pinned SHA hashes** (prevents supply chain attacks)
+
+#### Vulnerability Management
+
+- **Vulnerability handling**: See `docs/VULNERABILITY_REMEDIATION.md` for detailed workflow on handling Trivy findings, including remediation steps, `.trivyignore` usage, and debugging
+- **SBOM tracking**: See `docs/SBOM_GENERATION.md` for dependency inventory and compliance
 
 **Image signing**: See `docs/IMAGE_SIGNING.md` for container image signing implementation and verification.
 
@@ -375,20 +589,3 @@ The project uses **GitHub Projects** for tracking work:
 - **Roadmap view** for timeline visualization
 
 See docs/PROJECT_MANAGEMENT.md for complete setup instructions.
-
-## Learning Focus
-
-This is a **learning project**, not a production service. Key goals:
-
-- Build professional engineering habits (PRs, code review, CI/CD)
-- Gain hands-on experience with ML infrastructure
-- Document learnings and design decisions (use Learning Reflection issue template)
-- Practice trade-off analysis and architectural thinking
-
-When making changes:
-
-- Consider production best practices (even for a learning project)
-- Document the "why" behind decisions
-- Reflect on trade-offs and alternatives
-- Don't just complete tasks—understand them deeply
-- after creating pr, run `gh pr $PR_NUMBER checks --watch, then after its done, review the new pr comments and address them.
