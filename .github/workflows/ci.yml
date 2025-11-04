@@ -108,13 +108,13 @@ jobs:
           working_directory: terraform
           soft_fail: false
           format: sarif
-          additional_args: --out tfsec-results.sarif --minimum-severity HIGH
+          additional_args: --minimum-severity HIGH
 
       - name: Upload tfsec SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: tfsec-results.sarif
+          sarif_file: results.sarif
           category: tfsec-scan
         continue-on-error: true
 
