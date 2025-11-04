@@ -86,8 +86,17 @@ module "eks" {
   # Managed node groups
   eks_managed_node_groups = {
     ml_platform_nodes = {
-      name           = "${local.cluster_name}-node-group"
-      instance_types = [var.node_instance_type]
+      name = "${local.cluster_name}-node-group"
+
+      # Spot instances configuration for cost savings (70% discount)
+      # Use multiple instance types to increase spot fulfillment success rate
+      capacity_type = var.use_spot_instances ? "SPOT" : "ON_DEMAND"
+
+      instance_types = var.use_spot_instances ? [
+        "t3.medium",  # Primary: $0.0416/hour on-demand, ~$0.0125/hour spot
+        "t3a.medium", # AMD alternative: similar specs, ~$0.0112/hour spot
+        "t2.medium",  # Older generation fallback
+      ] : [var.node_instance_type]
 
       min_size     = var.node_min_size
       max_size     = var.node_max_size
@@ -100,8 +109,9 @@ module "eks" {
       ami_type = "AL2_x86_64"
 
       # Launch template configuration
+      # Increased max_unavailable for spot instances (faster node replacement)
       update_config = {
-        max_unavailable_percentage = 50 # Allow 50% of nodes to be unavailable during update
+        max_unavailable_percentage = var.use_spot_instances ? 50 : 33
       }
 
       # IAM role for worker nodes
@@ -110,16 +120,29 @@ module "eks" {
         AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore" # For Session Manager access
       }
 
-      labels = {
-        Environment = var.environment
-        NodeGroup   = "ml-platform-nodes"
-      }
+      # Node labels for pod scheduling
+      labels = merge(
+        {
+          Environment = var.environment
+          NodeGroup   = "ml-platform-nodes"
+        },
+        var.use_spot_instances ? { "node-lifecycle" = "spot" } : {}
+      )
+
+      # Taints for spot instances (forces pods to explicitly tolerate spot interruptions)
+      # Disabled by default - can be enabled for stricter control
+      # taints = var.use_spot_instances ? [{
+      #   key    = "kubernetes.io/lifecycle"
+      #   value  = "spot"
+      #   effect = "NoSchedule"
+      # }] : []
 
       tags = merge(
         local.tags,
         {
           Name = "${local.cluster_name}-worker-node"
-        }
+        },
+        var.use_spot_instances ? { "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "spot" } : {}
       )
     }
   }
