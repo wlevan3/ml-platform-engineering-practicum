@@ -1,0 +1,12 @@
+checks:
+  # Exclude checks that are intentionally not followed for this local Minikube deployment
+  doNotAutoAddDefaults: false
+  exclude:
+    # We're using NodePort for Minikube local access (not production)
+    # In production (AWS EKS), this would be changed to LoadBalancer or Ingress
+    - "no-node-port-services"
+
+    # Model files are intentionally included in Docker image
+    # Read-only root filesystem is disabled because some libraries
+    # (e.g., model deserialization, Python imports) require write access to /tmp
+    - "no-read-only-root-fs"

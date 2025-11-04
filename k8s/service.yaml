@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-platform-api
+  labels:
+    app: ml-platform-api
+spec:
+  type: NodePort  # Use NodePort for Minikube local access
+  selector:
+    app: ml-platform-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http
