@@ -67,6 +67,7 @@ resource "aws_securityhub_standards_subscription" "foundational" {
 # ===================================================================
 
 # Enable GuardDuty for threat detection
+#checkov:skip=CKV_AWS_238:GuardDuty is conditionally enabled for cost optimization - disabled by default in dev environments (~$10-30/month after 30-day free trial), enable via enable_guardduty variable when ready for continuous threat detection
 resource "aws_guardduty_detector" "main" {
   count = var.enable_guardduty ? 1 : 0
 
