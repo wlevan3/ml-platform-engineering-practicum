@@ -170,7 +170,7 @@ ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.34.x
 
 ### AWS Load Balancer Controller
 
-- **Chart**: `aws-load-balancer-controller` (v2.14.1)
+- **Chart**: `aws-load-balancer-controller` (chart v1.14.1, controller v2.14.1)
 - **Purpose**: Manages ALBs for Kubernetes Ingress
 - **IAM**: IRSA (IAM Roles for Service Accounts)
 - **Namespace**: kube-system
