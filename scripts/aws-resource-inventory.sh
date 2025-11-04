@@ -547,7 +547,7 @@ main() {
 		verify_empty
 		;;
 	"")
-		collect_inventory >/dev/null
+		collect_inventory
 		;;
 	*)
 		log_error "Unknown option: $1"
