@@ -184,10 +184,15 @@ if [[ "$CLEAN_DEPLOY" == true ]]; then
 	kubectl delete -f k8s/ --ignore-not-found=true
 
 	log_info "Waiting for pods to terminate..."
-	if ! kubectl wait --for=delete pod -l app="$DEPLOYMENT_NAME" --timeout=60s; then
-		log_warning "Pod termination timed out or failed; proceeding anyway (may cause conflicts)"
+	POD_COUNT=$(kubectl get pods -l app="$DEPLOYMENT_NAME" --no-headers 2>/dev/null | wc -l)
+	if [[ "$POD_COUNT" -gt 0 ]]; then
+		if ! kubectl wait --for=delete pod -l app="$DEPLOYMENT_NAME" --timeout=60s; then
+			log_warning "Pod termination timed out or failed; proceeding anyway (may cause conflicts)"
+		else
+			log_success "✓ Pods terminated cleanly"
+		fi
 	else
-		log_success "✓ Pods terminated cleanly"
+		log_info "No pods found to wait for termination"
 	fi
 
 	log_success "✓ Cleanup complete"
