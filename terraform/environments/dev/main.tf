@@ -173,9 +173,10 @@ resource "aws_ecr_repository" "ml_platform_api" {
     scan_on_push = var.ecr_scan_on_push
   }
 
-  # Encryption at rest
+  # Encryption at rest with AWS-managed KMS key
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
+    # No kms_key specified = uses AWS-managed KMS key (not customer-managed)
   }
 
   tags = merge(
