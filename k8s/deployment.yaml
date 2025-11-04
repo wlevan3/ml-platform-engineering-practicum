@@ -68,7 +68,7 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # FastAPI needs to write to /tmp
+            readOnlyRootFilesystem: false  # Some libraries (e.g., model deserialization, Python imports) require write access to /tmp for temporary files
             capabilities:
               drop:
                 - ALL
