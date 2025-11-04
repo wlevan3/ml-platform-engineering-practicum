@@ -105,10 +105,10 @@ jobs:
           working_directory: terraform
           soft_fail: false
           format: sarif
-          additional_args: --out tfsec-results.sarif
+          additional_args: --out tfsec-results.sarif --minimum-severity HIGH
 
       - name: Upload tfsec SARIF to GitHub Security
-        if: steps.check_terraform.outputs.exists == 'true' && always()
+        if: always() && steps.check_terraform.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: tfsec-results.sarif
@@ -122,11 +122,12 @@ jobs:
           directory: terraform/
           framework: terraform
           soft_fail: false
+          hard_fail_on: HIGH,CRITICAL
           output_format: sarif
           output_file_path: checkov-results.sarif
 
       - name: Upload Checkov SARIF to GitHub Security
-        if: steps.check_terraform.outputs.exists == 'true' && always()
+        if: always() && steps.check_terraform.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: checkov-results.sarif
@@ -515,7 +516,7 @@ jobs:
             echo "| Terraform Validation | ${{ needs.terraform-validate.result }} |"
             echo "| Terraform Security Scanning (tfsec + Checkov) | ${{ needs.terraform-security-scan.result }} |"
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
-            echo "| Kubernetes Security Scanning (kubesec) | ${{ needs.kubernetes-security-scan.result }} |"
+            echo "| Kubernetes Security Scanning (Trivy) | ${{ needs.kubernetes-security-scan.result }} |"
             echo "| Python Linting | ${{ needs.python-lint.result }} |"
             echo "| Python Tests | ${{ needs.python-test.result }} |"
             echo "| SonarCloud Analysis | ${{ needs.sonarcloud.result }} |"
