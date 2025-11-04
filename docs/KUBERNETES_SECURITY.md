@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document details the Kubernetes security scanning and hardening implementation for the ml-platform-engineering-practicum project. It covers manifest scanning with kubesec, cluster assessment with kube-bench, Pod Security Standards enforcement, and RBAC validation.
+This document details the Kubernetes security scanning and hardening implementation for the
+ml-platform-engineering-practicum project. It covers manifest scanning with kubesec, cluster
+assessment with kube-bench, Pod Security Standards enforcement, and RBAC validation.
 
 ## Security Scanning Tools
 
@@ -13,21 +15,25 @@ This document details the Kubernetes security scanning and hardening implementat
 **Integration**: GitHub Actions CI/CD pipeline (`kubernetes-security-scan` job in `.github/workflows/ci.yml`)
 
 **Scanning Scope**:
+
 - All YAML manifest files in `k8s/` directory
 - Deployment, StatefulSet, DaemonSet, Pod configurations
 - Container security contexts, resource limits, probes
 
 **Severity Levels**:
+
 - **CRITICAL**: High-risk configuration errors (privilege escalation, dangerous capabilities)
 - **HIGH**: Significant security issues (missing security controls)
 - **MEDIUM**: Defense-in-depth recommendations (defense layer reduction)
 - **LOW**: Best practice improvements
 
 **Output Format**: SARIF (Static Analysis Results Format)
+
 - Integrated with GitHub Security tab for visibility
 - Results accessible at: `Settings > Security > Code scanning > Security alerts`
 
 **Key Checks**:
+
 - Container runs as root (`runAsNonRoot: false`)
 - Privileged container (`privileged: true`)
 - Privilege escalation allowed (`allowPrivilegeEscalation: true`)
@@ -43,6 +49,7 @@ This document details the Kubernetes security scanning and hardening implementat
 **Purpose**: Automated cluster security assessment against CIS Kubernetes Benchmarks.
 
 **CIS Benchmark Coverage**:
+
 - Control plane security (API server, scheduler, controller manager)
 - Worker node security (kubelet, container runtime)
 - Policies (RBAC, network policies, pod security)
@@ -51,6 +58,7 @@ This document details the Kubernetes security scanning and hardening implementat
 **Running Kube-bench Locally**:
 
 Against Minikube cluster:
+
 ```bash
 # Start Minikube with necessary features
 minikube start --kubernetes-version=v1.30
@@ -63,12 +71,14 @@ kubectl logs -l app=kube-bench
 ```
 
 Against local cluster (Docker):
+
 ```bash
 # Run in Docker for local development
 docker run --rm -v $(pwd):/host aquasec/kube-bench:latest
 ```
 
 **Benchmark Profile**:
+
 - **PASS**: Control fully complies with benchmark
 - **FAIL**: Control does not comply (security gap)
 - **WARN**: Manual review recommended (ambiguous configuration)
@@ -83,32 +93,39 @@ The `ml-platform-api` deployment in `k8s/deployment.yaml` implements defense-in-
 **Security Strengths**:
 
 1. **Non-root User** ✅
+
    ```yaml
    runAsNonRoot: true
    runAsUser: 1000
    ```
+
    - Containers execute as unprivileged user (UID 1000)
    - Prevents privilege escalation attacks
    - Limits impact of container compromises
 
 2. **Privilege Escalation Protection** ✅
+
    ```yaml
    allowPrivilegeEscalation: false
    ```
+
    - Child processes cannot gain additional privileges
    - Prevents privilege escalation via setuid binaries
 
 3. **Capability Hardening** ✅
+
    ```yaml
    capabilities:
      drop:
        - ALL
    ```
+
    - All Linux kernel capabilities removed
    - Containers have minimal privileges
    - Only essential capabilities needed (none for FastAPI inference)
 
 4. **Resource Limits** ✅
+
    ```yaml
    resources:
      requests:
@@ -120,6 +137,7 @@ The `ml-platform-api` deployment in `k8s/deployment.yaml` implements defense-in-
        cpu: "500m"
        ephemeral-storage: "2Gi"
    ```
+
    - Memory: 256Mi request / 512Mi limit
    - CPU: 250m request / 500m limit
    - Ephemeral storage: 1Gi request / 2Gi limit
@@ -127,23 +145,28 @@ The `ml-platform-api` deployment in `k8s/deployment.yaml` implements defense-in-
    - Supports fair multi-tenant scheduling
 
 5. **Health Probes** ✅
+
    - Startup probe: Handles slow model loading (max 70s)
    - Liveness probe: Detects stuck processes (10s interval)
    - Readiness probe: Routes traffic only to ready instances (5s interval)
    - Fail-fast philosophy: Quick detection and container restart
 
 6. **Image Pull Policy** ✅
+
    ```yaml
    imagePullPolicy: Always
    ```
+
    - Always pull latest image from registry
    - Ensures latest security patches
    - Prevents stale vulnerable images
 
 7. **Service Account Token** ✅
+
    ```yaml
    automountServiceAccountToken: false
    ```
+
    - Disables automatic service account mounting
    - Prevents container from accessing Kubernetes API unless explicitly needed
    - Reduces attack surface
@@ -183,6 +206,7 @@ pod-security.kubernetes.io/warn: restricted
    - No blocking, purely informational
 
 **Restricted Standard Requirements**:
+
 - All capabilities dropped except NET_BIND_SERVICE
 - Non-root user enforcement
 - Read-only root filesystem (with exceptions)
@@ -195,10 +219,12 @@ pod-security.kubernetes.io/warn: restricted
 Current RBAC posture (minimal):
 
 **Service Account**:
+
 - Default service account used (no custom ClusterRoles)
 - Can be enhanced with least-privilege roles when cluster features are needed
 
 **Future RBAC Implementation**:
+
 ```yaml
 # Example: Role for accessing only required endpoints
 apiVersion: rbac.authorization.k8s.io/v1
@@ -233,6 +259,7 @@ kubesec scan k8s/*.yaml
 ```
 
 **Expected Score**: 8-9 (High security, minimal vulnerabilities)
+
 - Non-root execution
 - Security context hardening
 - Resource limits defined
@@ -241,28 +268,34 @@ kubesec scan k8s/*.yaml
 ### Common Issues Checked
 
 ✅ **Privilege Escalation**:
+
 - `allowPrivilegeEscalation: false` - Enforced
 - No SYS_ADMIN or dangerous capabilities
 
 ✅ **Root User**:
+
 - `runAsNonRoot: true` - Enforced
 - User ID 1000 (unprivileged)
 
 ✅ **Host Access**:
+
 - `hostNetwork: false` - Not set (default)
 - `hostPID: false` - Not set (default)
 - `hostIPC: false` - Not set (default)
 
 ⚠️ **Writable Root Filesystem**:
+
 - `readOnlyRootFilesystem: false` - Required for Python interpreter
 - Mitigated by other security controls (non-root, no privileges)
 
 ✅ **Resource Limits**:
+
 - Memory limits: 512Mi (sufficient for FastAPI + small model)
 - CPU limits: 500m (sufficient for inference workload)
 - Ephemeral storage limits: 2Gi (covers temporary files)
 
 ✅ **Health Probes**:
+
 - Startup, liveness, and readiness probes configured
 - Proper timeout and failure thresholds
 
@@ -293,7 +326,7 @@ Expected results when running against cluster:
 
 When kubesec or kube-bench find issues:
 
-### For kubesec Findings:
+### For kubesec Findings
 
 1. **CRITICAL/HIGH severity**:
    - Fix immediately in manifest
@@ -311,7 +344,7 @@ When kubesec or kube-bench find issues:
    - Document as technical debt if deferred
    - No blocking required
 
-### For kube-bench Findings:
+### For kube-bench Findings
 
 1. **FAIL results**:
    - Analyze root cause
@@ -329,6 +362,7 @@ When kubesec or kube-bench find issues:
 All security scan results are integrated with GitHub Security tab:
 
 **Accessing Results**:
+
 1. Go to repository `Settings` > `Security`
 2. View `Code scanning` for kubesec findings
 3. Each alert shows:
@@ -338,6 +372,7 @@ All security scan results are integrated with GitHub Security tab:
    - Recommended remediation steps
 
 **Alert Management**:
+
 - Auto-dismiss resolved alerts when code is fixed
 - Manually dismiss false positives with explanation
 - Track alert history and trends
@@ -345,7 +380,9 @@ All security scan results are integrated with GitHub Security tab:
 ## Best Practices Applied
 
 ### 1. Defense in Depth
+
 Multiple security layers ensure single-layer compromise doesn't expose system:
+
 - Non-root user
 - Disabled privilege escalation
 - Dropped capabilities
@@ -354,21 +391,27 @@ Multiple security layers ensure single-layer compromise doesn't expose system:
 - Network isolation (future)
 
 ### 2. Least Privilege
+
 Containers run with minimum required permissions:
+
 - No sudo/su capabilities
 - Only necessary system calls allowed
 - Service account without excessive permissions
 - No access to Kubernetes API unless needed
 
 ### 3. Security by Default
+
 Security controls applied at namespace/cluster level:
+
 - Pod Security Standards enforcement
 - Resource quotas (future)
 - Network policies (future)
 - Audit logging (future)
 
 ### 4. Observability
+
 Security controls are visible and manageable:
+
 - Health probes show container readiness
 - Resource limits prevent silent failures
 - Security context documented in manifests
@@ -398,12 +441,14 @@ Future enhancements planned for Phase 2 (EKS deployment):
 ## Maintenance
 
 **When to Re-scan**:
+
 - After any manifest changes
 - When updating Kubernetes version
 - Quarterly security review
 - As part of CI/CD pipeline (automatically)
 
 **Monitoring**:
+
 - GitHub Security tab alerts
 - CI/CD pipeline results
 - Regular kube-bench assessments against running clusters
