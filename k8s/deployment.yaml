@@ -34,6 +34,25 @@ spec:
         seccompProfile:
           type: RuntimeDefault  # Enable Seccomp for syscall filtering
 
+      # Spot instance awareness (optional - tolerations commented out by default)
+      # Uncomment if using taints on spot instances (see terraform/environments/dev/main.tf)
+      # tolerations:
+      # - key: "kubernetes.io/lifecycle"
+      #   operator: "Equal"
+      #   value: "spot"
+      #   effect: "NoSchedule"
+
+      # Spread pods across nodes (avoid single point of failure with spot interruptions)
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: ml-platform-api
+                topologyKey: "kubernetes.io/hostname"
+
       containers:
         - name: ml-platform-api
           # IMAGE_URL will be set by CI/CD or deployment script
