@@ -21,7 +21,7 @@ spec:
       containers:
         - name: ml-platform-api
           image: ml-platform-api:v1.0.0  # Use versioned tag (SonarCloud kubernetes:S6596)
-          imagePullPolicy: Never  # Use local image (Minikube)
+          imagePullPolicy: Never  # MINIKUBE ONLY - Change to "IfNotPresent" for AWS EKS
           ports:
             - containerPort: 8000
               name: http
