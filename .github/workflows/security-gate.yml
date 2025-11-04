@@ -1,0 +1,66 @@
+name: Security Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check-security-alerts:
+    name: Block if Security Alerts Exist
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # Required for Dependabot alerts API access
+      contents: read
+
+    steps:
+      - name: Check for open code scanning alerts
+        run: |
+          echo "🔍 Checking for open code scanning alerts..."
+
+          ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts \
+            --jq '[.[] | select(.state == "open")] | length')
+
+          if [ "$ALERTS" -gt 0 ]; then
+            echo ""
+            echo "❌ Found $ALERTS open code scanning alert(s)"
+            echo ""
+            echo "View alerts at: https://github.com/${{ github.repository }}/security/code-scanning"
+            echo ""
+            echo "Open alerts:"
+            gh api /repos/${{ github.repository }}/code-scanning/alerts \
+              --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.rule.description) (\(.rule.severity)) - \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)"'
+            echo ""
+            echo "❗ PRs cannot be merged until all code scanning alerts are resolved or dismissed."
+            exit 1
+          else
+            echo "✅ No open code scanning alerts"
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Check for open Dependabot alerts
+        run: |
+          echo "🔍 Checking for open Dependabot alerts..."
+
+          ALERTS=$(gh api /repos/${{ github.repository }}/dependabot/alerts \
+            --jq '[.[] | select(.state == "open")] | length')
+
+          if [ "$ALERTS" -gt 0 ]; then
+            echo ""
+            echo "❌ Found $ALERTS open Dependabot alert(s)"
+            echo ""
+            echo "View alerts at: https://github.com/${{ github.repository }}/security/dependabot"
+            echo ""
+            echo "Open alerts:"
+            gh api /repos/${{ github.repository }}/dependabot/alerts \
+              --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.security_advisory.summary) (\(.security_advisory.severity)) - \(.dependency.package.name)"'
+            echo ""
+            echo "❗ PRs cannot be merged until all Dependabot alerts are resolved or dismissed."
+            exit 1
+          else
+            echo "✅ No open Dependabot alerts"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}

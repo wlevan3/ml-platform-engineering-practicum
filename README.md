@@ -137,8 +137,8 @@ minikube image load ml-platform-api:v1.0.0
 kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 
-# Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=60s
+# Wait for pods to be ready (includes ~30s model loading time)
+kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=120s
 
 # Get service URL and test
 minikube service ml-platform-api --url

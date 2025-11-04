@@ -1,0 +1,58 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ml-platform-api
+  labels:
+    app: ml-platform-api
+  annotations:
+    # AWS Load Balancer Controller annotations
+    # See: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.6/guide/ingress/annotations/
+
+    # Ingress class - uses AWS Load Balancer Controller
+    kubernetes.io/ingress.class: alb
+
+    # ALB configuration
+    alb.ingress.kubernetes.io/scheme: internet-facing  # Public-facing ALB
+    alb.ingress.kubernetes.io/target-type: ip          # Route to pod IPs directly
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'  # HTTP only (TLS in Phase 3)
+
+    # Health check configuration
+    # Maps to /health/live endpoint (liveness probe)
+    alb.ingress.kubernetes.io/healthcheck-path: /health/live
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port  # Use same port as traffic (8000)
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+    alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+
+    # Target group attributes
+    alb.ingress.kubernetes.io/target-group-attributes: |
+      stickiness.enabled=false,
+      deregistration_delay.timeout_seconds=30
+
+    # Security
+    alb.ingress.kubernetes.io/load-balancer-attributes: |
+      deletion_protection.enabled=false,
+      idle_timeout.timeout_seconds=60
+
+    # Tags for AWS resources
+    alb.ingress.kubernetes.io/tags: |
+      Project=ml-platform-engineering-practicum,
+      Environment=dev,
+      ManagedBy=Kubernetes
+
+spec:
+  rules:
+    - http:
+        paths:
+          # All paths route to ml-platform-api service
+          # pathType: Prefix with path: / matches all requests
+          # (including /health, /model, /predict, /docs, /openapi.json)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: ml-platform-api
+                port:
+                  number: 8000

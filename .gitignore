@@ -292,3 +292,9 @@ models/
 # Data directories (if storing locally)
 data/
 datasets/
+
+# Git worktrees
+worktrees/
+
+# Personal project management docs
+docs/backlog/

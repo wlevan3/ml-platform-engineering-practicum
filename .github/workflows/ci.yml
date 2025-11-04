@@ -173,6 +173,65 @@ jobs:
           path: coverage.xml
           retention-days: 5
 
+  sonarcloud:
+    name: SonarCloud Analysis
+    runs-on: ubuntu-latest
+    needs: [python-test, security-scan, semgrep-scan, docker-build-scan]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
+
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+
+      - name: Download Trivy filesystem SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-fs-sarif
+          path: sarif-reports/trivy-fs/
+        continue-on-error: true
+
+      - name: Download Semgrep SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-sarif
+          path: sarif-reports/semgrep/
+        continue-on-error: true
+
+      - name: Download Trivy Docker SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-docker-sarif
+          path: sarif-reports/trivy-docker/
+        continue-on-error: true
+
+      - name: List SARIF files
+        run: |
+          echo "SARIF files available for import:"
+          find sarif-reports/ -name "*.sarif" -type f 2>/dev/null | while read -r file; do
+            echo "  - $file"
+          done || echo "No SARIF files found"
+
+      - name: Fix coverage.xml paths for SonarCloud
+        run: |
+          # Convert absolute paths to relative paths in coverage.xml
+          # SonarCloud runs in Docker and expects relative paths
+          sed -i 's|<source>/home/runner/work/ml-platform-engineering-practicum/ml-platform-engineering-practicum</source>|<source>.</source>|g' coverage.xml
+          sed -i 's|filename="/home/runner/work/ml-platform-engineering-practicum/ml-platform-engineering-practicum/|filename="|g' coverage.xml
+          echo "Fixed coverage.xml paths:"
+          head -20 coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602  # v6.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
   security-scan:
     name: Security Scanning
     runs-on: ubuntu-latest
@@ -198,6 +257,14 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
+
+      - name: Upload Trivy SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-fs-sarif
+          path: trivy-results.sarif
+          retention-days: 5
 
   gitleaks-scan:
     name: Secret Scanning (Gitleaks)
@@ -243,6 +310,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
+
+      - name: Upload Semgrep SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 5
 
   pre-commit-checks:
     name: Pre-commit Checks
@@ -316,13 +391,20 @@ jobs:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-docker-scan'
 
+      - name: Upload Trivy Docker SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-docker-sarif
+          path: trivy-results.sarif
+          retention-days: 5
+
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
     # Note: Some jobs (python-*, semgrep) have conditionals and may be skipped.
     # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
-    # Note: SonarCloud analysis runs via Automatic Analysis (GitHub App integration), not as a CI job.
-    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
+    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
     if: always()
 
     steps:
@@ -338,6 +420,7 @@ jobs:
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
             echo "| Python Linting | ${{ needs.python-lint.result }} |"
             echo "| Python Tests | ${{ needs.python-test.result }} |"
+            echo "| SonarCloud Analysis | ${{ needs.sonarcloud.result }} |"
             echo "| Security Scanning (Trivy FS) | ${{ needs.security-scan.result }} |"
             echo "| Docker Build & Image Scan | ${{ needs.docker-build-scan.result }} |"
             echo "| Secret Scanning (Gitleaks) | ${{ needs.gitleaks-scan.result }} |"

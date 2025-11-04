@@ -30,6 +30,11 @@ RUN pip install --no-cache-dir --upgrade pip==25.3 && \
 # ==========================================
 FROM python:3.13-slim AS runtime
 
+# FIX CVE-2025-8869: Upgrade system pip to 25.3
+# Even though venv pip (upgraded in builder stage) is used at runtime,
+# Trivy scans all files including unused system pip, so we upgrade both
+RUN pip install --no-cache-dir --upgrade pip==25.3
+
 # Set working directory
 WORKDIR /app
 

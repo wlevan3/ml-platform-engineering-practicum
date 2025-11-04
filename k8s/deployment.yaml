@@ -25,8 +25,11 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: ml-platform-api
+          # IMAGE_URL will be set by CI/CD or deployment script
+          # Minikube: ml-platform-api:v1.0.0
+          # EKS: <account-id>.dkr.ecr.<region>.amazonaws.com/ml-platform-api:v1.0.0
           image: ml-platform-api:v1.0.0  # Use versioned tag (SonarCloud kubernetes:S6596)
-          imagePullPolicy: Never  # MINIKUBE ONLY - Change to "IfNotPresent" for AWS EKS
+          imagePullPolicy: Always  # Always pull to ensure latest security patches
           ports:
             - containerPort: 8000
               name: http

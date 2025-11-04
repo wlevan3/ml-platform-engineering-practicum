@@ -20,47 +20,14 @@
 
 set -euo pipefail # Exit on error, undefined vars, pipe failures
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Source shared logging library
+# shellcheck disable=SC1091
+source "$(dirname "$0")/lib/logging.sh"
 
 # Configuration
 DOCKER_IMAGE="ml-platform-api:v1.0.0"
 DEPLOYMENT_NAME="ml-platform-api"
 TIMEOUT="120s"
-
-# Logging functions
-log_info() {
-	echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-	echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-	echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-	echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_step() {
-	echo ""
-	echo -e "${BLUE}========================================${NC}"
-	echo -e "${BLUE}STEP: $1${NC}"
-	echo -e "${BLUE}========================================${NC}"
-}
-
-# Error handler
-error_exit() {
-	log_error "$1"
-	exit 1
-}
 
 # Parse arguments
 CLEAN_DEPLOY=false
@@ -77,12 +44,12 @@ log_step "1/8 - Validating Prerequisites"
 log_info "Checking for required tools..."
 
 if ! command -v minikube &>/dev/null; then
-	error_exit "minikube not found. Install with: brew install minikube"
+	error_exit "minikube not found. Install: macOS: 'brew install minikube' | Ubuntu: 'apt-get install -y minikube'"
 fi
 log_success "✓ minikube found: $(minikube version --short)"
 
 if ! command -v kubectl &>/dev/null; then
-	error_exit "kubectl not found. Install with: brew install kubectl"
+	error_exit "kubectl not found. Install: macOS: 'brew install kubectl' | Ubuntu: 'apt-get install -y kubectl'"
 fi
 log_success "✓ kubectl found: $(kubectl version --client --short 2>/dev/null || kubectl version --client)"
 
