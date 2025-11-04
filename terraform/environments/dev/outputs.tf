@@ -95,43 +95,50 @@ output "ecr_login_command" {
 }
 
 # ===================================================================
-# Security Hub Outputs
+# Security Module Outputs
 # ===================================================================
 
 output "security_hub_enabled" {
   description = "Whether Security Hub is enabled"
-  value       = var.enable_security_hub
+  value       = module.security.security_hub_enabled
 }
 
 output "security_hub_standards" {
   description = "Security Hub standards enabled"
-  value = var.enable_security_hub ? {
-    cis_benchmark            = var.enable_cis_standard
-    foundational_security    = var.enable_foundational_security
-  } : null
-}
-
-output "guardduty_detector_id" {
-  description = "GuardDuty detector ID (if enabled)"
-  value       = var.enable_guardduty ? try(aws_guardduty_detector.main[0].id, null) : null
-}
-
-output "security_alerts_topic_arn" {
-  description = "SNS topic ARN for security alerts"
-  value       = var.enable_security_hub ? try(aws_sns_topic.security_alerts[0].arn, null) : null
-}
-
-output "security_alerts_topic_name" {
-  description = "SNS topic name for security alerts"
-  value       = var.enable_security_hub ? try(aws_sns_topic.security_alerts[0].name, null) : null
+  value       = module.security.security_hub_standards
 }
 
 output "security_hub_console_url" {
   description = "URL to Security Hub console"
-  value       = var.enable_security_hub ? "https://${var.aws_region}.console.aws.amazon.com/securityhub/home?region=${var.aws_region}#/summary" : null
+  value       = module.security.security_hub_console_url
+}
+
+output "guardduty_enabled" {
+  description = "Whether GuardDuty is enabled"
+  value       = module.security.guardduty_enabled
+}
+
+output "guardduty_detector_id" {
+  description = "GuardDuty detector ID (if enabled)"
+  value       = module.security.guardduty_detector_id
 }
 
 output "guardduty_console_url" {
   description = "URL to GuardDuty console"
-  value       = var.enable_guardduty ? "https://${var.aws_region}.console.aws.amazon.com/guardduty/home?region=${var.aws_region}#/findings" : null
+  value       = module.security.guardduty_console_url
+}
+
+output "inspector_enabled" {
+  description = "Whether Inspector is enabled"
+  value       = module.security.inspector_enabled
+}
+
+output "security_alerts_topic_arn" {
+  description = "SNS topic ARN for security alerts"
+  value       = module.security.security_alerts_topic_arn
+}
+
+output "security_alerts_topic_name" {
+  description = "SNS topic name for security alerts"
+  value       = module.security.security_alerts_topic_name
 }
