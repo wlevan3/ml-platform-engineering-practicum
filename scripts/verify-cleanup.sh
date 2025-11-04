@@ -533,25 +533,29 @@ verify_dynamodb_tables() {
 verify_cloudwatch_logs() {
 	log_section "Checking CloudWatch Log Groups"
 
-	# NOTE: CloudWatch Logs does not support tag-based filtering via AWS CLI/API
-	# (unlike EC2, VPCs, etc.). Pattern matching is the only available method.
-	# This is an AWS service limitation, not a script design choice.
+	# Use Resource Groups Tagging API for consistent tag-based filtering
+	# (CloudWatch Logs API doesn't support tag filters, but Resource Groups API does)
+	local log_group_arns
+	log_group_arns=$(aws resourcegroupstaggingapi get-resources \
+		--region "$AWS_REGION" \
+		--resource-type-filters "logs:log-group" \
+		--tag-filters "Key=$PROJECT_TAG_KEY,Values=$PROJECT_TAG_VALUE" \
+		--query 'ResourceTagMappingList[].ResourceARN' \
+		--output json 2>/dev/null | jq -r '.[]')
 
-	local log_groups
-	log_groups=$(aws logs describe-log-groups --region "$AWS_REGION" --query 'logGroups[].logGroupName' --output json | jq -r '.[]')
-
-	if [[ -z "$log_groups" ]]; then
+	if [[ -z "$log_group_arns" ]]; then
 		log_success "✓ No CloudWatch log groups found"
 		return
 	fi
 
-	for log_group in $log_groups; do
-		# Check if log group name contains project identifier
-		if [[ "$log_group" == *"ml-platform"* ]] || [[ "$log_group" == *"eks-cluster"* ]]; then
-			local log_streams
-			log_streams=$(aws logs describe-log-streams --log-group-name "$log_group" --region "$AWS_REGION" --query 'logStreams | length(@)' --output text)
-			log_resource_found "CloudWatch Log Group: $log_group ($log_streams streams)"
-		fi
+	for log_group_arn in $log_group_arns; do
+		# Extract log group name from ARN (format: arn:aws:logs:region:account:log-group:name:*)
+		local temp="${log_group_arn##*:log-group:}" # Remove prefix up to :log-group:
+		local log_group_name="${temp%%:*}"          # Remove suffix from next : onwards
+
+		local log_streams
+		log_streams=$(aws logs describe-log-streams --log-group-name "$log_group_name" --region "$AWS_REGION" --query 'logStreams | length(@)' --output text 2>/dev/null || echo "0")
+		log_resource_found "CloudWatch Log Group: $log_group_name ($log_streams streams)"
 	done
 }
 
