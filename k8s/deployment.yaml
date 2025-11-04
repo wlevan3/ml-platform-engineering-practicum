@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ml-platform-api
+  namespace: ml-platform  # Deploy to dedicated namespace instead of default
   labels:
     app: ml-platform-api
     version: v1
@@ -23,6 +24,16 @@ spec:
     spec:
       # Disable service account automounting for security (SonarCloud kubernetes:S6865)
       automountServiceAccountToken: false
+
+      # Pod-level security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001  # Non-root user ID > 10000
+        runAsGroup: 10001  # Non-root group ID > 10000
+        fsGroup: 10001  # File system group for volume permissions
+        seccompProfile:
+          type: RuntimeDefault  # Enable Seccomp for syscall filtering
+
       containers:
         - name: ml-platform-api
           # IMAGE_URL will be set by CI/CD or deployment script
@@ -99,12 +110,29 @@ spec:
             - name: PYTHONUNBUFFERED
               value: "1"
 
-          # Security context
+          # Container-level security context
           securityContext:
             runAsNonRoot: true
-            runAsUser: 1000
+            runAsUser: 10001  # Non-root user ID > 10000
+            runAsGroup: 10001  # Non-root group ID > 10000
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false  # Some libraries (e.g., model deserialization, Python imports) require write access to /tmp for temporary files
+            readOnlyRootFilesystem: true  # Read-only root filesystem for security
             capabilities:
               drop:
                 - ALL
+
+          # Volume mounts for writable directories
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /home/appuser/.cache
+
+      # Volumes for writable directories (since root filesystem is read-only)
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 100Mi  # Limit tmp directory size
+        - name: cache
+          emptyDir:
+            sizeLimit: 100Mi  # Limit cache directory size

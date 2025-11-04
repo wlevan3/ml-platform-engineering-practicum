@@ -49,9 +49,10 @@ ENV PATH="/opt/venv/bin:$PATH" \
 COPY app/ ./app/
 COPY models/ ./models/
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
-    chown -R appuser:appuser /app
+# Create non-root user for security (UID > 10000)
+RUN useradd -m -u 10001 -s /bin/bash appuser && \
+    mkdir -p /home/appuser/.cache && \
+    chown -R appuser:appuser /app /home/appuser/.cache
 
 # Switch to non-root user
 USER appuser
