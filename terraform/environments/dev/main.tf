@@ -15,8 +15,7 @@ locals {
 
 # VPC Module - Network foundation for EKS cluster
 module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "~> 5.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-vpc.git?ref=7c1f791efd61f326ed6102d564d1a65d1eceedf0"
 
   name = "${local.cluster_name}-vpc"
   cidr = var.vpc_cidr
@@ -50,8 +49,7 @@ module "vpc" {
 
 # EKS Cluster Module
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = "~> 19.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=2cb1fac31b0fc2dd6a236b0c0678df75819c5a3b"
 
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
@@ -175,9 +173,10 @@ resource "aws_ecr_repository" "ml_platform_api" {
     scan_on_push = var.ecr_scan_on_push
   }
 
-  # Encryption at rest
+  # Encryption at rest with AWS-managed KMS key
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
+    # No kms_key specified = uses AWS-managed KMS key (not customer-managed)
   }
 
   tags = merge(
@@ -227,8 +226,7 @@ resource "aws_ecr_lifecycle_policy" "ml_platform_api" {
 # IAM role for AWS Load Balancer Controller
 # Allows the controller to manage ALBs for Kubernetes Ingress
 module "load_balancer_controller_irsa_role" {
-  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
-  version = "~> 5.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-iam.git//modules/iam-role-for-service-accounts-eks?ref=c29ec1ed409683086f63f83ff5b10a6f3c296ef2"
 
   role_name = "${local.cluster_name}-aws-load-balancer-controller"
 

@@ -77,6 +77,63 @@ jobs:
           tflint --recursive
         continue-on-error: true
 
+  terraform-security-scan:
+    name: Terraform Security Scanning
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if terraform directory exists
+        id: check_terraform
+        run: |
+          if [ -d "terraform" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping Terraform security scanning - terraform/ directory does not exist yet"
+          fi
+
+      - name: Run tfsec
+        if: steps.check_terraform.outputs.exists == 'true'
+        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6  # v1.0.3
+        with:
+          working_directory: terraform
+          soft_fail: false
+          format: sarif
+          additional_args: --out tfsec-results.sarif --minimum-severity HIGH
+
+      - name: Upload tfsec SARIF to GitHub Security
+        if: always() && steps.check_terraform.outputs.exists == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: tfsec-results.sarif
+          category: tfsec-scan
+        continue-on-error: true
+
+      - name: Run Checkov
+        if: steps.check_terraform.outputs.exists == 'true'
+        uses: bridgecrewio/checkov-action@d146511ffb733a9a456c9ffc05cd462122037354  # v12.3069.0
+        with:
+          directory: terraform/
+          framework: terraform
+          soft_fail: false
+          hard_fail_on: HIGH,CRITICAL
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+
+      - name: Upload Checkov SARIF to GitHub Security
+        if: always() && steps.check_terraform.outputs.exists == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov-scan
+        continue-on-error: true
+
   kubernetes-validate:
     name: Kubernetes Validation
     runs-on: ubuntu-latest
@@ -444,7 +501,7 @@ jobs:
     runs-on: ubuntu-latest
     # Note: Some jobs (python-*, semgrep) have conditionals and may be skipped.
     # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
-    needs: [lint-and-validate, terraform-validate, kubernetes-validate, kubernetes-security-scan, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
+    needs: [lint-and-validate, terraform-validate, terraform-security-scan, kubernetes-validate, kubernetes-security-scan, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
     if: always()
 
     steps:
@@ -457,8 +514,9 @@ jobs:
             echo "|-----|--------|"
             echo "| Lint and Validate | ${{ needs.lint-and-validate.result }} |"
             echo "| Terraform Validation | ${{ needs.terraform-validate.result }} |"
+            echo "| Terraform Security Scanning (tfsec + Checkov) | ${{ needs.terraform-security-scan.result }} |"
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
-            echo "| Kubernetes Security Scanning (kubesec) | ${{ needs.kubernetes-security-scan.result }} |"
+            echo "| Kubernetes Security Scanning (Trivy) | ${{ needs.kubernetes-security-scan.result }} |"
             echo "| Python Linting | ${{ needs.python-lint.result }} |"
             echo "| Python Tests | ${{ needs.python-test.result }} |"
             echo "| SonarCloud Analysis | ${{ needs.sonarcloud.result }} |"
