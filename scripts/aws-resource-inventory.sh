@@ -60,12 +60,12 @@ log_section() {
 # Check prerequisites
 check_prerequisites() {
 	if ! command -v aws &>/dev/null; then
-		log_error "AWS CLI not found. Install with: brew install awscli"
+		log_error "AWS CLI not found. Install: macOS: 'brew install awscli' | Ubuntu: 'apt-get install awscli'"
 		exit 1
 	fi
 
 	if ! command -v jq &>/dev/null; then
-		log_error "jq not found. Install with: brew install jq"
+		log_error "jq not found. Install: macOS: 'brew install jq' | Ubuntu: 'apt-get install jq'"
 		exit 1
 	fi
 

@@ -77,12 +77,12 @@ log_step "1/8 - Validating Prerequisites"
 log_info "Checking for required tools..."
 
 if ! command -v minikube &>/dev/null; then
-	error_exit "minikube not found. Install with: brew install minikube"
+	error_exit "minikube not found. Install: macOS: 'brew install minikube' | Ubuntu: 'apt-get install -y minikube'"
 fi
 log_success "✓ minikube found: $(minikube version --short)"
 
 if ! command -v kubectl &>/dev/null; then
-	error_exit "kubectl not found. Install with: brew install kubectl"
+	error_exit "kubectl not found. Install: macOS: 'brew install kubectl' | Ubuntu: 'apt-get install -y kubectl'"
 fi
 log_success "✓ kubectl found: $(kubectl version --client --short 2>/dev/null || kubectl version --client)"
 
