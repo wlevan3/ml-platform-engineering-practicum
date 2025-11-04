@@ -5,6 +5,11 @@ variable "aws_region" {
   description = "AWS region for infrastructure deployment"
   type        = string
   default     = "us-west-2"
+
+  validation {
+    condition     = can(regex("^[a-z]{2}-[a-z]+-[0-9]$", var.aws_region))
+    error_message = "aws_region must be a valid AWS region format (e.g., us-west-2, eu-central-1)."
+  }
 }
 
 variable "environment" {
@@ -29,6 +34,11 @@ variable "vpc_cidr" {
   description = "CIDR block for VPC"
   type        = string
   default     = "10.0.0.0/16"
+
+  validation {
+    condition     = can(cidrhost(var.vpc_cidr, 0))
+    error_message = "vpc_cidr must be a valid IPv4 CIDR block (e.g., 10.0.0.0/16)."
+  }
 }
 
 variable "azs" {
@@ -41,12 +51,26 @@ variable "private_subnet_cidrs" {
   description = "CIDR blocks for private subnets (for worker nodes)"
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+
+  validation {
+    condition = alltrue([
+      for cidr in var.private_subnet_cidrs : can(cidrhost(cidr, 0))
+    ])
+    error_message = "All private_subnet_cidrs must be valid IPv4 CIDR blocks."
+  }
 }
 
 variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets (for load balancers)"
   type        = list(string)
   default     = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  validation {
+    condition = alltrue([
+      for cidr in var.public_subnet_cidrs : can(cidrhost(cidr, 0))
+    ])
+    error_message = "All public_subnet_cidrs must be valid IPv4 CIDR blocks."
+  }
 }
 
 variable "node_instance_type" {
@@ -59,18 +83,33 @@ variable "node_desired_size" {
   description = "Desired number of worker nodes"
   type        = number
   default     = 2
+
+  validation {
+    condition     = var.node_desired_size >= 1
+    error_message = "node_desired_size must be at least 1."
+  }
 }
 
 variable "node_min_size" {
   description = "Minimum number of worker nodes"
   type        = number
   default     = 1
+
+  validation {
+    condition     = var.node_min_size >= 1 && var.node_min_size <= var.node_desired_size
+    error_message = "node_min_size must be at least 1 and not greater than node_desired_size."
+  }
 }
 
 variable "node_max_size" {
   description = "Maximum number of worker nodes"
   type        = number
   default     = 4
+
+  validation {
+    condition     = var.node_max_size >= var.node_desired_size
+    error_message = "node_max_size must be greater than or equal to node_desired_size."
+  }
 }
 
 variable "ecr_repository_name" {
@@ -83,6 +122,11 @@ variable "ecr_image_tag_mutability" {
   description = "Image tag mutability setting (MUTABLE or IMMUTABLE)"
   type        = string
   default     = "IMMUTABLE" # Prevent tag overwriting for security
+
+  validation {
+    condition     = contains(["MUTABLE", "IMMUTABLE"], var.ecr_image_tag_mutability)
+    error_message = "ecr_image_tag_mutability must be either 'MUTABLE' or 'IMMUTABLE'."
+  }
 }
 
 variable "ecr_scan_on_push" {

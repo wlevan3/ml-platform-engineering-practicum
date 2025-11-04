@@ -228,6 +228,34 @@ calculate_costs() {
 	local nat_gateways=$3
 	local load_balancers=$4
 
+	# AWS Pricing Documentation (us-west-2 region)
+	# Last verified: November 2025
+	#
+	# Rates:
+	# - EKS Control Plane: $0.10/hour per cluster
+	#   Source: https://aws.amazon.com/eks/pricing/
+	#   Note: Excludes EC2 node costs (included separately below)
+	#
+	# - EC2 t3.medium instances: $0.0416/hour (On-Demand pricing)
+	#   Source: https://aws.amazon.com/ec2/pricing/on-demand/
+	#   Note: Actual cost for us-west-2, excludes EBS storage
+	#
+	# - NAT Gateway: $0.045/hour per gateway
+	#   Source: https://aws.amazon.com/vpc/pricing/
+	#   Note: Excludes data processing charges ($0.045/GB)
+	#
+	# - Application Load Balancer (ALB): $0.0225/hour per LB
+	#   Source: https://aws.amazon.com/elasticloadbalancing/pricing/
+	#   Note: Excludes LCU charges (varies by traffic)
+	#
+	# Disclaimer: Estimates are rough approximations. Does not include:
+	# - Data transfer costs
+	# - EBS storage costs
+	# - NAT Gateway data processing charges
+	# - ALB LCU charges (based on traffic)
+	# - S3, DynamoDB, ECR, or other service costs
+	# Always verify actual costs via AWS Cost Explorer.
+
 	local total_cost=0
 	local eks_cost
 	local ec2_cost
