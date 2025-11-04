@@ -443,6 +443,7 @@ jobs:
     permissions:
       security-events: write
       contents: read
+      id-token: write  # Required for keyless signing with OIDC
 
     steps:
       - name: Checkout code
@@ -495,6 +496,30 @@ jobs:
           name: trivy-docker-sarif
           path: trivy-results.sarif
           retention-days: 5
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da  # v3.7.0
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Sign container image (keyless)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
+          cosign sign --yes ml-platform-api:${{ github.sha }}
+          echo "✅ Image signed successfully"
+
+      - name: Verify container image signature
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          echo "Verifying signature for ml-platform-api:${{ github.sha }}"
+          cosign verify \
+            --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            ml-platform-api:${{ github.sha }}
+          echo "✅ Signature verified successfully"
 
   summary:
     name: CI Summary

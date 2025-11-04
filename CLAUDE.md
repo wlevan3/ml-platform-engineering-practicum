@@ -281,9 +281,17 @@ See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration 
   - Scans OS packages, Python dependencies, and Dockerfile best practices
   - Separate scans for builder and runtime stages
   - Results uploaded to GitHub Security tab
+- **Image signing** - Cosign signs container images with cryptographic signatures
+  - Keyless signing via GitHub Actions OIDC (no key management overhead)
+  - Signatures stored in OCI registry alongside images
+  - Transparency log records all signatures in Rekor
+  - Signatures verified before deployment to prevent tampering
+  - Supports Kubernetes admission controllers (Sigstore Policy Controller, Kyverno)
 - GitHub Actions use **pinned SHA hashes** for security scanning actions
 
 **Vulnerability handling**: See `docs/VULNERABILITY_REMEDIATION.md` for workflow on handling Trivy findings.
+
+**Image signing**: See `docs/IMAGE_SIGNING.md` for container image signing implementation and verification.
 
 ### CI/CD Behavior
 
@@ -316,6 +324,9 @@ For detailed guidance on project workflows and management, refer to:
 - **docs/AWS_OIDC_SETUP.md** - AWS OIDC authentication setup for GitHub Actions. Explains
   how to configure OpenID Connect between GitHub Actions and AWS IAM for secure,
   credential-free deployments using temporary tokens instead of long-lived access keys.
+- **docs/IMAGE_SIGNING.md** - Container image signing implementation with Cosign. Documents
+  keyless signing via GitHub Actions OIDC, signature verification procedures, Kubernetes
+  admission controller integration (Sigstore Policy Controller, Kyverno), and local testing workflows.
 
 ## Issue Templates and GitHub Projects
 
