@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ml-platform
+  labels:
+    name: ml-platform
+  # Pod Security Standards: Enforce restricted profile for production security
+  # https://kubernetes.io/docs/concepts/security/pod-security-standards/
+  # Levels: restricted (most secure), baseline (permissive), unrestricted (backward compatible)
+  annotations:
+    # Enforcement: Blocks pods that violate restricted standard, no exceptions
+    # Policy violations (pods are rejected):
+    # - Privileged containers, escalation, or SysAdmin capabilities
+    # - Root user without explicit runAsNonRoot
+    # - Host namespace access (hostNetwork, hostPID, hostIPC)
+    # - Dangerous capabilities beyond the restricted set
+    # - Writable root filesystem
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+
+    # Audit: Logs warnings for pods that violate restricted standard
+    # Same violations as above, but pods are allowed to run with warnings
+    # Useful for detecting violations without blocking workloads
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+
+    # Warning: Displays warnings to users about pods violating restricted standard
+    # kubectl output will include warnings for non-compliant pods
+    # Useful for educational purposes and early detection
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest

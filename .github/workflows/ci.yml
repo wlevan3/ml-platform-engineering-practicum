@@ -116,6 +116,44 @@ jobs:
           config: .kube-linter.yaml
         continue-on-error: true
 
+  kubernetes-security-scan:
+    name: Kubernetes Security Scanning (kubesec)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if k8s directory exists
+        id: check_k8s
+        run: |
+          if [ -d "k8s" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping kubesec scanning - k8s/ directory does not exist yet"
+          fi
+
+      - name: Run kubesec scanner on manifests
+        if: steps.check_k8s.outputs.exists == 'true'
+        uses: controlplaneio/kubesec-action@main
+        with:
+          directory: k8s/
+          format: sarif
+          output: kubesec-results.sarif
+        continue-on-error: true
+
+      - name: Upload kubesec results to GitHub Security
+        if: steps.check_k8s.outputs.exists == 'true' && always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: kubesec-results.sarif
+          category: kubesec-scan
+        continue-on-error: true
+
   python-lint:
     name: Python Linting
     runs-on: ubuntu-latest
@@ -404,7 +442,7 @@ jobs:
     runs-on: ubuntu-latest
     # Note: Some jobs (python-*, semgrep) have conditionals and may be skipped.
     # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
-    needs: [lint-and-validate, terraform-validate, kubernetes-validate, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
+    needs: [lint-and-validate, terraform-validate, kubernetes-validate, kubernetes-security-scan, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan]
     if: always()
 
     steps:
@@ -418,6 +456,7 @@ jobs:
             echo "| Lint and Validate | ${{ needs.lint-and-validate.result }} |"
             echo "| Terraform Validation | ${{ needs.terraform-validate.result }} |"
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
+            echo "| Kubernetes Security Scanning (kubesec) | ${{ needs.kubernetes-security-scan.result }} |"
             echo "| Python Linting | ${{ needs.python-lint.result }} |"
             echo "| Python Tests | ${{ needs.python-test.result }} |"
             echo "| SonarCloud Analysis | ${{ needs.sonarcloud.result }} |"
