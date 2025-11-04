@@ -189,6 +189,15 @@ jobs:
         with:
           name: coverage-report
 
+      - name: Fix coverage.xml paths for SonarCloud
+        run: |
+          # Convert absolute paths to relative paths in coverage.xml
+          # SonarCloud runs in Docker and expects relative paths
+          sed -i 's|<source>/home/runner/work/ml-platform-engineering-practicum/ml-platform-engineering-practicum</source>|<source>.</source>|g' coverage.xml
+          sed -i 's|filename="/home/runner/work/ml-platform-engineering-practicum/ml-platform-engineering-practicum/|filename="|g' coverage.xml
+          echo "Fixed coverage.xml paths:"
+          head -20 coverage.xml
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@e44258b109568baa0df60ed515909fc6c72cba92  # v2.3.0
         env:
