@@ -176,7 +176,7 @@ jobs:
   sonarcloud:
     name: SonarCloud Analysis
     runs-on: ubuntu-latest
-    needs: python-test
+    needs: [python-test, security-scan, semgrep-scan, docker-build-scan]
 
     steps:
       - name: Checkout code
@@ -188,6 +188,34 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: coverage-report
+
+      - name: Download Trivy filesystem SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-fs-sarif
+          path: sarif-reports/trivy-fs/
+        continue-on-error: true
+
+      - name: Download Semgrep SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-sarif
+          path: sarif-reports/semgrep/
+        continue-on-error: true
+
+      - name: Download Trivy Docker SARIF
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-docker-sarif
+          path: sarif-reports/trivy-docker/
+        continue-on-error: true
+
+      - name: List SARIF files
+        run: |
+          echo "SARIF files available for import:"
+          find sarif-reports/ -name "*.sarif" -type f 2>/dev/null | while read -r file; do
+            echo "  - $file"
+          done || echo "No SARIF files found"
 
       - name: Fix coverage.xml paths for SonarCloud
         run: |
@@ -229,6 +257,14 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
+
+      - name: Upload Trivy SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-fs-sarif
+          path: trivy-results.sarif
+          retention-days: 5
 
   gitleaks-scan:
     name: Secret Scanning (Gitleaks)
@@ -274,6 +310,14 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
+
+      - name: Upload Semgrep SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 5
 
   pre-commit-checks:
     name: Pre-commit Checks
@@ -346,6 +390,14 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-docker-scan'
+
+      - name: Upload Trivy Docker SARIF as artifact for SonarCloud
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trivy-docker-sarif
+          path: trivy-results.sarif
+          retention-days: 5
 
   summary:
     name: CI Summary
