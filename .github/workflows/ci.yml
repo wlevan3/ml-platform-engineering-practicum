@@ -574,7 +574,7 @@ jobs:
           jq '.packages | length' sbom-python-spdx.json >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📦 All SBOMs are available as artifacts for this workflow run." >> $GITHUB_STEP_SUMMARY
+          echo "All SBOMs are available as artifacts for this workflow run." >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Docker SBOMs
         uses: actions/upload-artifact@v4

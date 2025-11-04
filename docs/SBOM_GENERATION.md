@@ -246,7 +246,7 @@ brew install grype
 grype sbom:sbom-docker-cyclonedx.json
 
 # Scan with severity filtering
-grype sbom:sbom-docker-cyclonedx.json --fail-on high
+grype sbom:sbom-docker-cyclonedx.json --severity HIGH,CRITICAL
 ```
 
 #### Using Trivy (Aqua Security)
@@ -372,7 +372,7 @@ cosign sign-blob --key cosign.key sbom-docker-spdx.json > sbom-docker-spdx.json.
 **Solutions**:
 
 1. Check if Docker image built successfully (dependency on `docker-build-scan`)
-2. Verify Syft version is available: https://github.com/anchore/syft/releases
+2. Verify Syft version is available: [GitHub Releases](https://github.com/anchore/syft/releases)
 3. Check for Syft breaking changes in release notes
 
 ### SBOM is Empty or Incomplete

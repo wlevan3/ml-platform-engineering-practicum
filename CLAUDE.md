@@ -141,7 +141,7 @@ syft ml-platform-api:latest
 
 # Scan SBOM for vulnerabilities with Grype
 brew install grype  # macOS
-grype sbom:sbom-docker-cyclonedx.json --severity high,critical
+grype sbom:sbom-docker-cyclonedx.json --severity HIGH,CRITICAL
 ```
 
 **CI/CD Integration**: SBOMs are automatically generated in CI and uploaded as artifacts (90-day retention).
