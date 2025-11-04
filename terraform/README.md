@@ -24,7 +24,7 @@ terraform/
 
 - **AWS CLI** (v2.x+): `aws --version`
 - **Terraform** (v1.6.0+): `terraform version`
-- **kubectl** (v1.28+): `kubectl version --client`
+- **kubectl** (v1.34+): `kubectl version --client`
 - **helm** (v3.x+): `helm version`
 
 ### AWS Authentication
@@ -90,7 +90,7 @@ terraform plan -out=tfplan
 
 # Review what will be created:
 # - VPC with public/private subnets across 3 AZs
-# - EKS cluster (v1.28) with managed node group
+# - EKS cluster (v1.34) with managed node group
 # - ECR repository for ml-platform-api
 # - AWS Load Balancer Controller (via Helm)
 # - IAM roles and policies
@@ -126,8 +126,8 @@ Expected output:
 
 ```text
 NAME                                        STATUS   ROLES    AGE   VERSION
-ip-10-0-1-123.us-west-2.compute.internal    Ready    <none>   5m    v1.28.x
-ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.28.x
+ip-10-0-1-123.us-west-2.compute.internal    Ready    <none>   5m    v1.34.x
+ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.34.x
 ```
 
 ## Infrastructure Components
@@ -145,7 +145,7 @@ ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.28.x
 ### EKS Cluster
 
 - **Name**: `ml-platform-dev`
-- **Version**: Kubernetes 1.28
+- **Version**: Kubernetes 1.34
 - **Endpoint Access**: Public + Private
 - **OIDC Provider**: Enabled (for IAM roles for service accounts)
 - **Addons**: CoreDNS, kube-proxy, VPC-CNI, EBS CSI Driver
