@@ -80,6 +80,35 @@ This project uses **keyless signing** via GitHub Actions OIDC identity.
 
 ## CI/CD Pipeline Integration
 
+### Implementation Phases
+
+#### Phase 1: Offline/Local Signing (Current Implementation)
+
+The current implementation uses **offline signing** with the `--upload=false` flag. This approach:
+
+- ✅ **Demonstrates signing workflow**: Validates that OIDC authentication and signing work correctly
+- ✅ **Tests signature verification**: Confirms signatures are valid and verifiable
+- ✅ **No registry required**: Works without AWS ECR or other container registry
+- ⚠️ **Ephemeral signatures**: Signatures stored as files in CI, discarded after workflow completes
+- ⚠️ **Not production-ready**: Signatures don't persist for deployment validation
+
+#### Phase 2: Registry-Based Signing (Planned - Issue #94)
+
+Once AWS ECR is provisioned via Terraform, the workflow will be updated to:
+
+1. **Push images to ECR**: `docker push <ECR_URL>/ml-platform-api:tag`
+2. **Sign registry images**: `cosign sign <ECR_URL>/ml-platform-api:tag` (without --upload=false)
+3. **Store signatures in OCI registry**: Signatures persist alongside images
+4. **Enable production use**: Kubernetes admission controllers can verify signatures during deployment
+
+**Why Phase 1 First?**
+
+Separating signing implementation from registry setup:
+
+- Allows focused PR reviews (signing logic separate from infrastructure)
+- Validates signing workflow before registry integration
+- Follows project's phased approach (Phase 1: local testing → Phase 2: cloud deployment)
+
 ### Workflow Configuration
 
 The signing process is integrated into `.github/workflows/ci.yml` in the `docker-build-scan` job.
@@ -104,45 +133,81 @@ permissions:
     cosign-release: 'v2.4.1'
 ```
 
-**2. Sign Image (Keyless)**:
+**2. Sign Image (Keyless - Phase 1 Offline Mode)**:
 
 ```yaml
-- name: Sign container image (keyless)
+- name: Sign container image (keyless - offline mode)
   env:
     COSIGN_EXPERIMENTAL: "1"  # Enable keyless signing
   run: |
+    echo "Phase 1: Signing image locally (offline mode)"
     echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
-    cosign sign --yes ml-platform-api:${{ github.sha }}
+    echo "Note: Using --upload=false - signature stored as local file, not in registry"
+
+    cosign sign --yes \
+      --upload=false \
+      --output-signature=ml-platform-api.sig \
+      --output-certificate=ml-platform-api.crt \
+      ml-platform-api:${{ github.sha }}
+
     echo "✅ Image signed successfully"
+    echo "Signature file: ml-platform-api.sig"
+    echo "Certificate file: ml-platform-api.crt"
 ```
 
-**3. Verify Signature**:
+**Key flags explained**:
+
+- `--upload=false`: Don't upload signature to registry (offline mode)
+- `--output-signature`: Save signature to file
+- `--output-certificate`: Save certificate to file
+
+**3. Verify Signature (Phase 1 Offline Mode)**:
 
 ```yaml
 - name: Verify container image signature
   env:
     COSIGN_EXPERIMENTAL: "1"
   run: |
-    echo "Verifying signature for ml-platform-api:${{ github.sha }}"
+    echo "Verifying offline signature for ml-platform-api:${{ github.sha }}"
+    echo "Using signature file: ml-platform-api.sig"
+    echo "Using certificate file: ml-platform-api.crt"
+
     cosign verify \
+      --signature=ml-platform-api.sig \
+      --certificate=ml-platform-api.crt \
       --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
       --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
       ml-platform-api:${{ github.sha }}
+
     echo "✅ Signature verified successfully"
 ```
 
+**Key flags explained**:
+
+- `--signature`: Path to signature file (instead of fetching from registry)
+- `--certificate`: Path to certificate file
+- `--certificate-identity-regexp`: Validates certificate matches GitHub Actions workflow
+- `--certificate-oidc-issuer`: Validates certificate issued by GitHub OIDC provider
+
 ### Signature Storage
 
-Signatures are stored in the **same OCI registry** as the image:
+**Phase 1 (Current)**: Signatures stored as **local files** in CI runner:
 
-- Image: `ml-platform-api:sha256-abc123...`
-- Signature: `ml-platform-api:sha256-abc123....sig` (OCI artifact)
+- Signature file: `ml-platform-api.sig` (generated during workflow)
+- Certificate file: `ml-platform-api.crt` (contains OIDC identity)
+- **Limitation**: Files discarded after CI completes (ephemeral)
+
+**Phase 2 (Planned)**: Signatures stored in **OCI registry** alongside image:
+
+- Image: `<ECR_URL>/ml-platform-api:sha256-abc123...`
+- Signature: `<ECR_URL>/ml-platform-api:sha256-abc123....sig` (OCI artifact)
 
 This co-location ensures:
 
 - Atomic operations (image + signature pushed together)
 - No separate signature infrastructure needed
 - Registry access controls apply to both image and signature
+- Persistent signatures for production deployments
 
 ## Local Testing
 

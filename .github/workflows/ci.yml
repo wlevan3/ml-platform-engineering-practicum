@@ -497,28 +497,60 @@ jobs:
           path: trivy-results.sarif
           retention-days: 5
 
+      # ============================================================================
+      # Container Image Signing (Phase 1: Offline/Local Signing)
+      # ============================================================================
+      # Phase 1 Implementation:
+      #   - Signs images locally using --upload=false flag
+      #   - Stores signature and certificate as files (not in OCI registry)
+      #   - Demonstrates signing workflow and validates signatures work
+      #   - Signatures are ephemeral (discarded after CI run)
+      #
+      # Phase 2 Plan (requires ECR setup - see Issue #94):
+      #   - Push images to AWS ECR registry
+      #   - Sign with fully-qualified ECR image reference
+      #   - Signatures stored in OCI registry alongside images
+      #   - Persistent signatures for production deployments
+      # ============================================================================
+
       - name: Install Cosign
         uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da  # v3.7.0
         with:
           cosign-release: 'v2.4.1'
 
-      - name: Sign container image (keyless)
+      - name: Sign container image (keyless - offline mode)
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
+          echo "Phase 1: Signing image locally (offline mode)"
           echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
-          cosign sign --yes ml-platform-api:${{ github.sha }}
+          echo "Note: Using --upload=false - signature stored as local file, not in registry"
+
+          cosign sign --yes \
+            --upload=false \
+            --output-signature=ml-platform-api.sig \
+            --output-certificate=ml-platform-api.crt \
+            ml-platform-api:${{ github.sha }}
+
           echo "✅ Image signed successfully"
+          echo "Signature file: ml-platform-api.sig"
+          echo "Certificate file: ml-platform-api.crt"
 
       - name: Verify container image signature
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          echo "Verifying signature for ml-platform-api:${{ github.sha }}"
+          echo "Verifying offline signature for ml-platform-api:${{ github.sha }}"
+          echo "Using signature file: ml-platform-api.sig"
+          echo "Using certificate file: ml-platform-api.crt"
+
           cosign verify \
+            --signature=ml-platform-api.sig \
+            --certificate=ml-platform-api.crt \
             --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
             ml-platform-api:${{ github.sha }}
+
           echo "✅ Signature verified successfully"
 
   summary:
