@@ -38,14 +38,36 @@ def test_root_endpoint(client):
     assert data["name"] == "Iris Classification API"
 
 
-def test_health_endpoint(client):
-    """Test the health check endpoint."""
-    response = client.get("/health")
+def test_liveness_endpoint(client):
+    """Test the liveness probe endpoint - should always return 200."""
+    response = client.get("/health/live")
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] == "healthy"
+    assert data["status"] == "alive"
+
+
+def test_readiness_endpoint_when_model_loaded(client):
+    """Test the readiness probe endpoint when model is loaded."""
+    response = client.get("/health/ready")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["status"] == "ready"
     assert data["model_loaded"] is True
     assert "version" in data
+    assert "dependencies" in data
+    assert isinstance(data["dependencies"], dict)
+
+
+def test_readiness_endpoint_when_model_not_loaded():
+    """Test the readiness probe endpoint when model is not loaded."""
+    with patch("app.main.get_model") as mock_get_model:
+        mock_model = mock_get_model.return_value
+        mock_model.is_loaded.return_value = False
+
+        with TestClient(app) as test_client:
+            response = test_client.get("/health/ready")
+            assert response.status_code == 503
+            assert "Service not ready" in response.json()["detail"]
 
 
 def test_model_info_endpoint(client):
@@ -129,7 +151,8 @@ def test_openapi_docs(client):
     assert "info" in data
     assert "paths" in data
     assert "/predict" in data["paths"]
-    assert "/health" in data["paths"]
+    assert "/health/live" in data["paths"]
+    assert "/health/ready" in data["paths"]
     assert "/model/info" in data["paths"]
 
 
