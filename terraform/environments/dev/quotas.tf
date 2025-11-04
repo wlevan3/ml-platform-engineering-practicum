@@ -30,8 +30,8 @@ resource "kubernetes_resource_quota" "ml_platform_compute" {
 
   spec {
     hard = {
-      # Pod limits (aligned with HPA maxReplicas = 10)
-      "pods" = "12" # 10 from HPA + 2 buffer for rolling updates
+      # Pod limits (aligned with k8s/hpa.yaml maxReplicas = 10)
+      "pods" = "12" # 10 from HPA + 2 buffer for rolling updates (see k8s/hpa.yaml)
 
       # CPU limits (conservative for cost control)
       "requests.cpu"    = "4000m" # 4 vCPUs total (enough for 10 pods @ 400m each)

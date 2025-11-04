@@ -11,7 +11,7 @@ spec:
     name: ml-platform-api
 
   minReplicas: 2   # Minimum for high availability
-  maxReplicas: 10  # Maximum to prevent runaway scaling
+  maxReplicas: 10  # Maximum to prevent runaway scaling (keep in sync with terraform/environments/dev/quotas.tf)
 
   # Scaling behavior configuration
   behavior:
