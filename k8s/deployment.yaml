@@ -29,7 +29,7 @@ spec:
           # Minikube: ml-platform-api:v1.0.0
           # EKS: <account-id>.dkr.ecr.<region>.amazonaws.com/ml-platform-api:v1.0.0
           image: ml-platform-api:v1.0.0  # Use versioned tag (SonarCloud kubernetes:S6596)
-          imagePullPolicy: IfNotPresent  # Works for both Minikube and EKS
+          imagePullPolicy: Always  # Always pull to ensure latest security patches
           ports:
             - containerPort: 8000
               name: http
