@@ -252,7 +252,10 @@ kubectl logs -l app="$DEPLOYMENT_NAME" --tail=20
 log_step "8/8 - Running End-to-End Tests"
 
 log_info "Getting service URL..."
-SERVICE_URL=$(minikube service "$DEPLOYMENT_NAME" --url)
+# Get Minikube IP and NodePort (avoids tunnel requirement on macOS Docker driver)
+MINIKUBE_IP=$(minikube ip)
+NODE_PORT=$(kubectl get service "$DEPLOYMENT_NAME" -o jsonpath='{.spec.ports[0].nodePort}')
+SERVICE_URL="http://${MINIKUBE_IP}:${NODE_PORT}"
 
 if [[ -z "$SERVICE_URL" ]]; then
 	error_exit "Failed to get service URL"
@@ -324,7 +327,7 @@ run_test "Prediction (virginica)" "/predict" "POST" \
 
 # Test 8: Invalid input (missing features)
 run_test "Invalid input (missing features)" "/predict" "POST" \
-	'{"features": [5.1, 3.5]}' "422" || log_warning "  (Expected validation error)"
+	'{"features": [5.1, 3.5]}' "422"
 
 # Test 9: OpenAPI docs
 run_test "OpenAPI docs" "/openapi.json" "GET" "" "200"

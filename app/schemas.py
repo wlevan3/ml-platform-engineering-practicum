@@ -73,8 +73,8 @@ class ReadinessResponse(BaseModel):
     Returns 200 OK when model is loaded, 503 when not ready.
     """
 
-    status: Literal["ready", "not_ready"] = Field(
-        ..., description="Readiness status - 'ready' or 'not_ready'"
+    status: Literal["ready"] = Field(
+        ..., description="Readiness status - always 'ready' when responding with 200"
     )
     model_loaded: bool = Field(..., description="Whether the ML model is loaded")
     version: str = Field(..., description="API version")

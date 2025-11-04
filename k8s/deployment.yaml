@@ -73,7 +73,7 @@ spec:
             httpGet:
               path: /health/ready
               port: http  # Use named port reference for maintainability
-            initialDelaySeconds: 10  # Allow time for model loading; aligns with startup behavior
+            initialDelaySeconds: 30  # Allow time for model loading; aligns with startup behavior
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
