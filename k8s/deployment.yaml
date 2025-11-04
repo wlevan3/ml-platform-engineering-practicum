@@ -36,6 +36,7 @@ spec:
             limits:
               memory: "512Mi"
               cpu: "500m"
+              ephemeral-storage: "2Gi"  # Prevent unlimited ephemeral storage consumption
 
           # Liveness probe - checks if container is alive
           livenessProbe:
