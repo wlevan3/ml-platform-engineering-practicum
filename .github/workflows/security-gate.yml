@@ -11,7 +11,7 @@ jobs:
     name: Block if Security Alerts Exist
     runs-on: ubuntu-latest
     permissions:
-      security-events: read
+      security-events: write  # Required for Dependabot alerts API access
       contents: read
 
     steps:
