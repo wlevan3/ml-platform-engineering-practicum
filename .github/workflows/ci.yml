@@ -471,6 +471,31 @@ jobs:
       - name: Build Docker image
         run: docker build -t ml-platform-api:${{ github.sha }} .
 
+      # ============================================================================
+      # Local Registry Setup for Image Signing
+      # ============================================================================
+      # Cosign requires OCI registry access to read image manifests, even with
+      # --upload=false. We run an ephemeral local registry to satisfy this
+      # requirement while keeping signatures as local files (Phase 1 goal).
+      # ============================================================================
+
+      - name: Start local OCI registry
+        run: |
+          echo "Starting local registry on localhost:5000"
+          docker run -d -p 5000:5000 --name registry registry:2
+          echo "✅ Local registry started"
+
+      - name: Tag and push image to local registry
+        run: |
+          echo "Tagging image for local registry: localhost:5000/ml-platform-api:${{ github.sha }}"
+          docker tag ml-platform-api:${{ github.sha }} localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "Pushing image to local registry..."
+          docker push localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "✅ Image pushed to local registry"
+          echo "Image reference: localhost:5000/ml-platform-api:${{ github.sha }}"
+
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1 (Trivy v0.65.0)
         with:
@@ -518,20 +543,20 @@ jobs:
         with:
           cosign-release: 'v2.4.1'
 
-      - name: Sign container image (keyless - offline mode)
+      - name: Sign container image (keyless - local registry mode)
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          echo "Phase 1: Signing image locally (offline mode)"
-          echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
-          echo "Note: Using docker-daemon:// prefix to access local image without registry"
+          echo "Phase 1: Signing image from local registry (offline mode)"
+          echo "Signing image localhost:5000/ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
+          echo "Note: Using local registry to satisfy Cosign's OCI manifest requirement"
           echo "Note: Using --upload=false - signature stored as local file, not in registry"
 
           cosign sign --yes \
             --upload=false \
             --output-signature=ml-platform-api.sig \
             --output-certificate=ml-platform-api.crt \
-            docker-daemon://ml-platform-api:${{ github.sha }}
+            localhost:5000/ml-platform-api:${{ github.sha }}
 
           echo "✅ Image signed successfully"
           echo "Signature file: ml-platform-api.sig"
@@ -541,8 +566,7 @@ jobs:
         env:
           COSIGN_EXPERIMENTAL: "1"
         run: |
-          echo "Verifying offline signature for ml-platform-api:${{ github.sha }}"
-          echo "Using docker-daemon:// prefix to access local image"
+          echo "Verifying offline signature for localhost:5000/ml-platform-api:${{ github.sha }}"
           echo "Using signature file: ml-platform-api.sig"
           echo "Using certificate file: ml-platform-api.crt"
 
@@ -551,9 +575,17 @@ jobs:
             --certificate=ml-platform-api.crt \
             --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
-            docker-daemon://ml-platform-api:${{ github.sha }}
+            localhost:5000/ml-platform-api:${{ github.sha }}
 
           echo "✅ Signature verified successfully"
+
+      - name: Cleanup local registry
+        if: always()
+        run: |
+          echo "Stopping and removing local registry container..."
+          docker stop registry || true
+          docker rm registry || true
+          echo "✅ Local registry cleaned up"
 
   summary:
     name: CI Summary
