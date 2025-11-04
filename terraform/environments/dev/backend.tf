@@ -10,8 +10,8 @@ terraform {
     encrypt        = true
     dynamodb_table = "ml-platform-terraform-locks"
 
-    # Prevents accidental deletion of state
-    # Must explicitly disable to destroy infrastructure
-    # Note: This setting is in terraform configuration, not S3 bucket
+    # State protection via S3 bucket versioning (see terraform/README.md)
+    # Versioning retains 30 previous state versions for recovery
+    # Terraform backend config does not support prevent_destroy
   }
 }
