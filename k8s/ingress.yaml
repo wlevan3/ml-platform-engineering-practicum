@@ -46,52 +46,10 @@ spec:
   rules:
     - http:
         paths:
-          # Root endpoint
+          # All paths route to ml-platform-api service
+          # pathType: Prefix with path: / matches all requests
+          # (including /health, /model, /predict, /docs, /openapi.json)
           - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: ml-platform-api
-                port:
-                  number: 8000
-
-          # Health endpoints
-          - path: /health
-            pathType: Prefix
-            backend:
-              service:
-                name: ml-platform-api
-                port:
-                  number: 8000
-
-          # Model info endpoint
-          - path: /model
-            pathType: Prefix
-            backend:
-              service:
-                name: ml-platform-api
-                port:
-                  number: 8000
-
-          # Prediction endpoint
-          - path: /predict
-            pathType: Prefix
-            backend:
-              service:
-                name: ml-platform-api
-                port:
-                  number: 8000
-
-          # OpenAPI docs
-          - path: /docs
-            pathType: Prefix
-            backend:
-              service:
-                name: ml-platform-api
-                port:
-                  number: 8000
-
-          - path: /openapi.json
             pathType: Prefix
             backend:
               service:
