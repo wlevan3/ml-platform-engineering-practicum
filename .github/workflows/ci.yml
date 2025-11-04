@@ -524,13 +524,14 @@ jobs:
         run: |
           echo "Phase 1: Signing image locally (offline mode)"
           echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
+          echo "Note: Using docker-daemon:// prefix to access local image without registry"
           echo "Note: Using --upload=false - signature stored as local file, not in registry"
 
           cosign sign --yes \
             --upload=false \
             --output-signature=ml-platform-api.sig \
             --output-certificate=ml-platform-api.crt \
-            ml-platform-api:${{ github.sha }}
+            docker-daemon://ml-platform-api:${{ github.sha }}
 
           echo "✅ Image signed successfully"
           echo "Signature file: ml-platform-api.sig"
@@ -541,6 +542,7 @@ jobs:
           COSIGN_EXPERIMENTAL: "1"
         run: |
           echo "Verifying offline signature for ml-platform-api:${{ github.sha }}"
+          echo "Using docker-daemon:// prefix to access local image"
           echo "Using signature file: ml-platform-api.sig"
           echo "Using certificate file: ml-platform-api.crt"
 
@@ -549,7 +551,7 @@ jobs:
             --certificate=ml-platform-api.crt \
             --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
             --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
-            ml-platform-api:${{ github.sha }}
+            docker-daemon://ml-platform-api:${{ github.sha }}
 
           echo "✅ Signature verified successfully"
 
