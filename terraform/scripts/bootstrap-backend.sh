@@ -19,8 +19,16 @@
 
 set -euo pipefail
 
+# ============================================================================
+# AWS PROFILE CONFIGURATION - HARDCODED FOR SAFETY (SAFE TO COMMIT)
+# ============================================================================
+export AWS_PROFILE="kodekloud"
+export AWS_REGION="us-west-2"
+
+# Expected KodeKloud sandbox account ID
+readonly EXPECTED_ACCOUNT_ID="984479408136"
+
 # Configuration
-AWS_REGION="us-west-2"
 S3_BUCKET="ml-platform-terraform-state"
 DYNAMODB_TABLE="ml-platform-terraform-locks"
 
@@ -67,6 +75,23 @@ log_success "✓ AWS credentials valid"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 log_info "AWS Account: $ACCOUNT_ID"
 log_info "Region: $AWS_REGION"
+log_info "Profile: $AWS_PROFILE"
+
+# ============================================================================
+# SAFETY CHECK: Verify we're using the correct AWS account
+# ============================================================================
+if [[ "$ACCOUNT_ID" != "$EXPECTED_ACCOUNT_ID" ]]; then
+	log_error "❌ Wrong AWS account!"
+	log_error "   Expected: $EXPECTED_ACCOUNT_ID (KodeKloud sandbox)"
+	log_error "   Current:  $ACCOUNT_ID"
+	log_error "   Profile:  $AWS_PROFILE"
+	log_error ""
+	log_error "This script is hardcoded to only run against the KodeKloud sandbox account."
+	log_error "Exiting to prevent accidental resource creation in wrong account."
+	exit 1
+fi
+log_success "✅ Correct AWS account verified: $ACCOUNT_ID (KodeKloud sandbox)"
+echo ""
 
 # Create S3 bucket for state
 log_info "Creating S3 bucket for Terraform state..."

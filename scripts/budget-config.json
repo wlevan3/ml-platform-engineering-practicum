@@ -1,0 +1,94 @@
+{
+  "Budget": {
+    "BudgetName": "ml-platform-monthly-budget",
+    "BudgetLimit": {
+      "Amount": "5.00",
+      "Unit": "USD"
+    },
+    "TimeUnit": "MONTHLY",
+    "BudgetType": "COST",
+    "CostFilters": {
+      "TagKey": ["Project"],
+      "TagValue": ["ml-platform-engineering-practicum"]
+    },
+    "CostTypes": {
+      "IncludeTax": true,
+      "IncludeSubscription": true,
+      "UseBlended": false,
+      "IncludeRefund": false,
+      "IncludeCredit": false,
+      "IncludeUpfront": true,
+      "IncludeRecurring": true,
+      "IncludeOtherSubscription": true,
+      "IncludeSupport": false,
+      "IncludeDiscount": true,
+      "UseAmortized": false
+    },
+    "TimePeriod": {
+      "Start": "2025-11-01T00:00:00Z",
+      "End": "2087-06-15T00:00:00Z"
+    }
+  },
+  "NotificationsWithSubscribers": [
+    {
+      "Notification": {
+        "NotificationType": "ACTUAL",
+        "ComparisonOperator": "GREATER_THAN",
+        "Threshold": 50,
+        "ThresholdType": "PERCENTAGE",
+        "NotificationState": "ALARM"
+      },
+      "Subscribers": [
+        {
+          "SubscriptionType": "EMAIL",
+          "Address": "REPLACE_WITH_YOUR_EMAIL"
+        }
+      ]
+    },
+    {
+      "Notification": {
+        "NotificationType": "ACTUAL",
+        "ComparisonOperator": "GREATER_THAN",
+        "Threshold": 80,
+        "ThresholdType": "PERCENTAGE",
+        "NotificationState": "ALARM"
+      },
+      "Subscribers": [
+        {
+          "SubscriptionType": "EMAIL",
+          "Address": "REPLACE_WITH_YOUR_EMAIL"
+        }
+      ]
+    },
+    {
+      "Notification": {
+        "NotificationType": "ACTUAL",
+        "ComparisonOperator": "GREATER_THAN",
+        "Threshold": 100,
+        "ThresholdType": "PERCENTAGE",
+        "NotificationState": "ALARM"
+      },
+      "Subscribers": [
+        {
+          "SubscriptionType": "EMAIL",
+          "Address": "REPLACE_WITH_YOUR_EMAIL"
+        }
+      ]
+    },
+    {
+      "Notification": {
+        "NotificationType": "FORECASTED",
+        "ComparisonOperator": "GREATER_THAN",
+        "Threshold": 100,
+        "ThresholdType": "PERCENTAGE",
+        "NotificationState": "ALARM"
+      },
+      "Subscribers": [
+        {
+          "SubscriptionType": "EMAIL",
+          "Address": "REPLACE_WITH_YOUR_EMAIL"
+        }
+      ]
+    }
+  ]
+}

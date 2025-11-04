@@ -360,6 +360,7 @@ kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controll
    - Dev environment uses 1 NAT instead of 3
 
 4. **Delete when not needed**:
+
    ```bash
    terraform destroy
    ```
