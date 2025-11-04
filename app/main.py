@@ -9,7 +9,13 @@ from fastapi import FastAPI, HTTPException
 
 from app import __version__
 from app.model import get_model
-from app.schemas import PredictionRequest, PredictionResponse, HealthResponse, ModelInfo
+from app.schemas import (
+    LivenessResponse,
+    ModelInfo,
+    PredictionRequest,
+    PredictionResponse,
+    ReadinessResponse,
+)
 
 
 @asynccontextmanager
@@ -38,16 +44,41 @@ app = FastAPI(
 )
 
 
-@app.get("/health", response_model=HealthResponse, tags=["Health"])
-async def health_check():
+@app.get("/health/live", response_model=LivenessResponse, tags=["Health"])
+async def liveness_check():
     """
-    Health check endpoint.
+    Liveness probe endpoint for Kubernetes.
 
-    Returns the service health status and whether the model is loaded.
+    Checks if the application process is alive and responding to requests.
+    This endpoint should always return 200 OK if the process is running.
+    Used by Kubernetes to determine if the container should be restarted.
+    """
+    return LivenessResponse(status="alive")
+
+
+@app.get("/health/ready", response_model=ReadinessResponse, tags=["Health"])
+async def readiness_check():
+    """
+    Readiness probe endpoint for Kubernetes.
+
+    Checks if the application is ready to serve traffic (model loaded, dependencies available).
+    Returns 200 OK when ready, 503 Service Unavailable when not ready.
+    Used by Kubernetes to determine if traffic should be routed to this pod.
     """
     model = get_model()
-    return HealthResponse(
-        status="healthy", model_loaded=model.is_loaded(), version=__version__
+    model_loaded = model.is_loaded()
+
+    if not model_loaded:
+        raise HTTPException(
+            status_code=503,
+            detail="Service not ready: model not loaded",
+        )
+
+    return ReadinessResponse(
+        status="ready",
+        model_loaded=model_loaded,
+        version=__version__,
+        dependencies={},  # Future: add database, feature store, etc. checks here
     )
 
 
@@ -115,7 +146,8 @@ async def root():
         "name": "Iris Classification API",
         "version": __version__,
         "endpoints": {
-            "health": "/health",
+            "liveness": "/health/live",
+            "readiness": "/health/ready",
             "model_info": "/model/info",
             "predict": "/predict",
             "docs": "/docs",
