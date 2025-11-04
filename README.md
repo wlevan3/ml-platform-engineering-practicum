@@ -123,8 +123,8 @@ brew install minikube
 minikube start --cpus=4 --memory=6144 --driver=docker
 
 # Build and load image into Minikube
-docker build -t ml-platform-api:latest .
-minikube image load ml-platform-api:latest
+docker build -t ml-platform-api:v1.0.0 .
+minikube image load ml-platform-api:v1.0.0
 
 # Deploy to Kubernetes
 kubectl apply -f k8s/deployment.yaml
