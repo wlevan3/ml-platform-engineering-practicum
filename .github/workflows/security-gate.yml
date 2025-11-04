@@ -63,4 +63,4 @@ jobs:
             echo "✅ No open Dependabot alerts"
           fi
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
