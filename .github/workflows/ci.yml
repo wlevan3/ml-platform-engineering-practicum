@@ -524,10 +524,11 @@ jobs:
         run: |
           echo "Phase 1: Signing image locally (offline mode)"
           echo "Signing image ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
-          echo "Note: Using --upload=false - signature stored as local file, not in registry"
+          echo "Note: Using --upload=false and --local-image - signature stored as local file, not in registry"
 
           cosign sign --yes \
             --upload=false \
+            --local-image \
             --output-signature=ml-platform-api.sig \
             --output-certificate=ml-platform-api.crt \
             ml-platform-api:${{ github.sha }}
@@ -545,6 +546,7 @@ jobs:
           echo "Using certificate file: ml-platform-api.crt"
 
           cosign verify \
+            --local-image \
             --signature=ml-platform-api.sig \
             --certificate=ml-platform-api.crt \
             --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
