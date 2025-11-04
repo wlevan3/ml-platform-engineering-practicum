@@ -7,11 +7,13 @@ This document explains the spot instances configuration for EKS worker nodes, wh
 Spot instances allow you to use spare AWS EC2 capacity at significantly reduced prices. The trade-off is that AWS can interrupt (terminate) spot instances with 2 minutes notice when it needs the capacity back.
 
 **Cost Comparison** (per hour):
+
 - On-Demand t3.medium: **$0.0416/hour** × 2 nodes = $0.0832/hour
 - Spot t3.medium: **~$0.0125/hour** × 2 nodes = $0.0250/hour
 - **Savings**: ~70% = $0.0582/hour
 
 **For your usage pattern** (15 min/day × 20 days/month):
+
 - On-Demand: $0.62/month
 - Spot: $0.19/month
 - **Savings**: **$0.43/month** (~70%)
@@ -70,6 +72,7 @@ The deployment in `k8s/deployment.yaml` includes:
 ### High Availability Design
 
 With 2 replicas and pod anti-affinity:
+
 - Pods are scheduled on **different nodes**
 - If Node A is interrupted, **Pod A terminates** but **Pod B keeps serving traffic**
 - Kubernetes **automatically creates new Pod A** on Node B (or a new node)
@@ -78,6 +81,7 @@ With 2 replicas and pod anti-affinity:
 ### Interruption Frequency
 
 Spot interruption rates vary by instance type and region:
+
 - **Average**: 5-10% interruption rate
 - **t3.medium in us-west-2**: Typically <5% (stable spot market)
 - **For dev/test**: Completely acceptable
@@ -138,16 +142,11 @@ For production-grade spot instance handling, deploy the AWS Node Termination Han
 
 ### Deployment
 
-The handler is **optional** for dev environments but **recommended** for production:
+The handler is **optional** for dev environments but **recommended** for production.
 
-```bash
-# Deploy via Helm (already configured in terraform/environments/dev/main.tf)
-# Uncomment the aws_node_termination_handler module to enable
+**Current Status**: The AWS Node Termination Handler is **not yet implemented** in this project. This is a planned future enhancement.
 
-terraform apply
-```
-
-Configuration is in `terraform/environments/dev/spot_termination_handler.tf` (to be created).
+When implemented, the configuration will be added to `terraform/environments/dev/` as a separate module that can be enabled via a Terraform variable. For now, Kubernetes' native pod anti-affinity and automatic rescheduling provide sufficient resilience for the dev environment.
 
 ## Disabling Spot Instances
 
@@ -181,7 +180,7 @@ variable "use_spot_instances" {
 
 ## When to Use Spot vs On-Demand
 
-### ✅ Use Spot Instances For:
+### ✅ Use Spot Instances For
 
 - **Dev/test environments** (like this practicum)
 - **Stateless workloads** (your FastAPI pods)
@@ -189,7 +188,7 @@ variable "use_spot_instances" {
 - **Batch processing** (can retry on interruption)
 - **Short-lived clusters** (destroy after each session)
 
-### ❌ Avoid Spot Instances For:
+### ❌ Avoid Spot Instances For
 
 - **Single-replica deployments** (no redundancy)
 - **Stateful workloads** without proper backups
@@ -197,6 +196,7 @@ variable "use_spot_instances" {
 - **Workloads requiring guaranteed uptime**
 
 For this ML Platform practicum:
+
 - **Perfect use case** for spot instances
 - 2 replicas = high availability
 - Stateless API = no data loss risk
@@ -216,6 +216,7 @@ For this ML Platform practicum:
 ### Break-Even Analysis
 
 Even if spot interruptions cause 10% additional overhead (pod rescheduling, slight downtime):
+
 - Spot cost: $0.19 + 10% overhead = $0.21/month
 - Still **$0.41/month savings (66%)** vs on-demand
 
@@ -232,6 +233,7 @@ Not huge dollar amounts, but demonstrates real-world cost optimization practices
 ### Issue: Nodes Not Becoming Spot Instances
 
 **Check**:
+
 ```bash
 # Verify Terraform applied correctly
 terraform show | grep capacity_type
@@ -240,6 +242,7 @@ terraform show | grep capacity_type
 ```
 
 **Fix**: Re-apply Terraform configuration:
+
 ```bash
 terraform apply
 ```
@@ -247,6 +250,7 @@ terraform apply
 ### Issue: Frequent Spot Interruptions
 
 **Check** spot interruption rate:
+
 ```bash
 # View spot interruption history (AWS Console > EC2 > Spot Requests)
 aws ec2 describe-spot-instance-requests \
@@ -255,6 +259,7 @@ aws ec2 describe-spot-instance-requests \
 ```
 
 **Fix**: Add more instance types to increase availability:
+
 ```hcl
 instance_types = [
   "t3.medium", "t3a.medium", "t2.medium",
@@ -265,6 +270,7 @@ instance_types = [
 ### Issue: Pods Not Rescheduling After Interruption
 
 **Check** deployment replicas and anti-affinity:
+
 ```bash
 kubectl get deployment ml-platform-api -n ml-platform -o yaml | grep -A5 replicas
 kubectl get pods -n ml-platform -o wide

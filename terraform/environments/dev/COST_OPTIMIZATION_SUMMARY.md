@@ -17,11 +17,13 @@ Three cost-saving optimizations have been implemented to reduce AWS spending whi
 ### What Changed
 
 **Files Modified**:
+
 - `terraform/environments/dev/variables.tf` - Added `use_spot_instances` and `spot_max_price` variables
 - `terraform/environments/dev/main.tf` - Modified EKS node group to support spot instances
 - `k8s/deployment.yaml` - Added pod anti-affinity for high availability
 
 **Key Configuration**:
+
 ```hcl
 # Spot instances enabled by default
 variable "use_spot_instances" {
@@ -43,11 +45,13 @@ capacity_type = "SPOT"
 | **Spot (2× t3.medium)** | **$0.19** | **$0.43 (70%)** |
 
 **For 1 hour/day usage**:
+
 - On-Demand: $1.66/month
 - Spot: $0.50/month
 - **Savings: $1.16/month (70%)**
 
 **Over 4-month practicum**:
+
 - **Savings: $1.72** (15 min/day usage)
 - **Savings: $4.64** (1 hour/day usage)
 
@@ -99,10 +103,12 @@ terraform apply
 ### What Changed
 
 **Files Created**:
+
 - `scripts/deploy-local-k3d.sh` - Fast local deployment script (30 seconds)
 - `docs/LOCAL_VS_CLOUD.md` - Decision matrix for when to use local vs EKS
 
 **Key Benefits**:
+
 - ⚡ **40x faster** - 30 seconds vs 20 minutes (EKS)
 - 💰 **$0 cost** - No AWS charges for local development
 - 🚀 **Rapid iteration** - Code → Build → Test in seconds
@@ -118,6 +124,7 @@ terraform apply
 | **Savings** | 32 hours saved | **$8.32 (80%)** | **$33.28 (80%)** |
 
 **For current usage** (15 min/day):
+
 - All EKS: $2/month
 - 80% local: $0.40/month
 - **Savings: $1.60/month (80%)**
@@ -125,6 +132,7 @@ terraform apply
 ### Usage
 
 **Daily Development**:
+
 ```bash
 # Deploy to local k3d cluster (30 seconds)
 ./scripts/deploy-local-k3d.sh
@@ -137,6 +145,7 @@ k3d cluster stop ml-platform-dev
 ```
 
 **Weekly EKS Validation**:
+
 ```bash
 # Test AWS-specific features (ALB, ECR, IAM)
 cd terraform/environments/dev
@@ -148,6 +157,7 @@ terraform apply  # 15-20 min
 ### Decision Matrix
 
 **Use Local (k3d) For**:
+
 - ✅ API endpoint testing
 - ✅ Kubernetes manifest changes
 - ✅ Model changes / retraining
@@ -155,6 +165,7 @@ terraform apply  # 15-20 min
 - ✅ Fast iteration
 
 **Use EKS For**:
+
 - ☁️ ALB Ingress testing
 - ☁️ ECR integration
 - ☁️ IAM roles (IRSA)
@@ -190,6 +201,7 @@ This optimization prevents the **biggest cost risk**: Forgetting to destroy EKS 
 ### Planned Implementation
 
 **Architecture**:
+
 1. **Lambda Function** - Detects idle EKS clusters via CloudWatch metrics
 2. **EventBridge Rule** - Triggers check every 4 hours
 3. **Step Functions** - Graceful shutdown workflow with 5-min grace period
@@ -197,11 +209,13 @@ This optimization prevents the **biggest cost risk**: Forgetting to destroy EKS 
 5. **CodeBuild** - Executes `terraform destroy`
 
 **Idle Detection Logic**:
+
 - CPU utilization < 5% for 30 minutes
 - Network traffic < 1MB for 30 minutes
 - No recent API calls
 
 **Files to Create**:
+
 - `terraform/modules/auto-shutdown/` - Reusable module
   - `main.tf` - Lambda, EventBridge, Step Functions, IAM
   - `lambda/idle_detector.py` - Idle detection logic
@@ -211,12 +225,14 @@ This optimization prevents the **biggest cost risk**: Forgetting to destroy EKS 
 ### Cost Impact
 
 **Lambda Infrastructure Cost**: ~$0.52/month
+
 - Lambda invocations: ~$0.01/month (mostly FREE tier)
 - EventBridge: FREE (first 1M events)
 - Step Functions: ~$0.01/month (mostly FREE tier)
 - CloudWatch Logs: ~$0.50/month (minimal)
 
 **Savings**: **$6.27/day** if you forget to destroy once
+
 - **Break-even**: Saves cost if you forget **once in 12 months**
 - **ROI**: Infinite (prevents catastrophic $188/month scenario)
 
@@ -238,6 +254,7 @@ Auto-shutdown prevents this risk entirely.
 **Estimated effort**: 2-3 hours
 
 **Steps**:
+
 1. Create Lambda functions (idle detector + terraform destroyer)
 2. Configure IAM permissions (EKS describe, CloudWatch read, SNS publish)
 3. Create Step Functions state machine (grace period + destroy workflow)
@@ -265,6 +282,12 @@ Auto-shutdown prevents this risk entirely.
 **Key Insight**: Even small usage benefits significantly from optimizations!
 
 ### 4-Month Practicum Projection
+
+**Assumptions**:
+
+- **Optimistic**: Never forget to destroy EKS clusters
+- **Realistic**: Forget to destroy once over 4 months (~24 hours of unintended runtime = $6.27)
+- **Worst case**: Forget to destroy twice over 4 months (~48 hours of unintended runtime = $12.54)
 
 | Scenario | Baseline | Optimized | Savings |
 |----------|----------|-----------|---------|
@@ -356,12 +379,14 @@ time (terraform apply && kubectl apply -f k8s/)
 ### Immediate Actions
 
 1. **Start using k3d today**
+
    ```bash
    brew install k3d
    ./scripts/deploy-local-k3d.sh
    ```
 
 2. **Verify spot instances are working**
+
    ```bash
    kubectl get nodes -L eks.amazonaws.com/capacityType
    ```
@@ -399,6 +424,7 @@ time (terraform apply && kubectl apply -f k8s/)
 | **Total** | **4 hours** | **$2.03 + risk mitigation** | **< 1 month** | **$8.12 + safety** |
 
 **Value beyond cost**:
+
 - ⚡ **40x faster iteration** with k3d
 - 🧠 **Learning best practices** (spot instances, local dev, automation)
 - 😌 **Peace of mind** (auto-shutdown prevents disasters)
@@ -459,6 +485,7 @@ Three simple optimizations deliver significant results:
 3. **Auto-Shutdown**: Eliminates $188/month disaster risk
 
 **Total impact**:
+
 - **Cost**: 54-82% savings (depending on how often you'd forget to destroy)
 - **Speed**: 40x faster daily development
 - **Risk**: Catastrophic cost scenario eliminated

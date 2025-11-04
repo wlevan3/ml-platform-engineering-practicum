@@ -27,7 +27,7 @@ variable "cluster_name" {
 variable "cluster_version" {
   description = "Kubernetes version for EKS cluster"
   type        = string
-  default     = "1.34" # Latest stable version as of 2025
+  default     = "1.31" # Latest stable version available for EKS (as of Jan 2025)
 }
 
 variable "vpc_cidr" {
@@ -163,17 +163,16 @@ variable "project_name" {
   default     = "ml-platform-engineering-practicum"
 }
 
-variable "region" {
-  description = "AWS region (alias for aws_region for module compatibility)"
-  type        = string
-  default     = "us-west-2"
-}
-
 # Budget Configuration (FREE - first 2 budgets)
 variable "budget_amount" {
   description = "Monthly budget limit in USD"
   type        = string
   default     = "5.00"
+
+  validation {
+    condition     = can(tonumber(var.budget_amount))
+    error_message = "budget_amount must be a valid numeric string (e.g., '5.00')."
+  }
 }
 
 variable "budget_alert_email" {

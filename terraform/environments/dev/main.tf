@@ -110,6 +110,8 @@ module "eks" {
 
       # Launch template configuration
       # Increased max_unavailable for spot instances (faster node replacement)
+      # On-demand: 33% allows gradual rollout while maintaining availability (1 of 3 nodes)
+      # Spot: 50% allows faster replacement since spot nodes can be quickly recreated
       update_config = {
         max_unavailable_percentage = var.use_spot_instances ? 50 : 33
       }
@@ -142,7 +144,7 @@ module "eks" {
         {
           Name = "${local.cluster_name}-worker-node"
         },
-        var.use_spot_instances ? { "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "spot" } : {}
+        var.use_spot_instances ? { "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "Ec2Spot" } : {}
       )
     }
   }

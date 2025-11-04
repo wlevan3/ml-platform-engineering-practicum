@@ -24,6 +24,7 @@ This guide helps you decide when to use local Kubernetes (k3d/minikube) vs AWS E
 ### Local Development (k3d)
 
 **Pros**:
+
 - ⚡ **Fast** - 30 seconds from code to running pod
 - 💰 **Free** - Zero AWS charges
 - 🏠 **Offline** - Works without internet
@@ -31,6 +32,7 @@ This guide helps you decide when to use local Kubernetes (k3d/minikube) vs AWS E
 - 💚 **Low resource usage** - 512MB RAM (vs 2GB Minikube)
 
 **Cons**:
+
 - ❌ No AWS-specific features (ALB, ECR, IAM)
 - ❌ Not 100% identical to production
 - ❌ Limited to single-machine resources
@@ -38,12 +40,14 @@ This guide helps you decide when to use local Kubernetes (k3d/minikube) vs AWS E
 ### Cloud Development (AWS EKS)
 
 **Pros**:
-- ☁️ **Production parity** - Exact same environment as production
+
+- ☁️ **Production parity** - Identical environment to production
 - 🔐 **AWS integrations** - ALB, ECR, IAM, VPC, security groups
 - 📊 **Cloud-native testing** - CloudWatch metrics, ALB access logs
 - 🎓 **Learning AWS** - Hands-on experience with real infrastructure
 
 **Cons**:
+
 - ⏱️ **Slow** - 15-20 min cluster creation + 12-15 min destruction
 - 💸 **Cost** - $0.26/hour ($6.27/day if left running)
 - 🌐 **Requires internet** - Can't work offline
@@ -106,7 +110,7 @@ This guide helps you decide when to use local Kubernetes (k3d/minikube) vs AWS E
    - Validating deployment scripts
    - Debugging automation issues
 
-### Example Workflow
+### Example Workflow: Local Development
 
 ```bash
 # Morning: Start local cluster (30 seconds)
@@ -169,7 +173,7 @@ k3d cluster start ml-platform-dev
    - Performance testing with real ALB
    - Security testing with actual IAM policies
 
-### Example Workflow
+### Example Workflow: EKS Validation
 
 ```bash
 # Friday afternoon: Weekly EKS validation
@@ -215,6 +219,7 @@ curl http://${ALB_DNS}/health/ready
 **Overview**: Lightweight Kubernetes (K3s) in Docker
 
 **Pros**:
+
 - ⚡ **Fastest startup** - 30 seconds
 - 💚 **Lowest memory** - 512MB
 - 🚀 **Built-in load balancer** - Easy service exposure
@@ -222,6 +227,7 @@ curl http://${ALB_DNS}/health/ready
 - 📦 **Small footprint** - 50MB binary
 
 **Cons**:
+
 - ❌ K3s (not full Kubernetes) - Some features differ
 - ❌ Less documentation than Minikube
 
@@ -241,12 +247,14 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash  # L
 **Overview**: Full Kubernetes distribution, most mature local option
 
 **Pros**:
+
 - ✅ **Most feature-complete** - Closest to production Kubernetes
 - ✅ **Addons** - Metrics server, dashboard, ingress
 - ✅ **Best documentation** - Extensive guides and tutorials
 - ✅ **LoadBalancer support** - Via `minikube tunnel`
 
 **Cons**:
+
 - ⏱️ **Slower startup** - 2-3 minutes
 - 💛 **Higher memory** - 2GB minimum
 - 🐢 **Slower iteration** - Heavier resource usage
@@ -263,11 +271,13 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash  # L
 **Overview**: Kubernetes in Docker, designed for testing
 
 **Pros**:
+
 - 🧪 **CI/CD optimized** - Fast, reproducible
 - 🐋 **Docker-native** - Runs K8s nodes as containers
 - ⚡ **Fast cluster creation** - 60 seconds
 
 **Cons**:
+
 - ❌ **No LoadBalancer** - Requires manual port forwarding
 - ❌ **Less user-friendly** - More manual setup
 
@@ -280,30 +290,37 @@ curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash  # L
 This ML Platform practicum has 7 projects. Here's when each should use local vs cloud:
 
 ### Project 1: Containerized Microservice (Current)
+
 - **Local**: 80% - API development, model changes, manifest testing
 - **Cloud**: 20% - Final validation with ECR and ALB
 
 ### Project 2: Model Registry (MLflow)
+
 - **Local**: 70% - MLflow server setup, API integration, testing
 - **Cloud**: 30% - S3 backend integration, IAM roles, RDS connection
 
 ### Project 3: Batch Inference Pipeline
+
 - **Local**: 90% - Pipeline development, job testing
 - **Cloud**: 10% - S3 input/output testing
 
 ### Project 4: Feature Store (Feast)
+
 - **Local**: 80% - Feature definitions, entity testing
 - **Cloud**: 20% - DynamoDB backend integration
 
 ### Project 5: Observability Stack (Prometheus + Grafana)
+
 - **Local**: 85% - Dashboard development, metric testing
 - **Cloud**: 15% - CloudWatch integration, EKS metrics
 
 ### Project 6: CI/CD Pipeline
+
 - **Local**: 60% - Workflow development, testing
 - **Cloud**: 40% - GitHub Actions with EKS deployment, OIDC authentication
 
 ### Project 7: Advanced Topics (AutoScaling, Spot)
+
 - **Local**: 40% - HPA testing, pod autoscaling
 - **Cloud**: 60% - Cluster autoscaling, spot interruption handling
 
@@ -312,17 +329,20 @@ This ML Platform practicum has 7 projects. Here's when each should use local vs 
 ## Cost Savings Calculator
 
 ### Scenario 1: All Development on EKS
+
 - **Time on EKS**: 2 hours/day × 20 days = 40 hours/month
 - **Cost**: 40 hours × $0.26/hour = **$10.40/month**
 - **4-month practicum**: **$41.60**
 
 ### Scenario 2: 80% Local, 20% EKS (Recommended)
+
 - **Time on EKS**: 24 min/day × 20 days = 8 hours/month
 - **Cost**: 8 hours × $0.26/hour = **$2.08/month**
 - **4-month practicum**: **$8.32**
 - **Savings**: **$33.28 (80% cost reduction)**
 
 ### Scenario 3: 90% Local, 10% EKS (Aggressive)
+
 - **Time on EKS**: 12 min/day × 20 days = 4 hours/month
 - **Cost**: 4 hours × $0.26/hour = **$1.04/month**
 - **4-month practicum**: **$4.16**
@@ -420,6 +440,7 @@ k3d cluster stop ml-platform-dev  # Free up 512MB RAM
 ### Rule of Thumb
 
 **If your task mentions any of these, use EKS**:
+
 - ALB, Load Balancer, Ingress (with AWS ALB Controller)
 - ECR, Docker registry (when pulling from ECR)
 - IAM, Roles, Policies (IRSA)
@@ -449,7 +470,7 @@ k3d cluster delete ml-platform-dev
 k3d cluster create ml-platform-dev --agents 2 --port "8000:80@loadbalancer"
 ```
 
-### Issue: Can't access http://localhost:8000
+### Issue: Can't access <http://localhost:8000>
 
 ```bash
 # Check service
@@ -471,16 +492,19 @@ k3d cluster create ml-platform-dev --port "8000:80@loadbalancer"
 ## Summary
 
 **Use k3d for 80% of work**:
+
 - ⚡ 40x faster iteration (30 sec vs 20 min)
 - 💰 Zero cost
 - 🚀 Perfect for daily development
 
 **Use EKS for 20% of work**:
+
 - ☁️ AWS-specific features (ALB, ECR, IAM)
 - 🎓 Learning production infrastructure
 - ✅ Final validation before merge
 
 **Expected outcome**:
+
 - **Time saved**: ~15 hours over 4-month practicum
 - **Cost saved**: ~$33/practicum (80% reduction)
 - **Better workflow**: Fast feedback loop for most development

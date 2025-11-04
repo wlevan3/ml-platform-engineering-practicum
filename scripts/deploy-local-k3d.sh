@@ -68,6 +68,16 @@ if ! command -v docker &>/dev/null; then
 fi
 log_success "✓ docker found: $(docker --version)"
 
+# Check for jq (optional, used for pretty-printing JSON responses)
+if ! command -v jq &>/dev/null; then
+	log_warning "jq not found (optional tool for JSON formatting)"
+	log_info "Install jq for prettier output:"
+	log_info "  macOS:  brew install jq"
+	log_info "  Linux:  sudo apt-get install jq  # or: sudo yum install jq"
+else
+	log_success "✓ jq found: $(jq --version)"
+fi
+
 # Check if k8s manifests exist
 if [[ ! -f "k8s/namespace.yaml" ]] || [[ ! -f "k8s/deployment.yaml" ]] || [[ ! -f "k8s/service.yaml" ]]; then
 	error_exit "Kubernetes manifests not found in k8s/ directory"
@@ -204,7 +214,12 @@ fi
 log_info "Testing: $SERVICE_URL/health/ready"
 if curl -sf "$SERVICE_URL/health/ready" >/dev/null; then
 	log_success "✓ Readiness check passed"
-	RESPONSE=$(curl -s "$SERVICE_URL/health/ready" | jq -c '.')
+	# Use jq if available for pretty JSON, otherwise show raw response
+	if command -v jq &>/dev/null; then
+		RESPONSE=$(curl -s "$SERVICE_URL/health/ready" | jq -c '.')
+	else
+		RESPONSE=$(curl -s "$SERVICE_URL/health/ready")
+	fi
 	log_info "  Response: $RESPONSE"
 else
 	log_warning "Readiness check failed (model may still be loading)"
