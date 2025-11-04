@@ -86,6 +86,9 @@ cd ml-platform-engineering-practicum
 pre-commit install
 
 # Setup Python environment
+# NOTE: This project requires Python 3.13. If 'python3.13' is not available on your system,
+# use the full path to your Python 3.13 interpreter, or ensure 'python3' points to Python 3.13.
+# Alternatively, use 'uv' for environment management (see CLAUDE.md).
 python3.13 -m venv .venv
 source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
@@ -101,13 +104,17 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ```bash
 # Build Docker image
-docker build -t ml-platform-api:latest .
+docker build -t ml-platform-api:v1.0.0 .
 
 # Run container
-docker run -p 8000:8000 ml-platform-api:latest
+docker run -p 8000:8000 ml-platform-api:v1.0.0
 
 # Test endpoints
-curl http://localhost:8000/health
+# Liveness check (process alive)
+curl http://localhost:8000/health/live
+# Readiness check (model loaded, ready for traffic)
+curl http://localhost:8000/health/ready
+# Prediction
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
   -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
@@ -131,12 +138,16 @@ kubectl apply -f k8s/deployment.yaml
 kubectl apply -f k8s/service.yaml
 
 # Wait for pods to be ready
-kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=120s
+kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=60s
 
 # Get service URL and test
 minikube service ml-platform-api --url
 # Use the URL from above to test:
-curl <SERVICE_URL>/health
+# Liveness check (process alive)
+curl <SERVICE_URL>/health/live
+# Readiness check (model loaded, ready for traffic)
+curl <SERVICE_URL>/health/ready
+# Prediction
 curl -X POST <SERVICE_URL>/predict \
   -H "Content-Type: application/json" \
   -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
