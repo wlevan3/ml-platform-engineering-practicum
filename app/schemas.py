@@ -2,7 +2,7 @@
 Pydantic models for request/response validation.
 """
 
-from typing import List
+from typing import Dict, List, Literal
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -52,12 +52,50 @@ class PredictionResponse(BaseModel):
     )
 
 
-class HealthResponse(BaseModel):
-    """Response model for health check endpoint."""
+class LivenessResponse(BaseModel):
+    """Response model for liveness probe endpoint.
 
-    status: str = Field(..., description="Service health status")
+    Liveness probe checks if the application process is alive and responding.
+    This should always return 200 OK if the process can handle requests.
+    """
+
+    status: Literal["alive"] = Field(
+        default="alive", description="Liveness status - always 'alive' if responding"
+    )
+
+    model_config = ConfigDict(json_schema_extra={"examples": [{"status": "alive"}]})
+
+
+class ReadinessResponse(BaseModel):
+    """Response model for readiness probe endpoint.
+
+    Readiness probe checks if the application is ready to serve traffic.
+    Returns 200 OK when model is loaded, 503 when not ready.
+    """
+
+    status: Literal["ready"] = Field(
+        default="ready",
+        description="Readiness status - always 'ready' when responding with 200",
+    )
     model_loaded: bool = Field(..., description="Whether the ML model is loaded")
     version: str = Field(..., description="API version")
+    dependencies: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Status of dependencies (empty for now, future-proof for databases, feature stores, etc.)",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "status": "ready",
+                    "model_loaded": True,
+                    "version": "1.0.0",
+                    "dependencies": {},
+                }
+            ]
+        }
+    )
 
 
 class ModelInfo(BaseModel):

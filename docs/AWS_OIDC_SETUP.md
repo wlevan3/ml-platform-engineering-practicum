@@ -100,10 +100,10 @@ AWS_PROFILE=kodekloud aws iam get-role --role-name GitHubActions-AssumeRoleForAc
          │ 1. Request OIDC token
          │    (includes repo, branch, workflow info)
          ▼
-┌────────────────────────────────────────────────────────────────┐
-│ GitHub OIDC Token Endpoint                                     │
-│ https://token.actions.githubusercontent.com/.well-known/jwks   │
-└────────┬───────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│ GitHub OIDC Token Endpoint                                       │
+│ https://token.actions.githubusercontent.com/.well-known/jwks     │
+└────────┬─────────────────────────────────────────────────────────┘
          │ 2. Return signed JWT token
          │    (short-lived, cryptographically signed)
          ▼

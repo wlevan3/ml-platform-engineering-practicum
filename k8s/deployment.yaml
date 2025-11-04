@@ -7,6 +7,11 @@ metadata:
     version: v1
 spec:
   replicas: 2  # High availability with 2 replicas
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1  # Ensures at least 1 pod always available during updates
+      maxSurge: 1        # Creates new pod before terminating old one (zero-downtime)
   selector:
     matchLabels:
       app: ml-platform-api
@@ -20,14 +25,25 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: ml-platform-api
+          # IMAGE_URL will be set by CI/CD or deployment script
+          # Minikube: ml-platform-api:v1.0.0
+          # EKS: <account-id>.dkr.ecr.<region>.amazonaws.com/ml-platform-api:v1.0.0
           image: ml-platform-api:v1.0.0  # Use versioned tag (SonarCloud kubernetes:S6596)
-          imagePullPolicy: Never  # MINIKUBE ONLY - Change to "IfNotPresent" for AWS EKS
+          imagePullPolicy: IfNotPresent  # Works for both Minikube and EKS
           ports:
             - containerPort: 8000
               name: http
               protocol: TCP
 
           # Resource limits and requests
+          # Rationale:
+          # - Memory: 256Mi request / 512Mi limit for small ML model + FastAPI
+          #   (iris classifier ~5MB, sklearn ~50MB, FastAPI ~30MB = ~100MB baseline)
+          # - CPU: 250m request / 500m limit for inference workload
+          #   (0.25 cores minimum, burst to 0.5 cores for concurrent requests)
+          # - Ephemeral storage: 1Gi request / 2Gi limit for temp files
+          #   (model loading, Python bytecode cache, /tmp usage)
+          # - Limits prevent noisy neighbor issues in multi-tenant cluster
           resources:
             requests:
               memory: "256Mi"
@@ -38,22 +54,42 @@ spec:
               cpu: "500m"
               ephemeral-storage: "2Gi"  # Prevent unlimited ephemeral storage consumption
 
-          # Liveness probe - checks if container is alive
+          # Health Probe Philosophy: FAIL-FAST
+          # - Startup: Handles slow model loading (one-time, generous timeout)
+          # - Liveness: Process alive (always passes if HTTP responds)
+          # - Readiness: Model loaded + ready for traffic (503 if not ready)
+          # - Startup failure: Container crashes and restarts (fail-fast approach)
+          # - Alternative: Keep alive but not ready (degraded-state) - not used here
+          # - Rationale: Fail-fast ensures problems are visible and fixed quickly
+
+          # Startup probe - handles slow model loading during container startup
+          # Once this passes, liveness/readiness probes take over with shorter delays
+          # This eliminates the "blind period" where issues go undetected
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 12  # Max startup time: 10s + (5s * 12) = 70 seconds
+
+          # Liveness probe - checks if container is alive (AFTER startup completes)
           livenessProbe:
             httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 20  # Allow time for ML model loading at startup
+              path: /health/live
+              port: http  # Use named port reference for maintainability
+            initialDelaySeconds: 0  # Start immediately after startup probe succeeds
             periodSeconds: 10
             timeoutSeconds: 5
-            failureThreshold: 3
+            failureThreshold: 3  # Faster detection post-startup (30s grace period)
 
-          # Readiness probe - checks if container is ready to serve traffic
+          # Readiness probe - checks if container is ready to serve traffic (AFTER startup completes)
           readinessProbe:
             httpGet:
-              path: /health
-              port: 8000
-            initialDelaySeconds: 5
+              path: /health/ready
+              port: http  # Use named port reference for maintainability
+            initialDelaySeconds: 0  # Start immediately after startup probe succeeds
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3

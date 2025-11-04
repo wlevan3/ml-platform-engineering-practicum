@@ -400,9 +400,12 @@ Alpine only achieved 22% reduction because:
 
 #### Core Learning 🎓
 
-**"For scientific Python workloads, application dependencies (NumPy, SciPy, scikit-learn) dominate image size, not the base OS. Alpine's smaller OS footprint is overshadowed by large compiled binaries."**
+> **Key Finding**: For scientific Python workloads, application dependencies (NumPy, SciPy,
+> scikit-learn) dominate image size, not the base OS. Alpine's smaller OS footprint is overshadowed
+> by large compiled binaries.
 
-This finding **invalidates the core assumption** behind Alpine migration for ML platforms and provides valuable guidance for future infrastructure decisions.
+This finding **invalidates the core assumption** behind Alpine migration for ML platforms and
+provides valuable guidance for future infrastructure decisions.
 
 ---
 
@@ -451,7 +454,8 @@ This finding **invalidates the core assumption** behind Alpine migration for ML 
 
 ## Conclusion
 
-While Alpine Linux is an excellent choice for **stateless microservices** and **simple REST APIs**, it is **NOT optimal for scientific Python workloads** due to:
+While Alpine Linux is an excellent choice for **stateless microservices** and **simple REST APIs**,
+it is **NOT optimal for scientific Python workloads** due to:
 
 1. **Lack of pre-built wheels**: Forces source compilation for NumPy, SciPy, scikit-learn
 2. **Longer build times**: 2x slower (~5 min → ~10 min), increasing CI/CD costs
@@ -460,7 +464,9 @@ While Alpine Linux is an excellent choice for **stateless microservices** and **
 
 **Final Verdict**: **Stick with Debian + `.trivyignore`** for this ML platform project.
 
-**Recommendation for Similar Projects**: If your project heavily depends on scientific Python packages (NumPy, SciPy, pandas, scikit-learn, TensorFlow, PyTorch), **prefer Debian or Distroless over Alpine** to leverage pre-built wheels and avoid compilation overhead.
+**Recommendation for Similar Projects**: If your project heavily depends on scientific Python
+packages (NumPy, SciPy, pandas, scikit-learn, TensorFlow, PyTorch), **prefer Debian or Distroless
+over Alpine** to leverage pre-built wheels and avoid compilation overhead.
 
 ---
 
