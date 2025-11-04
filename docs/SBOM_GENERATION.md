@@ -291,7 +291,7 @@ sbom-generation:
 ### Key Features
 
 1. **Runs After Docker Build**: Ensures we scan the final, tested image
-2. **Pinned Syft Version**: Uses Syft v1.18.1 for reproducibility
+2. **Pinned Syft Version**: Uses Syft v1.37.0 for reproducibility
 3. **Dual Format Output**: Generates both SPDX and CycloneDX
 4. **Package Count Summary**: Shows statistics in GitHub Actions UI
 5. **Extended Retention**: 90-day retention for compliance (vs. default 5 days)
@@ -410,7 +410,7 @@ syft version
 curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
 
 # Or use specific version
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.18.1
+curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin v1.37.0
 ```
 
 ## References
