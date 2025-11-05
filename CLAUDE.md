@@ -2,32 +2,21 @@
 
 Guidance for Claude Code working with this ML platform learning project.
 
-## 🎯 Quick Navigation (Index)
+## Quick Navigation
 
-**Common Questions** → Direct Answers:
+| Question | Answer | Details |
+|----------|--------|---------|
+| How do I run the API? | `uvicorn app.main:app --reload` | [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server) |
+| Run tests? | `pytest` | [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements) |
+| Python version? | Python 3.13 + uv | [README.md](README.md#local-development-setup) |
+| Commit format? | Conventional: `<type>(<scope>): <subject>` | [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) |
+| Security tools? | pre-commit, Trivy, Syft, Cosign | [SECURITY.md](SECURITY.md) |
 
-- **"How do I run the API?"** → `uvicorn app.main:app --reload` (details: [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server))
-- **"How do I run tests?"** → `pytest` (full options: [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements))
-- **"What Python version?"** → **Python 3.13 + uv** (setup: [README.md](README.md#local-development-setup))
-- **"How do I commit code?"** → **Conventional commits** `<type>(<scope>): <subject>` (guide: [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines))
-- **"Security scanning tools?"** → pre-commit, Trivy, Syft, Cosign (details: [SECURITY.md](SECURITY.md))
+**Core**: [README.md](README.md) | [CONTRIBUTING.md](CONTRIBUTING.md) | [SECURITY.md](SECURITY.md) |
+[ROADMAP.md](ROADMAP.md) | [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)
 
-**By Task**:
-
-- **Setup/Getting Started** → [README.md](README.md#getting-started) (Prerequisites, local dev, Docker, K8s)
-- **All Commands** → [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (Docker, K8s, Python, testing, security)
-- **Workflow & Standards** → [CONTRIBUTING.md](CONTRIBUTING.md) (Branch strategy, PR process, code quality)
-- **Security Practices** → [SECURITY.md](SECURITY.md) (Scanning, vulnerabilities, SBOM, image signing)
-- **Project Roadmap** → [ROADMAP.md](ROADMAP.md) (Phase-by-phase implementation plan)
-
-**Specialized Topics**:
-
-- Image signing (Cosign) → [docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)
-- Model security (pickle) → [docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)
-- AWS OIDC setup → [docs/AWS_OIDC_SETUP.md](docs/AWS_OIDC_SETUP.md)
-- SonarCloud quality → [docs/SONARCLOUD_QUALITY_STANDARDS.md](docs/SONARCLOUD_QUALITY_STANDARDS.md)
-- Kubernetes security → [docs/KUBERNETES_SECURITY.md](docs/KUBERNETES_SECURITY.md)
-- SBOM generation → [docs/SBOM_GENERATION.md](docs/SBOM_GENERATION.md)
+**Specialized**: [Image Signing](docs/IMAGE_SIGNING.md) | [Model Security](docs/PICKLE_SECURITY.md) |
+[AWS OIDC](docs/AWS_OIDC_SETUP.md) | [K8s Security](docs/KUBERNETES_SECURITY.md) | [SBOM](docs/SBOM_GENERATION.md)
 
 ---
 
