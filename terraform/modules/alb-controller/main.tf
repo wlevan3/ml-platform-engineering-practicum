@@ -40,6 +40,4 @@ resource "helm_release" "aws_load_balancer_controller" {
   depends_on = [
     module.irsa_role
   ]
-
-  tags = var.tags
 }
