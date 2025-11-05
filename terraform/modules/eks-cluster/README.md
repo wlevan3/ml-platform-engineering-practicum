@@ -21,7 +21,9 @@ management.
 - VPC with public and private subnets
 - Terraform >= 1.6.0
 - AWS provider >= 5.0
-- Kubernetes provider >= 2.20
+
+**Note**: Kubernetes provider is intentionally NOT required. Kubernetes resources (ResourceQuotas, LimitRanges) are
+managed via YAML manifests in `k8s/manifests/` as part of the GitOps migration strategy.
 
 ## Usage
 
@@ -185,16 +187,19 @@ module "eks_cluster" {
 ## AWS Costs
 
 ### EKS Control Plane
+
 - $0.10/hour (~$73/month) per cluster
 - Includes 99.95% uptime SLA
 - Multi-AZ redundant control plane
 
 ### Worker Nodes (On-Demand)
+
 - t3.medium: $0.0416/hour (~$30/month per node)
 - m5.large: $0.096/hour (~$70/month per node)
 - Plus EBS storage: $0.10/GB-month (e.g., 50GB = $5/month per node)
 
 ### Worker Nodes (Spot Instances)
+
 - t3.medium spot: ~$0.0125/hour (~$9/month per node) - **70% savings**
 - m5.large spot: ~$0.029/hour (~$21/month per node) - **70% savings**
 - Spot instances can be interrupted with 2-minute notice
@@ -202,18 +207,21 @@ module "eks_cluster" {
 ### Example Monthly Costs
 
 **Dev Environment (2x t3.medium spot, 50GB disks):**
+
 - Control plane: $73
 - Worker nodes: 2 × $9 = $18
 - Storage: 2 × $5 = $10
 - **Total: ~$101/month**
 
 **Production Environment (3x m5.large on-demand, 100GB disks):**
+
 - Control plane: $73
 - Worker nodes: 3 × $70 = $210
 - Storage: 3 × $10 = $30
 - **Total: ~$313/month**
 
 ### Cost Optimization Tips
+
 1. Use spot instances for non-critical workloads (70% savings)
 2. Use multiple instance types for spot to increase fulfillment rate
 3. Rightsize nodes based on actual workload requirements
@@ -242,12 +250,14 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 - **No Taints**: By default, spot nodes accept all workloads. Enable taints to restrict.
 
 **When to use spot:**
+
 - Dev/test environments
 - Batch processing workloads
 - Stateless applications
 - Workloads with retry logic
 
 **When NOT to use spot:**
+
 - Production databases
 - Real-time processing
 - Workloads requiring guaranteed uptime
