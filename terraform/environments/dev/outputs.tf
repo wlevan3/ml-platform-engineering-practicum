@@ -31,7 +31,7 @@ output "cluster_id" {
 
 output "cluster_name" {
   description = "EKS cluster name"
-  value       = local.cluster_name
+  value       = module.eks_cluster.cluster_id
 }
 
 output "cluster_endpoint" {

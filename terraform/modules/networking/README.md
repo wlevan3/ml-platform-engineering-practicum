@@ -150,9 +150,9 @@ When `cluster_name` is provided, the module automatically adds the following tag
 
 ### Public Subnets
 
-```
-kubernetes.io/role/elb                 = "1"
-kubernetes.io/cluster/${cluster_name}" = "shared"
+```text
+kubernetes.io/role/elb                = "1"
+kubernetes.io/cluster/${cluster_name} = "shared"
 ```
 
 ### Private Subnets
@@ -182,7 +182,7 @@ These tags are required for EKS to automatically discover subnets for load balan
 
 ## Network Architecture
 
-```
+```text
 VPC (10.0.0.0/16)
 ├── AZ1 (us-west-2a)
 │   ├── Public Subnet (10.0.101.0/24)

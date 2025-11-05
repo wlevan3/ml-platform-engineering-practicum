@@ -8,8 +8,8 @@ variable "cluster_name" {
   type        = string
 
   validation {
-    condition     = length(var.cluster_name) > 0
-    error_message = "cluster_name must not be empty."
+    condition     = can(regex("^[a-zA-Z][a-zA-Z0-9-]{0,99}$", var.cluster_name))
+    error_message = "cluster_name must start with a letter and contain only alphanumeric characters and hyphens (max 100 chars)."
   }
 
   validation {
