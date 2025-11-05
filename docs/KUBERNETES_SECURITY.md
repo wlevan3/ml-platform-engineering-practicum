@@ -63,7 +63,7 @@ Against Minikube cluster:
 
 ```bash
 # Start Minikube with necessary features
-minikube start --kubernetes-version=v1.30
+minikube start --kubernetes-version=v1.34
 
 # Run kube-bench as a Kubernetes Job
 kubectl apply -f https://raw.githubusercontent.com/aquasecurity/kube-bench/main/job.yaml

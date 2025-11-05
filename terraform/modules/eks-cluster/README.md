@@ -34,7 +34,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "my-eks-cluster"
-  cluster_version = "1.28"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -62,7 +62,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "dev-eks-cluster"
-  cluster_version = "1.28"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -101,7 +101,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "prod-eks-cluster"
-  cluster_version = "1.29"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -302,7 +302,7 @@ No resources.
 | <a name="input_cluster_endpoint_public_access"></a> [cluster\_endpoint\_public\_access](#input\_cluster\_endpoint\_public\_access) | Enable public API server endpoint. Required for CI/CD access (e.g., GitHub Actions). Production environments should set to false and use VPN/bastion. | `bool` | `true` | no |
 | <a name="input_cluster_endpoint_public_access_cidrs"></a> [cluster\_endpoint\_public\_access\_cidrs](#input\_cluster\_endpoint\_public\_access\_cidrs) | List of CIDR blocks that can access the public API server endpoint. Defaults to open (0.0.0.0/0). Production should restrict to specific IPs. | `list(string)` | <pre>[<br/>  "0.0.0.0/0"<br/>]</pre> | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the EKS cluster | `string` | n/a | yes |
-| <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for the EKS cluster | `string` | `"1.33"` | no |
+| <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for the EKS cluster | `string` | `"1.34"` | no |
 | <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
 | <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
 | <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2\_x86\_64, AL2\_x86\_64\_GPU, AL2\_ARM\_64, BOTTLEROCKET\_*) | `string` | `"AL2_x86_64"` | no |
