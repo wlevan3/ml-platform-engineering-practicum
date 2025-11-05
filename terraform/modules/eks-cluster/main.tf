@@ -2,7 +2,7 @@
 # Creates an Amazon EKS cluster with managed node groups
 
 module "eks" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=v21.8.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=2cb1fac31b0fc2dd6a236b0c0678df75819c5a3b"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version

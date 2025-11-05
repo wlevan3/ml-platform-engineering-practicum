@@ -157,9 +157,9 @@ kubernetes.io/cluster/${cluster_name} = "shared"
 
 ### Private Subnets
 
-```text
-kubernetes.io/role/internal-elb       = "1"
-kubernetes.io/cluster/${cluster_name} = "shared"
+```
+kubernetes.io/role/internal-elb        = "1"
+kubernetes.io/cluster/${cluster_name}" = "shared"
 ```
 
 These tags are required for EKS to automatically discover subnets for load balancer provisioning.

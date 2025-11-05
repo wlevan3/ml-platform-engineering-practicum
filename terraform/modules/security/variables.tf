@@ -11,6 +11,11 @@ variable "cluster_name" {
     condition     = can(regex("^[a-zA-Z][a-zA-Z0-9-]{0,99}$", var.cluster_name))
     error_message = "cluster_name must start with a letter and contain only alphanumeric characters and hyphens (max 100 chars)."
   }
+
+  validation {
+    condition     = can(regex("^[a-zA-Z][a-zA-Z0-9-]{0,99}$", var.cluster_name))
+    error_message = "cluster_name must start with a letter and contain only alphanumeric characters and hyphens (max 100 chars)."
+  }
 }
 
 variable "region" {
