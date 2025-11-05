@@ -1,0 +1,39 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
+.coverage*
+.mypy_cache/
+.ruff_cache/
+*.pyc
+*.pyo
+*.egg-info/
+pip-log.txt
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Models (binary - tokenization inefficient)
+models/*.skops
+models/*.pkl
+models/*.joblib
+
+# Test & Coverage outputs
+coverage.xml
+coverage.json
+htmlcov/
+
+# IDE & OS
+.DS_Store
+.idea/
+*.swp
+*.swo
+*~
