@@ -1,0 +1,81 @@
+# ============================================================================
+# Limit Range - Default Pod Limits
+# ============================================================================
+#
+# LimitRange sets default resource requests/limits for pods that don't specify
+# them. This prevents unbounded resource consumption and ensures predictable
+# costs.
+#
+# Purpose: Layer 1 of cost control (HPA is Layer 2, Budget Alerts are Layer 3)
+#
+# Key features:
+# - Default container limits: 500m CPU, 1Gi memory
+# - Default container requests: 250m CPU, 512Mi memory
+# - Maximum container limits: 2 vCPUs, 4Gi memory (prevents runaway pods)
+# - Pod-level limits: Max 4 vCPUs, 8Gi memory per pod
+# - PVC limits: 1Gi min, 50Gi max
+#
+# Apply with:
+#   kubectl apply -f k8s/manifests/limit-range.yaml
+#
+# Verify with:
+#   kubectl describe limitrange ml-platform-default-limits -n default
+#
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: ml-platform-default-limits
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ml-platform-api
+    app.kubernetes.io/component: limit-range
+    app.kubernetes.io/managed-by: kubectl
+    Project: ml-platform-engineering-practicum
+spec:
+  limits:
+    # ==========================================================================
+    # Container Limits
+    # ==========================================================================
+    - type: Container
+      # Default values (applied if not specified in pod spec)
+      default:
+        cpu: 500m                  # Default CPU limit
+        memory: 1Gi                # Default memory limit
+        ephemeral-storage: 2Gi     # Default ephemeral storage limit
+      # Default requests (applied if not specified in pod spec)
+      defaultRequest:
+        cpu: 250m                  # Default CPU request
+        memory: 512Mi              # Default memory request
+        ephemeral-storage: 1Gi     # Default ephemeral storage request
+      # Maximum allowed (prevents setting limits too high)
+      max:
+        cpu: 2000m                 # Max 2 vCPUs per container
+        memory: 4Gi                # Max 4 GB per container
+        ephemeral-storage: 10Gi    # Max 10 GB ephemeral storage
+      # Minimum allowed (prevents setting limits too low)
+      min:
+        cpu: 100m                  # Min 100m CPU
+        memory: 128Mi              # Min 128 MB memory
+        ephemeral-storage: 100Mi   # Min 100 MB ephemeral storage
+
+    # ==========================================================================
+    # Pod-Level Limits (aggregated across all containers)
+    # ==========================================================================
+    - type: Pod
+      max:
+        cpu: 4000m                 # Max 4 vCPUs per pod
+        memory: 8Gi                # Max 8 GB per pod
+        ephemeral-storage: 20Gi    # Max 20 GB ephemeral storage per pod
+      min:
+        cpu: 100m                  # Min 100m CPU per pod
+        memory: 128Mi              # Min 128 MB per pod
+        ephemeral-storage: 100Mi   # Min 100 MB ephemeral storage per pod
+
+    # ==========================================================================
+    # PVC Limits
+    # ==========================================================================
+    - type: PersistentVolumeClaim
+      max:
+        storage: 50Gi              # Max 50 GB per PVC
+      min:
+        storage: 1Gi               # Min 1 GB per PVC

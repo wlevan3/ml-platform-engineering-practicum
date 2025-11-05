@@ -1,0 +1,43 @@
+# ============================================================================
+# Resource Quota - Object Counts
+# ============================================================================
+#
+# This ResourceQuota enforces hard limits on Kubernetes object counts in the
+# default namespace to prevent resource sprawl and accidental cost overruns
+# (especially from load balancers).
+#
+# Purpose: Layer 1 of cost control (HPA is Layer 2, Budget Alerts are Layer 3)
+#
+# Key features:
+# - Limits deployments, services, ConfigMaps, secrets, jobs, CronJobs
+# - Restricts load balancer creation to prevent accidental ALB provisioning
+#
+# Apply with:
+#   kubectl apply -f k8s/manifests/resource-quota-objects.yaml
+#
+# Verify with:
+#   kubectl describe quota ml-platform-object-count-quota -n default
+#
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: ml-platform-object-count-quota
+  namespace: default
+  labels:
+    app.kubernetes.io/name: ml-platform-api
+    app.kubernetes.io/component: resource-quota
+    app.kubernetes.io/managed-by: kubectl
+    Project: ml-platform-engineering-practicum
+spec:
+  hard:
+    # Object count limits
+    count/deployments.apps: "5"    # Max 5 deployments (should only need 1-2)
+    count/services: "10"           # Max 10 services (plenty for ml-platform-api)
+    count/configmaps: "20"         # Max 20 ConfigMaps
+    count/secrets: "20"            # Max 20 Secrets
+    count/jobs.batch: "10"         # Max 10 Jobs (for one-off tasks)
+    count/cronjobs.batch: "5"      # Max 5 CronJobs
+
+    # Prevent accidental load balancer creation (cost control)
+    # Each ALB costs ~$22/month + data transfer charges
+    services.loadbalancers: "1"    # Only 1 ALB allowed (created by Ingress)
