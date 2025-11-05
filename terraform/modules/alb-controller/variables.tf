@@ -17,7 +17,7 @@ variable "role_name" {
 
   validation {
     condition     = var.role_name == null || can(regex("^[a-zA-Z0-9+=,.@_-]+$", var.role_name))
-    error_message = "Role name must contain only alphanumeric characters and +=,.@_-"
+    error_message = "Role name must contain only alphanumeric characters and the following special characters: + = , . @ _ -"
   }
 }
 
