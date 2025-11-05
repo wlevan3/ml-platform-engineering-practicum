@@ -235,6 +235,72 @@ aws s3 sync ./local s3://bucket-name
 aws rds describe-db-instances
 ```
 
+## GitHub Actions Workflows
+
+### EKS Infrastructure Deployment
+
+```bash
+# Bootstrap backend (one-time setup) - choose one:
+gh workflow run eks-deploy.yml -f action=bootstrap  # GitHub Actions
+./scripts/bootstrap-eks-backend.sh dev              # Local script
+
+# Plan infrastructure changes (no apply)
+gh workflow run eks-deploy.yml -f action=plan-only
+
+# Deploy EKS cluster + ECR
+gh workflow run eks-deploy.yml -f action=deploy -f image_tag=v1.0.0
+
+# Deploy EKS + ECR + deploy to Kubernetes
+gh workflow run eks-deploy.yml \
+  -f action=deploy \
+  -f image_tag=v1.0.0 \
+  -f deploy_to_k8s=true
+
+# Destroy EKS only (keep VPC for faster recreation)
+gh workflow run eks-deploy.yml -f action=destroy-eks-only
+
+# Full destruction
+gh workflow run eks-deploy.yml -f action=destroy
+```
+
+### Workflow Management
+
+```bash
+# List all workflows
+gh workflow list
+
+# View workflow runs
+gh run list --workflow=eks-deploy.yml --limit 10
+
+# Watch current workflow run
+gh run watch
+
+# View specific run
+gh run view <run-id>
+
+# View run logs
+gh run view <run-id> --log
+
+# Download artifacts
+gh run download <run-id>
+
+# Re-run failed jobs
+gh run rerun <run-id> --failed
+
+# Cancel running workflow
+gh run cancel <run-id>
+```
+
+### Test OIDC Authentication
+
+```bash
+# Test AWS OIDC authentication
+gh workflow run test-oidc-aws.yml
+
+# View test results
+gh run list --workflow=test-oidc-aws.yml --limit 1
+```
+
 ## Pre-commit
 
 ```bash
@@ -318,7 +384,7 @@ gh issue close 123
 - **Pull Requests:** <https://github.com/wlevan3/ml-platform-engineering-practicum/pulls>
 - **Actions:** <https://github.com/wlevan3/ml-platform-engineering-practicum/actions>
 
-### Code Quality
+### Quality Monitoring
 
 - **SonarCloud Dashboard:** <https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum>
 - **Quality Gate:** <https://sonarcloud.io/project/quality_gate?id=wlevan3_ml-platform-engineering-practicum>
