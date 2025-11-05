@@ -115,16 +115,16 @@ Check that quotas are created and active:
 
 ```bash
 # View all resource quotas
-kubectl get resourcequota -n default
+kubectl get resourcequota -n ml-platform
 
 # View compute quota details
-kubectl describe quota ml-platform-compute-quota -n default
+kubectl describe quota ml-platform-compute-quota -n ml-platform
 
 # View object count quota details
-kubectl describe quota ml-platform-object-count-quota -n default
+kubectl describe quota ml-platform-object-count-quota -n ml-platform
 
 # View limit range details
-kubectl describe limitrange ml-platform-default-limits -n default
+kubectl describe limitrange ml-platform-default-limits -n ml-platform
 ```
 
 **Expected output** (example):
@@ -135,7 +135,7 @@ ml-platform-compute-quota          10s
 ml-platform-object-count-quota     10s
 
 Name:                   ml-platform-compute-quota
-Namespace:              default
+Namespace:              ml-platform
 Resource                Used  Hard
 --------                ----  ----
 limits.cpu              0     8000m
@@ -151,13 +151,13 @@ Check current quota usage vs limits:
 
 ```bash
 # Summary view
-kubectl get resourcequota -n default
+kubectl get resourcequota -n ml-platform
 
 # Detailed usage breakdown
-kubectl describe quota -n default
+kubectl describe quota -n ml-platform
 
 # Check if pods are being rejected due to quota
-kubectl get events -n default --sort-by='.lastTimestamp' | grep -i quota
+kubectl get events -n ml-platform --sort-by='.lastTimestamp' | grep -i quota
 ```
 
 ## 🔄 Integration with Existing Resources
@@ -218,7 +218,7 @@ requested: requests.cpu=250m, used: requests.cpu=3750m, limited: requests.cpu=40
 
 **Solution**:
 
-1. Check current quota usage: `kubectl describe quota -n default`
+1. Check current quota usage: `kubectl describe quota -n ml-platform`
 2. Delete unused pods or reduce replicas
 3. If legitimately needed, increase quota limits in manifest and reapply
 
@@ -265,7 +265,7 @@ spec:
 **Solution**: Restart deployments to apply new defaults:
 
 ```bash
-kubectl rollout restart deployment/ml-platform-api -n default
+kubectl rollout restart deployment/ml-platform-api -n ml-platform
 ```
 
 ## 📚 Background: Migration from Terraform
@@ -297,8 +297,8 @@ cycle resolution).
 
 ## ⚠️ Important Notes
 
-1. **Namespace**: Currently applied to `default` namespace. Update `metadata.namespace` when implementing proper
-   namespace separation.
+1. **Namespace**: Resources are deployed to `ml-platform` namespace. Ensure deployment and service manifests use the
+   same namespace for proper quota enforcement.
 
 2. **Quota Modification**: When changing quotas, ensure values are coordinated:
    - Pod quota ≥ HPA maxReplicas + rolling update buffer
@@ -324,10 +324,10 @@ Test quota enforcement by attempting to exceed limits:
 kubectl scale deployment ml-platform-api --replicas=15
 
 # Check quota violation event
-kubectl get events -n default | grep -i quota
+kubectl get events -n ml-platform | grep -i quota
 
 # Verify quota blocks scale-up
-kubectl get pods -n default | wc -l  # Should show 12 or fewer
+kubectl get pods -n ml-platform | wc -l  # Should show 12 or fewer
 ```
 
 Test LimitRange defaults:
