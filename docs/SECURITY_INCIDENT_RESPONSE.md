@@ -236,11 +236,19 @@ aws s3api put-public-access-block \
 | Recon:EC2/PortProbeUnprotectedPort | MEDIUM | Review SG rules, restrict ports | `aws ec2 describe-security-groups --group-ids SG_ID` |
 | IAM.1 Root Access Key Exists | CRITICAL | Delete root access keys immediately | `aws iam delete-access-key --access-key-id KEY_ID` |
 | EC2.2 Default SG Open | HIGH | Remove all ingress/egress rules | `aws ec2 revoke-security-group-ingress/egress` |
-| S3.1 Public Access Enabled | HIGH | Block public access | `aws s3api put-public-access-block --bucket NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true` |
+| S3.1 Public Access Enabled | HIGH | Block public access | See command below |
 | CVE Package Vulnerability | HIGH | Update package/container image | `yum update PACKAGE` or rebuild Docker image |
 | Network Exposure Port 0.0.0.0/0 | MEDIUM/HIGH | Restrict to specific IP range | `aws ec2 revoke/authorize-security-group-ingress` |
 | IAM Password Policy Missing | MEDIUM | Configure via Console or Terraform | Update terraform/environments/dev/main.tf |
 | CloudTrail Not Enabled | MEDIUM | Enable via Terraform | `terraform apply -var="enable_cloudtrail=true"` |
+
+**S3.1 Public Access Enabled Remediation Command:**
+
+```bash
+aws s3api put-public-access-block --bucket NAME \
+  --public-access-block-configuration \
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+```
 
 **For detailed remediation steps**, refer to AWS documentation or contact platform engineering team.
 
