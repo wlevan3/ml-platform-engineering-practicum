@@ -83,6 +83,86 @@ ci/add-security-scan
 - `ci` - CI/CD
 - `chore` - Maintenance
 
+## Python Development
+
+### API Server
+
+```bash
+# Run development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# Run with custom port
+uvicorn app.main:app --reload --port 3000
+```
+
+### Model Training
+
+```bash
+# Train and save model (.skops format)
+python train_model.py
+```
+
+### Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output and coverage
+pytest -v --cov=app --cov-report=term-missing
+
+# Run specific test file
+pytest tests/test_main.py
+
+# Run with markers
+pytest -m "not slow"
+```
+
+### Code Quality
+
+```bash
+# Format code (Black)
+black .
+black app/ tests/
+
+# Lint and auto-fix (Ruff)
+ruff check . --fix
+ruff check app/
+
+# Type checking (mypy)
+mypy app/
+mypy app/ --strict
+
+# Run all pre-commit hooks
+pre-commit run --all-files
+```
+
+### Docker
+
+```bash
+# Build image
+docker build -t ml-platform-api:latest .
+
+# Run container
+docker run -p 8000:8000 ml-platform-api:latest
+
+# Run with environment variables
+docker run -p 8000:8000 -e LOG_LEVEL=debug ml-platform-api:latest
+
+# Security scan
+trivy image ml-platform-api:latest --severity HIGH,CRITICAL
+```
+
+### SBOM Generation
+
+```bash
+# Generate SPDX format
+syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
+
+# Generate CycloneDX format
+syft ml-platform-api:latest -o cyclonedx-json --file sbom-docker-cyclonedx.json
+```
+
 ## Project Status Updates
 
 ### In Project UI

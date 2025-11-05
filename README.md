@@ -69,103 +69,79 @@ The ML platform consists of these core components:
 - Docker Desktop
 - Minikube (for local K8s deployment)
 - kubectl >= 1.28
-- (Future) AWS Account with appropriate permissions
-- (Future) `terraform` >= 1.7.0
-- (Future) `aws-cli` >= 2.0
-- (Future) `helm` >= 3.0
 - `gh` CLI (for GitHub integration)
+- (Future) AWS Account, `terraform` >= 1.7.0, `aws-cli` >= 2.0, `helm` >= 3.0
 
 ### Local Development Setup
 
 ```bash
-# Clone repository
+# Clone and setup
 git clone https://github.com/wlevan3/ml-platform-engineering-practicum.git
 cd ml-platform-engineering-practicum
-
-# Install pre-commit hooks
 pre-commit install
 
-# Setup Python environment
-# NOTE: This project requires Python 3.13. If 'python3.13' is not available on your system,
-# use the full path to your Python 3.13 interpreter, or ensure 'python3' points to Python 3.13.
-# Alternatively, use 'uv' for environment management (see CLAUDE.md).
+# Python environment (3.13 required)
 python3.13 -m venv .venv
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-# Train the ML model
+# Train model and run API
 python train_model.py
-
-# Run locally with uvicorn
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Docker Deployment
+**Alternative:** Use `uv` package manager - see [CLAUDE.md](CLAUDE.md) for details.
+
+### Docker Quick Start
 
 ```bash
-# Build Docker image
 docker build -t ml-platform-api:v1.0.0 .
-
-# Run container
 docker run -p 8000:8000 ml-platform-api:v1.0.0
 
 # Test endpoints
-# Liveness check (process alive)
-curl http://localhost:8000/health/live
-# Readiness check (model loaded, ready for traffic)
 curl http://localhost:8000/health/ready
-# Prediction
 curl -X POST http://localhost:8000/predict \
   -H "Content-Type: application/json" \
   -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
 ```
 
-### Kubernetes Deployment (Minikube)
+**All Docker commands:** [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (build, run, scan, SBOM)
+
+### Kubernetes Quick Start
 
 ```bash
-# Install Minikube (macOS)
-brew install minikube
-
-# Start Minikube cluster
+# Start Minikube
 minikube start --cpus=4 --memory=6144 --driver=docker
 
-# Build and load image into Minikube
+# Build, load, and deploy
 docker build -t ml-platform-api:v1.0.0 .
 minikube image load ml-platform-api:v1.0.0
+kubectl apply -f k8s/
 
-# Deploy to Kubernetes
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-
-# Wait for pods to be ready (includes ~30s model loading time)
-kubectl wait --for=condition=ready pod -l app=ml-platform-api --timeout=120s
-
-# Get service URL and test
-minikube service ml-platform-api --url
-# Use the URL from above to test:
-# Liveness check (process alive)
-curl <SERVICE_URL>/health/live
-# Readiness check (model loaded, ready for traffic)
+# Test
+minikube service ml-platform-api --url  # Get service URL
 curl <SERVICE_URL>/health/ready
-# Prediction
-curl -X POST <SERVICE_URL>/predict \
-  -H "Content-Type: application/json" \
-  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
-
-# View pod status and logs
-kubectl get pods
-kubectl logs -l app=ml-platform-api --all-containers=true
-kubectl describe pods -l app=ml-platform-api
-
-# Stop Minikube when done
-minikube stop
 ```
+
+**All Kubernetes commands:** `docs/QUICK_REFERENCE.md` (deployment, validation, logs, troubleshooting)
 
 ## 📚 Documentation
 
-- **[Contributing Guide](CONTRIBUTING.md)** - Development workflow, branch strategy, commit conventions
-- **[Project Management](docs/PROJECT_MANAGEMENT.md)** - GitHub Projects setup and usage
-- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Commands and shortcuts
+### Core Guides
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Workflow, branch strategy, commit conventions, PR checklist
+- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - Commands and shortcuts for all tools
+- **[SECURITY.md](SECURITY.md)** - Security practices, scanning tools, vulnerability management
+- **[ROADMAP.md](ROADMAP.md)** - Detailed phase-by-phase implementation plan
+
+### Specialized Docs
+
+- **[docs/PROJECT_MANAGEMENT.md](docs/PROJECT_MANAGEMENT.md)** - GitHub Projects setup
+- **[docs/SONARCLOUD_QUALITY_STANDARDS.md](docs/SONARCLOUD_QUALITY_STANDARDS.md)** - Quality metrics
+- **[docs/SBOM_GENERATION.md](docs/SBOM_GENERATION.md)** - Software Bill of Materials
+- **[docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)** - Container image signing with Cosign
+- **[docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)** - Model deserialization security
+- **[docs/KUBERNETES_SECURITY.md](docs/KUBERNETES_SECURITY.md)** - K8s security best practices
 
 ## 🛠️ Technology Stack
 
@@ -197,91 +173,23 @@ minikube stop
 
 ## 📖 Development Workflow
 
-This project follows production-grade practices:
+**Quick:** Create issue → Branch → Develop → Test → PR → CI/CD → Merge
 
-1. **Create Issue** - Use GitHub Projects and issue templates
-2. **Create Branch** - Feature branches from `main`
-3. **Develop** - Follow coding standards
-4. **Test** - Run pre-commit hooks and tests
-5. **Create PR** - Use PR template, self-review
-6. **CI/CD** - Automated checks must pass
-7. **Merge** - Squash merge to keep history clean
+**Details:** See [CONTRIBUTING.md](CONTRIBUTING.md) for complete workflow, coding standards, and PR checklist.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+## 📝 Learning Philosophy
 
-## 📝 Learning Reflections
+This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection** issue template to capture insights, challenges, trade-offs, and resources.
 
-A key part of this practicum is documenting learnings and design decisions. Use the **Learning Reflection** issue
-template to capture:
-
-- Key insights and takeaways
-- Challenges encountered and solutions
-- Trade-offs and alternative approaches
-- Resources that helped
-
-View all learnings in the [Project Board's Learning view](https://github.com/users/wlevan3/projects).
-
-## 📈 Progress Tracking
-
-Track progress through:
-
-- **GitHub Projects** - Visual boards and roadmap
-- **Issues** - Detailed task tracking
-- **Pull Requests** - Code changes and reviews
-- **Milestones** - Phase completion markers
+**View learnings:** [Project Board Learning view](https://github.com/users/wlevan3/projects)
 
 ## 🎯 Roadmap
 
-### Phase 1: Foundation & Setup ✅
+**Current Phase:** Transitioning from Phase 1 (Foundation ✅) to Phase 2 (EKS & Kubernetes)
 
-- [x] GitHub repository setup
-- [x] Branch protection and rulesets
-- [x] Issue templates and PR templates
-- [x] CI/CD pipeline foundation
-- [x] GitHub Projects configuration
+**Next Milestone:** EKS cluster deployment with Terraform
 
-### Phase 2: EKS & Kubernetes
-
-- [ ] Terraform configuration for EKS
-- [ ] VPC and networking setup
-- [ ] Node groups and autoscaling
-- [ ] kubectl access configuration
-- [ ] Deploy sample workload
-
-### Phase 3: Model Registry
-
-- [ ] MLflow deployment on EKS
-- [ ] S3 backend for artifacts
-- [ ] Authentication and access control
-- [ ] Integration testing
-
-### Phase 4: Feature Store
-
-- [ ] Feature store architecture design
-- [ ] RDS deployment for metadata
-- [ ] Feature ingestion pipeline
-- [ ] Feature serving API
-
-### Phase 5: CI/CD Integration
-
-- [ ] GitHub Actions workflows
-- [ ] Automated testing
-- [ ] Deployment automation
-- [ ] Rollback procedures
-
-### Phase 6: Observability
-
-- [ ] Prometheus deployment
-- [ ] Grafana dashboards
-- [ ] Log aggregation (ELK)
-- [ ] Alerting setup
-
-### Phase 7: Optimization & Polish
-
-- [ ] Cost optimization
-- [ ] Performance tuning
-- [ ] Security hardening
-- [ ] Documentation completion
+**View detailed roadmap:** [ROADMAP.md](ROADMAP.md) - Full phase-by-phase plan with timelines and success metrics
 
 ## 🤝 Contributing
 

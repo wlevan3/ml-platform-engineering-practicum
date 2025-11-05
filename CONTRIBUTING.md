@@ -250,20 +250,6 @@ For comprehensive guidance on SonarCloud integration, see:
 - [Quality Gate Details](https://sonarcloud.io/project/quality_gate?id=wlevan3_ml-platform-engineering-practicum)
 - [Project Issues](https://sonarcloud.io/project/issues?id=wlevan3_ml-platform-engineering-practicum)
 
-## Table of Contents
-
-- [Development Setup](#development-setup)
-  - [Pre-Commit Hooks](#pre-commit-hooks)
-  - [Code Quality Standards (SonarCloud)](#code-quality-standards-sonarcloud)
-- [Development Workflow](#development-workflow)
-- [Branch Strategy](#branch-strategy)
-- [Commit Guidelines](#commit-guidelines)
-- [Pull Request Process](#pull-request-process)
-- [Code Standards](#code-standards)
-- [Testing Requirements](#testing-requirements)
-- [Infrastructure Changes](#infrastructure-changes)
-- [Documentation](#documentation)
-
 ## Development Workflow
 
 This project follows a **production-like workflow** to practice real-world engineering practices:

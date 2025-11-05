@@ -1,6 +1,35 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
+Guidance for Claude Code working with this ML platform learning project.
+
+## 🎯 Quick Navigation (Index)
+
+**Common Questions** → Direct Answers:
+
+- **"How do I run the API?"** → `uvicorn app.main:app --reload` (details: [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server))
+- **"How do I run tests?"** → `pytest` (full options: [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements))
+- **"What Python version?"** → **Python 3.13 + uv** (setup: [README.md](README.md#local-development-setup))
+- **"How do I commit code?"** → **Conventional commits** `<type>(<scope>): <subject>` (guide: [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines))
+- **"Security scanning tools?"** → pre-commit, Trivy, Syft, Cosign (details: [SECURITY.md](SECURITY.md))
+
+**By Task**:
+
+- **Setup/Getting Started** → [README.md](README.md#getting-started) (Prerequisites, local dev, Docker, K8s)
+- **All Commands** → [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (Docker, K8s, Python, testing, security)
+- **Workflow & Standards** → [CONTRIBUTING.md](CONTRIBUTING.md) (Branch strategy, PR process, code quality)
+- **Security Practices** → [SECURITY.md](SECURITY.md) (Scanning, vulnerabilities, SBOM, image signing)
+- **Project Roadmap** → [ROADMAP.md](ROADMAP.md) (Phase-by-phase implementation plan)
+
+**Specialized Topics**:
+
+- Image signing (Cosign) → [docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)
+- Model security (pickle) → [docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)
+- AWS OIDC setup → [docs/AWS_OIDC_SETUP.md](docs/AWS_OIDC_SETUP.md)
+- SonarCloud quality → [docs/SONARCLOUD_QUALITY_STANDARDS.md](docs/SONARCLOUD_QUALITY_STANDARDS.md)
+- Kubernetes security → [docs/KUBERNETES_SECURITY.md](docs/KUBERNETES_SECURITY.md)
+- SBOM generation → [docs/SBOM_GENERATION.md](docs/SBOM_GENERATION.md)
+
+---
 
 ## Project Context
 
@@ -8,30 +37,20 @@ Personal **learning project** building a production-grade ML platform from scrat
 hands-on experience with infrastructure, MLOps, and platform engineering. Uses production-like
 workflows (issues, PRs, CI/CD) to build professional habits.
 
-**Current Phase**: Foundation & Setup (Phase 1) - FastAPI ML inference service (Iris
-classifier) is functional. Infrastructure (EKS, Terraform) coming in Phase 2+.
+**Current Phase**: Phase 1 complete (FastAPI inference functional) → transitioning to Phase 2 (EKS & Kubernetes)
 
 **Learning philosophy**: Document the "why" behind decisions, reflect on trade-offs, don't
 just complete tasks—understand them deeply.
 
-## Development Environment
+## Environment Requirements
 
-**IMPORTANT - Environment Requirements:**
+**Critical**:
 
-- This project uses **Python 3.13** with **uv** package manager
-- Model files use **.skops format** (not .joblib or .pkl) for secure deserialization
-- Pre-commit hooks must pass before pushing (see Workflow section)
+- **Python 3.13 + uv** (package manager)
+- **.skops format** for models (NOT .pkl/.joblib - security requirement)
+- **Pre-commit hooks** mandatory (blocks secrets, runs linters)
 
-```bash
-# Setup
-uv venv .venv --python 3.13
-source .venv/bin/activate  # Windows: .venv/Scripts/activate
-uv pip install -r requirements.txt
-python train_model.py  # Creates models/iris_classifier.skops + metadata
-
-# Alternative: standard venv (if uv unavailable)
-python3.13 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-```
+**Setup**: [README.md - Getting Started](README.md#getting-started)
 
 ## Essential Commands
 
@@ -60,74 +79,41 @@ trivy image ml-platform-api:latest --severity HIGH,CRITICAL  # Scan vulnerabilit
 syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 ```
 
+**Complete command reference**: [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)
+
 ## Code Standards
 
-### Python
+**Project-specific patterns**:
 
-- **Style**: PEP 8 via black (line length: 88)
-- **Type hints**: Required for all function signatures
-- **Docstrings**: Required for modules, classes, public functions (Google style)
-- **Exceptions**: Use specific exceptions, never bare `except:`
-- **Validation**: Pydantic models for FastAPI schemas
+- **Model loading**: Singleton pattern in `app/model.py:get_model()`
+- **Model security**: .skops format + SHA-256 verification (see [PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md))
+- **FastAPI**: Lifespan events, dependency injection, HTTPException with status codes
+- **Testing**: 90% coverage target (SonarCloud gate: 80% minimum)
 
-### FastAPI Patterns
+**Full standards**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-- **Singleton pattern** for model loading → `app/model.py:get_model()`
-- **Lifespan events** for startup/shutdown → `app/main.py:lifespan()`
-- **Dependency injection** for shared resources
-- **HTTPException** for errors with proper status codes
-- **Response models** for all endpoints
-
-### Testing
-
-- **Location**: `tests/` directory, files named `test_*.py`
-- **Framework**: pytest with fixtures
-- **API testing**: FastAPI `TestClient`
-- **Coverage**: 80%+ target (configured in pytest.ini)
+- PEP 8 style (black formatter)
+- Type hints required
+- Docstrings for modules, classes, functions
+- Conventional commits
 
 ## Workflow
 
-### Branch Naming
+**Branch naming**: `<type>/<description>` (e.g., `feature/add-mlflow`, `fix/api-timeout`)
 
-```text
-<type>/<short-description>
-```
+**Commit format**: `<type>(<scope>): <subject>` (e.g., `feat(api): add health check endpoint`)
 
-Types: `feature/`, `fix/`, `infra/`, `docs/`, `refactor/`, `ci/`
+**Before pushing**:
 
-Example: `feature/add-mlflow-integration`
+1. Run tests: `pytest`
+2. Run quality checks: `pre-commit run --all-files`
+3. Optional: Run `/pre-push-review` Claude Code skill (shellcheck + actionlint)
 
-### Commit Format
+**Complete workflow**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
-Follow Conventional Commits:
-
-```text
-<type>(<scope>): <subject>
-```
-
-Types: `feat`, `fix`, `infra`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
-
-Examples:
-
-- `feat(model-registry): add MLflow integration`
-- `fix(api): resolve prediction timeout issue`
-- `infra(eks): upgrade cluster to v1.28`
-
-### Pull Request Checklist
-
-**Required steps before pushing:**
-
-1. Run `pytest` - all tests pass
-2. Run `pre-commit run --all-files` - all hooks pass
-3. Run `/pre-push-review` (Claude Code skill) - shellcheck + actionlint
-
-After creating PR:
-
-```bash
-gh pr checks 97 --watch  # Replace 97 with your PR number
-```
-
-Then review automated PR comments and address them.
+- Pull request process
+- Code review checklist
+- Merge strategy (squash merge)
 
 ### When to Create Issues
 
@@ -142,12 +128,15 @@ Then review automated PR comments and address them.
 - Typo fixes, broken links, minor dependency updates
 - Small refactoring, documentation improvements
 
-## Security
+## Security Requirements
 
-**IMPORTANT - Security Requirements:**
+**Never commit**:
 
-- **Never commit secrets** - pre-commit hooks (detect-secrets, Gitleaks) will block
-- **Model security** uses **skops.io** format (.skops) with SHA-256 hash verification
+- Secrets, API keys, credentials (pre-commit blocks: detect-secrets, Gitleaks)
+- Binary files (images, models) - use Git LFS or external storage
+- `.env` files with real credentials
+
+**Model security**: .skops format + SHA-256 hash verification (NOT pickle/joblib - arbitrary code execution risk)
 
 **Multi-layer scanning**:
 
@@ -155,7 +144,12 @@ Then review automated PR comments and address them.
 - **CI**: Trivy (filesystem + containers), Gitleaks (secrets), Semgrep (SAST), SonarCloud
 - **Container**: Fail-fast on HIGH/CRITICAL vulnerabilities
 
-See `docs/SECURITY.md` for detailed security practices.
+**Full security policy**: [SECURITY.md](SECURITY.md)
+
+- Vulnerability scanning (Trivy, Bandit)
+- SBOM generation (Syft)
+- Image signing (Cosign)
+- Dependency updates (Dependabot)
 
 ## Project Structure
 
@@ -189,18 +183,52 @@ Runs on PRs and pushes to `main`:
 
 Jobs are **conditional** based on file existence. Skipped jobs show in summary.
 
-## Detailed Documentation
+## Documentation Structure
 
-For comprehensive guides, see:
+**Core docs** (project root):
 
-- **docs/CONTRIBUTING.md** - Full PR workflow, merge conflicts, code standards
-- **docs/TROUBLESHOOTING.md** - Common issues and solutions
-- **docs/SECURITY.md** - Security practices, scanning tools, vulnerability management
-- **docs/VULNERABILITY_REMEDIATION.md** - Trivy findings workflow
-- **docs/SBOM_GENERATION.md** - Software Bill of Materials
-- **docs/PICKLE_SECURITY.md** - Model deserialization security
-- **docs/PROJECT_MANAGEMENT.md** - GitHub Projects setup
-- **docs/QUICK_REFERENCE.md** - Git commands, conventions
-- **docs/ALPINE_MIGRATION_ANALYSIS.md** - Docker base image analysis
-- **docs/AWS_OIDC_SETUP.md** - GitHub Actions AWS auth
-- **docs/IMAGE_SIGNING.md** - Container image signing with Cosign
+- `README.md` - Project overview, getting started, architecture
+- `CONTRIBUTING.md` - Full PR workflow, merge conflicts, code standards
+- `SECURITY.md` - Security practices, scanning tools, vulnerability management
+- `ROADMAP.md` - Phase-by-phase implementation plan
+- `CLAUDE.md` - This file (you are here)
+
+**Specialized docs** (`docs/` directory):
+
+- `QUICK_REFERENCE.md` - All commands (Docker, K8s, Python, AWS)
+- `TROUBLESHOOTING.md` - Common issues and solutions
+- `IMAGE_SIGNING.md` - Container image signing with Cosign
+- `PICKLE_SECURITY.md` - Model deserialization security
+- `AWS_OIDC_SETUP.md` - GitHub Actions AWS authentication
+- `SONARCLOUD_QUALITY_STANDARDS.md` - Code quality metrics
+- `KUBERNETES_SECURITY.md` - K8s security best practices
+- `SBOM_GENERATION.md` - Software Bill of Materials
+- `VULNERABILITY_REMEDIATION.md` - Trivy findings workflow
+- `PROJECT_MANAGEMENT.md` - GitHub Projects setup
+- `ALPINE_MIGRATION_ANALYSIS.md` - Docker base image analysis
+
+## Forbidden Directories
+
+**Ignore when exploring** (performance + irrelevant content):
+
+- `.venv/` - Python virtual environment
+- `.git/` - Git metadata
+- `__pycache__/` - Python bytecode
+- `.pytest_cache/` - Test cache
+- `models/` - Binary ML artifacts (.skops files)
+- `node_modules/` - If present (not currently in project)
+
+## Quick Troubleshooting
+
+**Common issues**:
+
+- `ModuleNotFoundError` → Activate venv: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
+- Pre-commit fails → Install hooks: `pre-commit install`, then retry commit
+- Tests fail → Check Python version: `python --version` (must be 3.13+)
+- Model loading fails → Verify .skops file exists: `ls -lh models/iris_classifier.skops`
+
+**Detailed troubleshooting**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (comprehensive guide for common issues)
+
+---
+
+**Last Updated**: 2025-11-05 (Enhanced with index layer for progressive disclosure)
