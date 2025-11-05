@@ -299,3 +299,32 @@ resource "helm_release" "aws_load_balancer_controller" {
     module.load_balancer_controller_irsa_role
   ]
 }
+
+# ===================================================================
+# Security Monitoring Module
+# ===================================================================
+
+module "security" {
+  source = "../../modules/security"
+
+  # Required
+  cluster_name = local.cluster_name
+  region       = var.aws_region
+
+  # Security Hub configuration
+  enable_security_hub          = var.enable_security_hub
+  enable_cis_standard          = var.enable_cis_standard
+  enable_foundational_security = var.enable_foundational_security
+
+  # GuardDuty configuration
+  enable_guardduty = var.enable_guardduty
+
+  # Inspector configuration
+  enable_inspector = var.enable_inspector
+
+  # Alerting
+  security_alert_email = var.security_alert_email
+
+  # Tagging
+  tags = local.tags
+}

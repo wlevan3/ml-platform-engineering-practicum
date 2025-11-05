@@ -93,3 +93,52 @@ output "ecr_login_command" {
   value       = "aws ecr get-login-password --region ${var.aws_region} | docker login --username AWS --password-stdin ${aws_ecr_repository.ml_platform_api.repository_url}"
   sensitive   = true
 }
+
+# ===================================================================
+# Security Module Outputs
+# ===================================================================
+
+output "security_hub_enabled" {
+  description = "Whether Security Hub is enabled"
+  value       = module.security.security_hub_enabled
+}
+
+output "security_hub_standards" {
+  description = "Security Hub standards enabled"
+  value       = module.security.security_hub_standards
+}
+
+output "security_hub_console_url" {
+  description = "URL to Security Hub console"
+  value       = module.security.security_hub_console_url
+}
+
+output "guardduty_enabled" {
+  description = "Whether GuardDuty is enabled"
+  value       = module.security.guardduty_enabled
+}
+
+output "guardduty_detector_id" {
+  description = "GuardDuty detector ID (if enabled)"
+  value       = module.security.guardduty_detector_id
+}
+
+output "guardduty_console_url" {
+  description = "URL to GuardDuty console"
+  value       = module.security.guardduty_console_url
+}
+
+output "inspector_enabled" {
+  description = "Whether Inspector is enabled"
+  value       = module.security.inspector_enabled
+}
+
+output "security_alerts_topic_arn" {
+  description = "SNS topic ARN for security alerts"
+  value       = module.security.security_alerts_topic_arn
+}
+
+output "security_alerts_topic_name" {
+  description = "SNS topic name for security alerts"
+  value       = module.security.security_alerts_topic_name
+}

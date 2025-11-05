@@ -190,6 +190,45 @@ variable "enable_guardduty" {
   # Set to true during 30-day trial or when doing extended testing
 }
 
+# Security Hub Configuration (FREE for limited checks, paid for aggregation)
+variable "enable_security_hub" {
+  description = "Enable AWS Security Hub for centralized security findings"
+  type        = bool
+  default     = false # Disabled by default; enable during Phase 2+ when EKS is deployed
+}
+
+variable "enable_cis_standard" {
+  description = "Enable CIS AWS Foundations Benchmark in Security Hub"
+  type        = bool
+  default     = true # Enabled when Security Hub is active
+}
+
+variable "enable_foundational_security" {
+  description = "Enable AWS Foundational Security Best Practices standard"
+  type        = bool
+  default     = true # Enabled when Security Hub is active
+}
+
+variable "enable_inspector" {
+  description = "Enable AWS Inspector for EC2/EKS vulnerability scanning (requires EC2/EKS)"
+  type        = bool
+  default     = false # Enable after EKS nodes are deployed
+}
+
+variable "security_alert_email" {
+  description = "Email address for HIGH/CRITICAL security findings (REQUIRED when Security Hub enabled)"
+  type        = string
+  default     = "" # REPLACE WITH YOUR EMAIL: "your-email@example.com"
+
+  validation {
+    condition = (
+      var.security_alert_email == "" ||
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.security_alert_email))
+    )
+    error_message = "security_alert_email must be empty or a valid email address."
+  }
+}
+
 # ===================================================================
 # Cost Optimization Variables
 # ===================================================================
