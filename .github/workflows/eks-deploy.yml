@@ -414,7 +414,7 @@ jobs:
           role-session-name: GitHubActions-Bootstrap-${{ github.run_id }}
 
       # -----------------------------------------------------------------------
-      # Step 3: Create S3 bucket
+      # Step 3: Create S3 bucket with comprehensive error handling
       # -----------------------------------------------------------------------
       - name: Create S3 bucket for Terraform state
         run: |
@@ -423,26 +423,73 @@ jobs:
 
           echo "🪣 Creating S3 bucket: ${BUCKET}"
 
-          # Check if bucket exists
+          # Check if bucket exists and in correct region
           if aws s3api head-bucket --bucket "${BUCKET}" 2>/dev/null; then
-            echo "✅ S3 bucket already exists: ${BUCKET}"
+            echo "ℹ️  Bucket exists, verifying configuration..."
+
+            # Check bucket region
+            BUCKET_REGION=$(aws s3api get-bucket-location \
+              --bucket "${BUCKET}" \
+              --query 'LocationConstraint' \
+              --output text 2>/dev/null || echo "us-east-1")
+
+            # Handle us-east-1 special case (returns null/None)
+            if [ "$BUCKET_REGION" == "None" ] || [ "$BUCKET_REGION" == "null" ]; then
+              BUCKET_REGION="us-east-1"
+            fi
+
+            if [ "$BUCKET_REGION" != "$REGION" ]; then
+              echo "❌ ERROR: Bucket exists in wrong region"
+              echo "  Expected: ${REGION}"
+              echo "  Actual: ${BUCKET_REGION}"
+              echo ""
+              echo "::error title=Bucket Region Mismatch::S3 bucket '${BUCKET}' exists in ${BUCKET_REGION} but workflow expects ${REGION}"
+              echo ""
+              echo "Options to fix:"
+              echo "  1. Delete bucket in ${BUCKET_REGION}: aws s3 rb s3://${BUCKET} --force"
+              echo "  2. OR update workflow to use ${BUCKET_REGION}"
+              echo "  3. OR use a different bucket name"
+              exit 1
+            fi
+
+            echo "✅ Bucket exists in correct region: ${REGION}"
           else
             # Create bucket
-            aws s3api create-bucket \
+            echo "Creating new S3 bucket..."
+
+            if ! aws s3api create-bucket \
               --bucket "${BUCKET}" \
               --region "${REGION}" \
-              --create-bucket-configuration LocationConstraint="${REGION}"
+              --create-bucket-configuration LocationConstraint="${REGION}" 2>&1; then
+
+              echo "❌ ERROR: Failed to create S3 bucket"
+              echo ""
+              echo "::error title=Bucket Creation Failed::Could not create S3 bucket. Check permissions and bucket name availability."
+              echo ""
+              echo "Common causes:"
+              echo "  - Bucket name already taken globally (S3 names are globally unique)"
+              echo "  - Insufficient IAM permissions (need s3:CreateBucket)"
+              echo "  - Region restrictions or service control policies"
+              exit 1
+            fi
 
             echo "✅ S3 bucket created: ${BUCKET}"
           fi
 
+          # Configure bucket settings with error handling
+          echo "Configuring bucket settings..."
+
           # Enable versioning
-          aws s3api put-bucket-versioning \
+          if ! aws s3api put-bucket-versioning \
             --bucket "${BUCKET}" \
-            --versioning-configuration Status=Enabled
+            --versioning-configuration Status=Enabled 2>&1; then
+            echo "⚠️  Warning: Could not enable versioning (continuing...)"
+          else
+            echo "✅ Versioning enabled"
+          fi
 
           # Enable encryption
-          aws s3api put-bucket-encryption \
+          if ! aws s3api put-bucket-encryption \
             --bucket "${BUCKET}" \
             --server-side-encryption-configuration '{
                 "Rules": [{
@@ -451,15 +498,24 @@ jobs:
                     },
                     "BucketKeyEnabled": true
                 }]
-            }'
+            }' 2>&1; then
+            echo "⚠️  Warning: Could not enable encryption (continuing...)"
+          else
+            echo "✅ Encryption enabled"
+          fi
 
           # Block public access
-          aws s3api put-public-access-block \
+          if ! aws s3api put-public-access-block \
             --bucket "${BUCKET}" \
             --public-access-block-configuration \
-              "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
+              "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true" 2>&1; then
+            echo "⚠️  Warning: Could not block public access (continuing...)"
+          else
+            echo "✅ Public access blocked"
+          fi
 
-          echo "✅ S3 bucket configured with versioning, encryption, and blocked public access"
+          echo ""
+          echo "✅ S3 bucket configured successfully"
 
       # -----------------------------------------------------------------------
       # Step 4: Create DynamoDB table
@@ -582,7 +638,45 @@ jobs:
           aws sts get-caller-identity
 
       # -----------------------------------------------------------------------
-      # Step 4: Setup Terraform
+      # Step 4: Validate Terraform backend exists
+      # -----------------------------------------------------------------------
+      - name: Validate Terraform backend
+        id: validate-backend
+        run: |
+          echo "🔍 Validating Terraform backend resources..."
+
+          BUCKET="ml-platform-terraform-state"
+          TABLE="ml-platform-terraform-locks"
+          REGION="us-west-2"
+
+          # Check S3 bucket exists and is accessible
+          if ! aws s3api head-bucket --bucket "${BUCKET}" --region "${REGION}" 2>/dev/null; then
+            echo "❌ ERROR: S3 bucket '${BUCKET}' not found or not accessible"
+            echo ""
+            echo "::error title=Backend Not Bootstrapped::Terraform backend not initialized. Run bootstrap action first."
+            echo ""
+            echo "To fix this, run:"
+            echo "  gh workflow run eks-deploy.yml -f action=bootstrap"
+            exit 1
+          fi
+
+          # Check DynamoDB table exists
+          if ! aws dynamodb describe-table --table-name "${TABLE}" --region "${REGION}" >/dev/null 2>&1; then
+            echo "❌ ERROR: DynamoDB table '${TABLE}' not found"
+            echo ""
+            echo "::error title=Backend Not Bootstrapped::Terraform state locking table not found. Run bootstrap action first."
+            echo ""
+            echo "To fix this, run:"
+            echo "  gh workflow run eks-deploy.yml -f action=bootstrap"
+            exit 1
+          fi
+
+          echo "✅ Backend validated successfully"
+          echo "  - S3 bucket: ${BUCKET}"
+          echo "  - DynamoDB table: ${TABLE}"
+
+      # -----------------------------------------------------------------------
+      # Step 5: Setup Terraform
       # -----------------------------------------------------------------------
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
@@ -590,7 +684,7 @@ jobs:
           terraform_version: 1.6.0
 
       # -----------------------------------------------------------------------
-      # Step 5: Terraform Init (initialize backend and providers)
+      # Step 6: Terraform Init (initialize backend and providers)
       # -----------------------------------------------------------------------
       - name: Terraform Init
         id: init
@@ -599,7 +693,7 @@ jobs:
           terraform init
 
       # -----------------------------------------------------------------------
-      # Step 6: Terraform Validate
+      # Step 7: Terraform Validate
       # -----------------------------------------------------------------------
       - name: Terraform Validate
         id: validate
@@ -608,7 +702,7 @@ jobs:
           terraform validate -no-color
 
       # -----------------------------------------------------------------------
-      # Step 7: Terraform Plan (always run)
+      # Step 8: Terraform Plan (always run)
       # -----------------------------------------------------------------------
       - name: Terraform Plan
         id: plan
@@ -626,7 +720,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       # -----------------------------------------------------------------------
-      # Step 8: Upload plan as artifact
+      # Step 9: Upload plan as artifact
       # -----------------------------------------------------------------------
       - name: Upload Terraform plan
         uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9  # v4.4.1
@@ -636,7 +730,7 @@ jobs:
           retention-days: 30
 
       # -----------------------------------------------------------------------
-      # Step 9: Terraform Apply (only for deploy action)
+      # Step 10: Terraform Apply (only for deploy action)
       # -----------------------------------------------------------------------
       - name: Terraform Apply
         id: apply
@@ -654,7 +748,7 @@ jobs:
           echo "✅ Terraform apply completed successfully"
 
       # -----------------------------------------------------------------------
-      # Step 10: Capture Terraform outputs
+      # Step 11: Capture Terraform outputs
       # -----------------------------------------------------------------------
       - name: Capture Terraform outputs
         id: outputs
@@ -671,7 +765,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       # -----------------------------------------------------------------------
-      # Step 11: Display deployment summary
+      # Step 12: Display deployment summary
       # -----------------------------------------------------------------------
       - name: Display deployment summary
         if: inputs.action == 'deploy'
