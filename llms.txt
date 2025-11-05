@@ -17,7 +17,7 @@
 
 ### CLAUDE.md
 **Purpose**: Primary guidance for Claude Code when working with this repository
-**Length**: 234 lines
+**Length**: 234 lines (condensed)
 **Summary**: Environment requirements (Python 3.13 + uv + .skops), essential commands, code standards, workflow, security practices, documentation index
 **Link**: /CLAUDE.md
 **When to read**: Always (Claude Code auto-loads this file at session start)
@@ -165,5 +165,5 @@ ml-platform-engineering-practicum/
 ---
 
 **Standard**: llms.txt v1.0 (September 2024)
-**Last Updated**: 2025-01-04
+**Last Updated**: 2025-11-05
 **Maintained By**: Project owner (learning practicum)

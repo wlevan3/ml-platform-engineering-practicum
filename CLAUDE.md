@@ -107,7 +107,7 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 1. Run tests: `pytest`
 2. Run quality checks: `pre-commit run --all-files`
-3. Optional: Run `/pre-push-review` (Claude Code skill) - shellcheck + actionlint
+3. Optional: Run `/pre-push-review` Claude Code skill (shellcheck + actionlint)
 
 **Complete workflow**: [CONTRIBUTING.md](CONTRIBUTING.md)
 
