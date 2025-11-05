@@ -24,8 +24,10 @@ module "eks" {
   enable_irsa = var.enable_irsa
 
   # Disable aws-auth ConfigMap management to avoid provider dependency cycle
-  # The aws-auth ConfigMap will be managed by the terraform-aws-eks module
-  # using AWS API calls instead of Kubernetes provider
+  # The aws-auth ConfigMap is NOT managed by this module. It must be managed
+  # separately via kubectl, Helm, or GitOps tools (e.g., ArgoCD) to prevent
+  # circular dependencies between AWS and Kubernetes providers.
+  # See: terraform/environments/dev/providers.tf for detailed migration notes.
   manage_aws_auth_configmap = false
 
   # Cluster addons (automatically managed)

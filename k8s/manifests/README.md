@@ -36,8 +36,8 @@ These manifests implement **Layer 1** of our cost control strategy:
 | **Pods** | 12 | HPA maxReplicas (10) + 2 buffer for rolling updates |
 | **CPU Requests** | 4 vCPUs | Allows 16 pods @ 250m each (HPA headroom) |
 | **CPU Limits** | 8 vCPUs | Allows 16 pods @ 500m each |
-| **Memory Requests** | 10 GB | ~40 pods @ 256Mi each (generous buffer) |
-| **Memory Limits** | 20 GB | ~40 pods @ 512Mi each |
+| **Memory Requests** | 10 GB | 12 pods × 512Mi = 6Gi (generous buffer) |
+| **Memory Limits** | 20 GB | 12 pods × 1Gi = 12Gi (generous buffer) |
 | **PVCs** | 5 | Max 5 persistent volume claims |
 | **Total Storage** | 100 GB | Max storage across all PVCs |
 | **Ephemeral Storage** | 50 GB | Limits temp file usage |
@@ -182,7 +182,8 @@ resources:
 **Calculation**: With a 12-pod quota:
 
 - CPU requests: 12 pods × 250m = 3 vCPUs (under 4 vCPU quota ✓)
-- Memory requests: 12 pods × 256Mi = 3Gi (under 10Gi quota ✓)
+- Memory requests: 12 pods × 512Mi = 6Gi (under 10Gi quota ✓)
+- Memory limits: 12 pods × 1Gi = 12Gi (under 20Gi quota ✓)
 
 ### HPA Alignment
 
