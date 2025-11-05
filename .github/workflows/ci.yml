@@ -108,13 +108,13 @@ jobs:
           working_directory: terraform
           soft_fail: false
           format: sarif
-          additional_args: --out tfsec-results.sarif --minimum-severity HIGH
+          additional_args: --minimum-severity HIGH
 
       - name: Upload tfsec SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: tfsec-results.sarif
+          sarif_file: results.sarif
           category: tfsec-scan
         continue-on-error: true
 
@@ -231,8 +231,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install black ruff pytest
+          python -m pip install --upgrade pip==25.3
+          pip install black==24.10.0 ruff==0.9.1 pytest==8.3.4
 
       - name: Run Black (formatting check)
         run: black --check .
@@ -257,7 +257,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==25.3
           pip install -r requirements.txt
 
       - name: Train model for tests
@@ -267,7 +267,7 @@ jobs:
         run: pytest
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: coverage-report
           path: coverage.xml
@@ -285,26 +285,26 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
 
       - name: Download coverage report
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: coverage-report
 
       - name: Download Trivy filesystem SARIF
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: trivy-fs-sarif
           path: sarif-reports/trivy-fs/
         continue-on-error: true
 
       - name: Download Semgrep SARIF
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: semgrep-sarif
           path: sarif-reports/semgrep/
         continue-on-error: true
 
       - name: Download Trivy Docker SARIF
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: trivy-docker-sarif
           path: sarif-reports/trivy-docker/
@@ -359,7 +359,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: trivy-fs-sarif
@@ -412,7 +412,7 @@ jobs:
           sarif_file: semgrep.sarif
 
       - name: Upload Semgrep SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: semgrep-sarif
@@ -433,7 +433,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: pip install pre-commit==4.0.1
 
       - name: Run pre-commit
         run: pre-commit run --all-files
@@ -446,6 +446,7 @@ jobs:
     permissions:
       security-events: write
       contents: read
+      id-token: write  # Required for keyless signing with OIDC
 
     steps:
       - name: Checkout code
@@ -458,7 +459,7 @@ jobs:
 
       - name: Install dependencies and train model
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==25.3
           pip install -r requirements.txt
           python train_model.py
 
@@ -472,6 +473,31 @@ jobs:
 
       - name: Build Docker image
         run: docker build -t ml-platform-api:${{ github.sha }} .
+
+      # ============================================================================
+      # Local Registry Setup for Image Signing
+      # ============================================================================
+      # Cosign requires OCI registry access to read image manifests, even with
+      # --upload=false. We run an ephemeral local registry to satisfy this
+      # requirement while keeping signatures as local files (Phase 1 goal).
+      # ============================================================================
+
+      - name: Start local OCI registry
+        run: |
+          echo "Starting local registry on localhost:5000"
+          docker run -d -p 5000:5000 --name registry registry:2
+          echo "✅ Local registry started"
+
+      - name: Tag and push image to local registry
+        run: |
+          echo "Tagging image for local registry: localhost:5000/ml-platform-api:${{ github.sha }}"
+          docker tag ml-platform-api:${{ github.sha }} localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "Pushing image to local registry..."
+          docker push localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "✅ Image pushed to local registry"
+          echo "Image reference: localhost:5000/ml-platform-api:${{ github.sha }}"
 
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1 (Trivy v0.65.0)
@@ -492,18 +518,85 @@ jobs:
           category: 'trivy-docker-scan'
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: trivy-docker-sarif
           path: trivy-results.sarif
           retention-days: 5
 
+      # ============================================================================
+      # Container Image Signing (Phase 1: Offline/Local Signing)
+      # ============================================================================
+      # Phase 1 Implementation:
+      #   - Signs images locally using --upload=false flag
+      #   - Stores signature and certificate as files (not in OCI registry)
+      #   - Demonstrates signing workflow and validates signatures work
+      #   - Signatures are ephemeral (discarded after CI run)
+      #
+      # Phase 2 Plan (requires ECR setup - see Issue #94):
+      #   - Push images to AWS ECR registry
+      #   - Sign with fully-qualified ECR image reference
+      #   - Signatures stored in OCI registry alongside images
+      #   - Persistent signatures for production deployments
+      # ============================================================================
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da  # v3.7.0
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Sign container image (keyless - local registry mode)
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          echo "Phase 1: Signing image from local registry (offline mode)"
+          echo "Signing image localhost:5000/ml-platform-api:${{ github.sha }} with keyless signing (OIDC)"
+          echo "Note: Using local registry to satisfy Cosign's OCI manifest requirement"
+          echo "Note: Using --upload=false - signature stored as local file, not in registry"
+
+          cosign sign --yes \
+            --upload=false \
+            --output-signature=ml-platform-api.sig \
+            --output-certificate=ml-platform-api.crt \
+            localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "✅ Image signed successfully"
+          echo "Signature file: ml-platform-api.sig"
+          echo "Certificate file: ml-platform-api.crt"
+
+      - name: Verify container image signature
+        env:
+          COSIGN_EXPERIMENTAL: "1"
+        run: |
+          echo "Verifying offline signature for localhost:5000/ml-platform-api:${{ github.sha }}"
+          echo "Using signature file: ml-platform-api.sig"
+          echo "Using certificate file: ml-platform-api.crt"
+          echo "Note: Using --insecure-ignore-tlog for Phase 1 offline/local signing mode"
+
+          cosign verify \
+            --insecure-ignore-tlog=true \
+            --signature=ml-platform-api.sig \
+            --certificate=ml-platform-api.crt \
+            --certificate-identity-regexp="https://github.com/${{ github.repository }}/*" \
+            --certificate-oidc-issuer="https://token.actions.githubusercontent.com" \
+            localhost:5000/ml-platform-api:${{ github.sha }}
+
+          echo "✅ Signature verified successfully"
+
+      - name: Cleanup local registry
+        if: always()
+        run: |
+          echo "Stopping and removing local registry container..."
+          docker stop registry || true
+          docker rm registry || true
+          echo "✅ Local registry cleaned up"
+
       - name: Save Docker image for SBOM generation
         run: docker save ml-platform-api:${{ github.sha }} -o /tmp/ml-platform-api.tar
 
       - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp/ml-platform-api.tar
@@ -528,7 +621,7 @@ jobs:
 
       - name: Install dependencies and train model
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip==25.3
           pip install -r requirements.txt
           python train_model.py
 
@@ -536,7 +629,7 @@ jobs:
       # This avoids rebuilding the image (saves 2-5 minutes per CI run)
       # Artifact name defined in workflow-level env for consistency
       - name: Download Docker image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp
@@ -575,31 +668,33 @@ jobs:
 
       - name: Display SBOM summary
         run: |
-          echo "## SBOM Generation Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Generated SBOMs for commit: \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Docker Image SBOMs" >> $GITHUB_STEP_SUMMARY
-          echo "- **SPDX Format**: \`sbom-docker-spdx.json\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **CycloneDX Format**: \`sbom-docker-cyclonedx.json\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Python Application SBOMs" >> $GITHUB_STEP_SUMMARY
-          echo "- **SPDX Format**: \`sbom-python-spdx.json\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **CycloneDX Format**: \`sbom-python-cyclonedx.json\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Package Counts" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "Docker Image Packages:" >> $GITHUB_STEP_SUMMARY
-          jq '.packages | length' sbom-docker-spdx.json >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Python Application Packages:" >> $GITHUB_STEP_SUMMARY
-          jq '.packages | length' sbom-python-spdx.json >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "All SBOMs are available as artifacts for this workflow run." >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## SBOM Generation Summary"
+            echo ""
+            echo "Generated SBOMs for commit: \`${{ github.sha }}\`"
+            echo ""
+            echo "### Docker Image SBOMs"
+            echo "- **SPDX Format**: \`sbom-docker-spdx.json\`"
+            echo "- **CycloneDX Format**: \`sbom-docker-cyclonedx.json\`"
+            echo ""
+            echo "### Python Application SBOMs"
+            echo "- **SPDX Format**: \`sbom-python-spdx.json\`"
+            echo "- **CycloneDX Format**: \`sbom-python-cyclonedx.json\`"
+            echo ""
+            echo "### Package Counts"
+            echo "\`\`\`"
+            echo "Docker Image Packages:"
+            jq '.packages | length' sbom-docker-spdx.json
+            echo ""
+            echo "Python Application Packages:"
+            jq '.packages | length' sbom-python-spdx.json
+            echo "\`\`\`"
+            echo ""
+            echo "All SBOMs are available as artifacts for this workflow run."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Docker SBOMs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: sbom-docker
           path: |
@@ -608,7 +703,7 @@ jobs:
           retention-days: 90  # Keep SBOMs for 90 days (compliance)
 
       - name: Upload Python SBOMs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: sbom-python
           path: |

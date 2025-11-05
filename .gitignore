@@ -253,6 +253,10 @@ secrets.yml
 *.csr
 id_rsa*
 
+# Image signing keys (Cosign)
+cosign.key
+cosign.password
+
 # ===========================
 # MacOS & IDE
 # ===========================
