@@ -3,7 +3,7 @@
 # ============================================================================
 #
 # This ResourceQuota enforces hard limits on Kubernetes object counts in the
-# default namespace to prevent resource sprawl and accidental cost overruns
+# ml-platform namespace to prevent resource sprawl and accidental cost overruns
 # (especially from load balancers).
 #
 # Purpose: Layer 1 of cost control (HPA is Layer 2, Budget Alerts are Layer 3)
@@ -16,13 +16,13 @@
 #   kubectl apply -f k8s/manifests/resource-quota-objects.yaml
 #
 # Verify with:
-#   kubectl describe quota ml-platform-object-count-quota -n default
+#   kubectl describe quota ml-platform-object-count-quota -n ml-platform
 #
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: ml-platform-object-count-quota
-  namespace: default
+  namespace: ml-platform
   labels:
     app.kubernetes.io/name: ml-platform-api
     app.kubernetes.io/component: resource-quota

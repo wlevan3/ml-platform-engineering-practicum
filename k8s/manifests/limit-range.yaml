@@ -19,13 +19,13 @@
 #   kubectl apply -f k8s/manifests/limit-range.yaml
 #
 # Verify with:
-#   kubectl describe limitrange ml-platform-default-limits -n default
+#   kubectl describe limitrange ml-platform-default-limits -n ml-platform
 #
 apiVersion: v1
 kind: LimitRange
 metadata:
   name: ml-platform-default-limits
-  namespace: default
+  namespace: ml-platform
   labels:
     app.kubernetes.io/name: ml-platform-api
     app.kubernetes.io/component: limit-range

@@ -3,7 +3,7 @@
 # ============================================================================
 #
 # This ResourceQuota enforces hard limits on compute resources (pods, CPU,
-# memory, storage) in the default namespace to prevent runaway resource
+# memory, storage) in the ml-platform namespace to prevent runaway resource
 # consumption and ensure predictable costs.
 #
 # Purpose: Layer 1 of cost control (HPA is Layer 2, Budget Alerts are Layer 3)
@@ -16,13 +16,13 @@
 #   kubectl apply -f k8s/manifests/resource-quota-compute.yaml
 #
 # Verify with:
-#   kubectl describe quota ml-platform-compute-quota -n default
+#   kubectl describe quota ml-platform-compute-quota -n ml-platform
 #
 apiVersion: v1
 kind: ResourceQuota
 metadata:
   name: ml-platform-compute-quota
-  namespace: default
+  namespace: ml-platform
   labels:
     app.kubernetes.io/name: ml-platform-api
     app.kubernetes.io/component: resource-quota
