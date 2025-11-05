@@ -34,7 +34,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "my-eks-cluster"
-  cluster_version = "1.28"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -62,7 +62,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "dev-eks-cluster"
-  cluster_version = "1.28"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -101,7 +101,7 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   cluster_name    = "prod-eks-cluster"
-  cluster_version = "1.29"
+  cluster_version = "1.34"
 
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnet_ids
@@ -270,3 +270,68 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 - [Spot Instance Best Practices](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-best-practices.html)
 - [IRSA Documentation](https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html)
 - [EKS Addons](https://docs.aws.amazon.com/eks/latest/userguide/eks-add-ons.html)
+
+<!-- BEGIN_TF_DOCS -->
+## Requirements
+
+| Name | Version |
+|------|---------|
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.0 |
+
+## Providers
+
+No providers.
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_eks"></a> [eks](#module\_eks) | git::https://github.com/terraform-aws-modules/terraform-aws-eks.git | 2cb1fac31b0fc2dd6a236b0c0678df75819c5a3b |
+
+## Resources
+
+No resources.
+
+## Inputs
+
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_cluster_addons"></a> [cluster\_addons](#input\_cluster\_addons) | Map of EKS cluster addons to install (e.g., vpc-cni, kube-proxy, coredns, aws-ebs-csi-driver) | <pre>map(object({<br/>    most_recent = optional(bool, true)<br/>    version     = optional(string, null)<br/>  }))</pre> | <pre>{<br/>  "aws-ebs-csi-driver": {<br/>    "most_recent": true<br/>  },<br/>  "coredns": {<br/>    "most_recent": true<br/>  },<br/>  "kube-proxy": {<br/>    "most_recent": true<br/>  },<br/>  "vpc-cni": {<br/>    "most_recent": true<br/>  }<br/>}</pre> | no |
+| <a name="input_cluster_endpoint_private_access"></a> [cluster\_endpoint\_private\_access](#input\_cluster\_endpoint\_private\_access) | Enable private API server endpoint (access from within VPC) | `bool` | `true` | no |
+| <a name="input_cluster_endpoint_public_access"></a> [cluster\_endpoint\_public\_access](#input\_cluster\_endpoint\_public\_access) | Enable public API server endpoint. Required for CI/CD access (e.g., GitHub Actions). Production environments should set to false and use VPN/bastion. | `bool` | `true` | no |
+| <a name="input_cluster_endpoint_public_access_cidrs"></a> [cluster\_endpoint\_public\_access\_cidrs](#input\_cluster\_endpoint\_public\_access\_cidrs) | List of CIDR blocks that can access the public API server endpoint. Defaults to open (0.0.0.0/0). Production should restrict to specific IPs. | `list(string)` | <pre>[<br/>  "0.0.0.0/0"<br/>]</pre> | no |
+| <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the EKS cluster | `string` | n/a | yes |
+| <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for the EKS cluster | `string` | `"1.34"` | no |
+| <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
+| <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
+| <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2\_x86\_64, AL2\_x86\_64\_GPU, AL2\_ARM\_64, BOTTLEROCKET\_*) | `string` | `"AL2_x86_64"` | no |
+| <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
+| <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `50` | no |
+| <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | Map of additional IAM policies to attach to worker node IAM role (e.g., for SSM, CloudWatch) | `map(string)` | <pre>{<br/>  "AmazonSSMManagedInstanceCore": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"<br/>}</pre> | no |
+| <a name="input_node_instance_type"></a> [node\_instance\_type](#input\_node\_instance\_type) | Instance type for on-demand worker nodes (used when use\_spot\_instances=false) | `string` | `"t3.medium"` | no |
+| <a name="input_node_labels"></a> [node\_labels](#input\_node\_labels) | Kubernetes labels to apply to worker nodes (for pod scheduling) | `map(string)` | `{}` | no |
+| <a name="input_node_max_size"></a> [node\_max\_size](#input\_node\_max\_size) | Maximum number of worker nodes | `number` | `4` | no |
+| <a name="input_node_min_size"></a> [node\_min\_size](#input\_node\_min\_size) | Minimum number of worker nodes | `number` | `1` | no |
+| <a name="input_node_taints"></a> [node\_taints](#input\_node\_taints) | Kubernetes taints to apply to worker nodes (for pod scheduling restrictions) | <pre>list(object({<br/>    key    = string<br/>    value  = optional(string)<br/>    effect = string<br/>  }))</pre> | `[]` | no |
+| <a name="input_spot_instance_types"></a> [spot\_instance\_types](#input\_spot\_instance\_types) | List of instance types for spot instances (multiple types increase fulfillment success rate) | `list(string)` | <pre>[<br/>  "t3.medium",<br/>  "t3a.medium",<br/>  "t2.medium"<br/>]</pre> | no |
+| <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | List of subnet IDs for EKS worker nodes (typically private subnets) | `list(string)` | n/a | yes |
+| <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources | `map(string)` | `{}` | no |
+| <a name="input_use_spot_instances"></a> [use\_spot\_instances](#input\_use\_spot\_instances) | Use EC2 Spot instances for worker nodes (70% cost savings, but can be interrupted) | `bool` | `true` | no |
+| <a name="input_vpc_id"></a> [vpc\_id](#input\_vpc\_id) | VPC ID where the EKS cluster will be deployed | `string` | n/a | yes |
+
+## Outputs
+
+| Name | Description |
+|------|-------------|
+| <a name="output_cluster_arn"></a> [cluster\_arn](#output\_cluster\_arn) | The Amazon Resource Name (ARN) of the cluster |
+| <a name="output_cluster_certificate_authority_data"></a> [cluster\_certificate\_authority\_data](#output\_cluster\_certificate\_authority\_data) | Base64 encoded certificate data required to communicate with the cluster |
+| <a name="output_cluster_endpoint"></a> [cluster\_endpoint](#output\_cluster\_endpoint) | Endpoint for your Kubernetes API server |
+| <a name="output_cluster_id"></a> [cluster\_id](#output\_cluster\_id) | The ID/name of the EKS cluster |
+| <a name="output_cluster_platform_version"></a> [cluster\_platform\_version](#output\_cluster\_platform\_version) | The platform version for the cluster |
+| <a name="output_cluster_security_group_id"></a> [cluster\_security\_group\_id](#output\_cluster\_security\_group\_id) | Security group ID attached to the EKS cluster |
+| <a name="output_cluster_version"></a> [cluster\_version](#output\_cluster\_version) | The Kubernetes version for the cluster |
+| <a name="output_eks_managed_node_groups"></a> [eks\_managed\_node\_groups](#output\_eks\_managed\_node\_groups) | Map of attribute maps for all EKS managed node groups created |
+| <a name="output_node_security_group_id"></a> [node\_security\_group\_id](#output\_node\_security\_group\_id) | Security group ID attached to the EKS nodes |
+| <a name="output_oidc_provider_arn"></a> [oidc\_provider\_arn](#output\_oidc\_provider\_arn) | ARN of the OIDC Provider for EKS |
+<!-- END_TF_DOCS -->
