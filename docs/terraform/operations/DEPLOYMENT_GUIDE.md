@@ -415,21 +415,21 @@ ECR pushing, and optional Kubernetes deployment.
 
 1. **S3 Backend Setup** (one-time) - choose one option:
 
-**Option A - GitHub Actions (Recommended)**:
+   **Option A - GitHub Actions (Recommended)**:
 
-```bash
-gh workflow run eks-deploy.yml -f action=bootstrap
-```
+   ```bash
+   gh workflow run eks-deploy.yml -f action=bootstrap
+   ```
 
-**Option B - Local Script**:
+   **Option B - Local Script**:
 
-```bash
-./scripts/bootstrap-eks-backend.sh dev
+   ```bash
+   ./scripts/bootstrap-eks-backend.sh dev
 
-# Expected output:
-# ✅ S3 bucket created: ml-platform-terraform-state
-# ✅ DynamoDB table created: ml-platform-terraform-locks
-```
+   # Expected output:
+   # ✅ S3 bucket created: ml-platform-terraform-state
+   # ✅ DynamoDB table created: ml-platform-terraform-locks
+   ```
 
 1. **OIDC Authentication** (already configured):
    - AWS OIDC provider exists

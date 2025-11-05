@@ -29,11 +29,15 @@
 
 | Scenario | Daily Cost | Monthly Cost |
 |----------|------------|--------------|
-| **EKS running 24/7** | $6.27/day | **~$188/month** 😱 |
-| **EKS 15 min/day + always-on basics** | $0.065 + $0.05 = **$0.12/day** | **~$3.50/month** ✅ |
-| **EKS 1 hour/day + always-on basics** | $0.26 + $0.05 = **$0.31/day** | **~$9/month** ✅ |
+| **EKS running 24/7** + always-on | $6.27 + $0.05 = **$6.32/day** | **~$190/month** 😱 |
+| **EKS 15 min/day** + always-on | $0.065 + $0.05 = **$0.12/day** | **~$3.50/month** ✅ |
+| **EKS 1 hour/day** + always-on | $0.26 + $0.05 = **$0.31/day** | **~$9/month** ✅ |
 
 **Savings**: 15 min/day usage = **98% cost reduction** vs. 24/7
+
+> **Note**: All scenarios include always-on baseline costs ($0.05/day for CloudTrail,
+> S3 state storage, ECR) for fair comparison. The 98% savings applies to total
+> infrastructure costs when using intermittent EKS deployment patterns.
 
 ---
 
@@ -89,16 +93,24 @@ kubectl apply -f k8s/
 ```bash
 cd terraform/environments/dev
 
-# Destroy EKS cluster, VPC, nodes, ALB
-# KEEPS: CloudTrail, Budgets, S3 state bucket
+# Option 1: Use helper script (Recommended - handles all targets correctly)
+./destroy-eks-only.sh  # Destroys EKS cluster, keeps VPC for faster recreation
+# OR
+./destroy-eks.sh       # Full destruction (EKS + VPC), keeps security services
+
+# Option 2: Manual destroy (verify module names first)
+# Step 1: Verify current module names (module structure may change over time)
+terraform state list
+
+# Step 2: Destroy specific modules based on what you see above
+# IMPORTANT: Replace module names below with actual names from state list
 terraform destroy -target=module.eks \
                   -target=module.vpc \
                   -target=module.load_balancer_controller_irsa_role \
                   -target=helm_release.aws_load_balancer_controller
 
-# Alternative: Destroy everything except security module
-terraform destroy --auto-approve \
-  $(terraform state list | grep -v "module.security" | tr '\n' ' ' | sed 's/ / -target=/g' | sed 's/-target=$//')
+# Step 3: Dry-run verification (optional but recommended)
+terraform plan  # Should show no changes if destruction was complete
 
 # Verify destruction
 aws eks list-clusters  # Should be empty

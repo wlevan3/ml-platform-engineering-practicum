@@ -932,27 +932,37 @@ jobs:
           kubectl cluster-info
 
       # -----------------------------------------------------------------------
-      # Step 4: Update image in deployment manifest
+      # Step 4: Apply Kubernetes manifests
       # -----------------------------------------------------------------------
-      - name: Update deployment image
+      - name: Apply Kubernetes manifests
         run: |
-          echo "🔄 Updating image reference in deployment..."
-          sed -i "s|image:.*|image: ${{ needs.terraform-deploy.outputs.ecr_repository_url }}:${{ inputs.image_tag }}|g" k8s/deployment.yaml
-          sed -i "s|imagePullPolicy: Never|imagePullPolicy: IfNotPresent|g" k8s/deployment.yaml
+          echo "🚀 Applying Kubernetes manifests..."
 
-      # -----------------------------------------------------------------------
-      # Step 5: Apply Kubernetes manifests
-      # -----------------------------------------------------------------------
-      - name: Deploy to Kubernetes
-        run: |
-          echo "🚀 Deploying to Kubernetes..."
-
-          # Apply manifests
+          # Apply manifests (creates or updates resources)
           kubectl apply -f k8s/namespace.yaml || true
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
 
-          echo "✅ Kubernetes deployment completed"
+          echo "✅ Manifests applied"
+
+      # -----------------------------------------------------------------------
+      # Step 5: Update deployment image
+      # -----------------------------------------------------------------------
+      - name: Update deployment image
+        run: |
+          echo "🔄 Updating deployment image..."
+
+          # Use kubectl set image (more robust than sed on YAML)
+          kubectl set image deployment/ml-platform-api \
+            ml-platform-api=${{ needs.terraform-deploy.outputs.ecr_repository_url }}:${{ inputs.image_tag }} \
+            -n ml-platform
+
+          # Update imagePullPolicy if needed (ensure manifest uses IfNotPresent for ECR)
+          kubectl patch deployment ml-platform-api -n ml-platform \
+            --type='json' \
+            -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/imagePullPolicy", "value": "IfNotPresent"}]'
+
+          echo "✅ Deployment image updated"
 
       # -----------------------------------------------------------------------
       # Step 6: Wait for deployment rollout
