@@ -89,19 +89,31 @@ module "container_registry" {
 }
 
 # ===================================================================
-# AWS Load Balancer Controller Module - ALB/NLB provisioning for Kubernetes
+# AWS Load Balancer Controller Module - DISABLED
+# ===================================================================
+#
+# This module is commented out because it requires the Helm provider,
+# which has been disabled to break the Terraform provider dependency cycle.
+#
+# The ALB controller will be installed via one of these methods:
+# 1. ArgoCD application (recommended GitOps approach)
+# 2. Manual Helm chart installation after EKS cluster creation
+# 3. Separate Terraform root that runs after EKS cluster exists
+#
+# See related GitHub issues for migration roadmap.
+#
 # ===================================================================
 
-module "alb_controller" {
-  source = "../../modules/alb-controller"
-
-  cluster_name      = local.cluster_name
-  oidc_provider_arn = module.eks_cluster.oidc_provider_arn
-
-  tags = local.tags
-
-  depends_on = [module.eks_cluster]
-}
+# module "alb_controller" {
+#   source = "../../modules/alb-controller"
+#
+#   cluster_name      = local.cluster_name
+#   oidc_provider_arn = module.eks_cluster.oidc_provider_arn
+#
+#   tags = local.tags
+#
+#   depends_on = [module.eks_cluster]
+# }
 
 # ===================================================================
 # Security Monitoring Module

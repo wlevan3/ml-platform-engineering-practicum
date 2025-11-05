@@ -85,13 +85,14 @@ output "ecr_repository_name" {
 }
 
 # ===================================================================
-# ALB Controller Module Outputs
+# ALB Controller Module Outputs - DISABLED
 # ===================================================================
+# Commented out because alb_controller module is disabled
 
-output "load_balancer_controller_role_arn" {
-  description = "IAM role ARN for AWS Load Balancer Controller"
-  value       = module.alb_controller.iam_role_arn
-}
+# output "load_balancer_controller_role_arn" {
+#   description = "IAM role ARN for AWS Load Balancer Controller"
+#   value       = module.alb_controller.iam_role_arn
+# }
 
 # ===================================================================
 # Convenience Commands
