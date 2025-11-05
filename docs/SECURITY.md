@@ -301,7 +301,7 @@ For **discovered vulnerabilities**:
 Instead:
 
 1. Use GitHub Security Advisories
-2. Or email: [your-security-email]
+2. Or create a private security advisory via GitHub's Security tab
 3. Include:
    - Description of vulnerability
    - Steps to reproduce

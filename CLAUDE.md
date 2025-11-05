@@ -16,14 +16,16 @@ just complete tasks—understand them deeply.
 
 ## Development Environment
 
-IMPORTANT: This project uses **Python 3.13** with **uv** package manager.
+**IMPORTANT - Environment Requirements:**
 
-IMPORTANT: Model files use **.skops format** (not .joblib or .pkl) for secure deserialization.
+- This project uses **Python 3.13** with **uv** package manager
+- Model files use **.skops format** (not .joblib or .pkl) for secure deserialization
+- Pre-commit hooks must pass before pushing (see Workflow section)
 
 ```bash
 # Setup
 uv venv .venv --python 3.13
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+source .venv/bin/activate  # Windows: .venv/Scripts/activate
 uv pip install -r requirements.txt
 python train_model.py  # Creates models/iris_classifier.skops + metadata
 
@@ -113,7 +115,7 @@ Examples:
 
 ### Pull Request Checklist
 
-YOU MUST complete before pushing:
+**Required steps before pushing:**
 
 1. Run `pytest` - all tests pass
 2. Run `pre-commit run --all-files` - all hooks pass
@@ -122,7 +124,7 @@ YOU MUST complete before pushing:
 After creating PR:
 
 ```bash
-gh pr checks $PR_NUMBER --watch  # Monitor CI
+gh pr checks 97 --watch  # Replace 97 with your PR number
 ```
 
 Then review automated PR comments and address them.
@@ -142,9 +144,10 @@ Then review automated PR comments and address them.
 
 ## Security
 
-IMPORTANT: Never commit secrets - pre-commit hooks (detect-secrets, Gitleaks) will block.
+**IMPORTANT - Security Requirements:**
 
-IMPORTANT: Model security uses **skops.io** format (.skops) with SHA-256 hash verification.
+- **Never commit secrets** - pre-commit hooks (detect-secrets, Gitleaks) will block
+- **Model security** uses **skops.io** format (.skops) with SHA-256 hash verification
 
 **Multi-layer scanning**:
 
