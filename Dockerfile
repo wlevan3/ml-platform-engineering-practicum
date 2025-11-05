@@ -1,7 +1,7 @@
 # ==========================================
 # Stage 1: Builder - Install dependencies
 # ==========================================
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim@sha256:452ed869040b0d92371f1d444da1997de6cd468b74c23149c0062c1c8b9ffbb3 AS builder
 
 # Set working directory
 WORKDIR /app
@@ -28,7 +28,7 @@ RUN pip install --no-cache-dir --upgrade pip==25.3 && \
 # ==========================================
 # Stage 2: Runtime - Minimal production image
 # ==========================================
-FROM python:3.13-slim AS runtime
+FROM python:3.13-slim@sha256:452ed869040b0d92371f1d444da1997de6cd468b74c23149c0062c1c8b9ffbb3 AS runtime
 
 # FIX CVE-2025-8869: Upgrade system pip to 25.3
 # Even though venv pip (upgraded in builder stage) is used at runtime,
