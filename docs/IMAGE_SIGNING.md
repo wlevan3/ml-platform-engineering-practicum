@@ -69,6 +69,7 @@ permissions:
 ### Signing Steps
 
 **Install Cosign:**
+
 ```yaml
 - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da  # v3.7.0
   with:
@@ -76,6 +77,7 @@ permissions:
 ```
 
 **Sign (Phase 1 Offline):**
+
 ```yaml
 - name: Sign image (keyless - offline)
   env:
@@ -88,6 +90,7 @@ permissions:
 ```
 
 **Verify:**
+
 ```yaml
 - name: Verify signature
   env:
@@ -115,6 +118,7 @@ cosign version                         # Verify
 ### Sign & Verify
 
 **Keyless (requires OIDC):**
+
 ```bash
 export COSIGN_EXPERIMENTAL=1
 cosign sign ml-platform-api:local      # Opens browser for GitHub auth
@@ -125,6 +129,7 @@ cosign verify \
 ```
 
 **Key-based (local testing):**
+
 ```bash
 cosign generate-key-pair                           # Generate test keys
 cosign sign --key cosign.key ml-platform-api:local
@@ -144,12 +149,14 @@ Admission controllers enforce signature verification before pod creation.
 ### Option 1: Sigstore Policy Controller (⭐ Recommended for Keyless)
 
 **Install:**
+
 ```bash
 helm repo add sigstore https://sigstore.github.io/helm-charts
 helm install policy-controller sigstore/policy-controller --namespace sigstore-system --create-namespace
 ```
 
 **Policy:**
+
 ```yaml
 apiVersion: policy.sigstore.dev/v1beta1
 kind: ClusterImagePolicy
@@ -167,6 +174,7 @@ spec:
 ```
 
 **Testing:**
+
 ```bash
 kubectl apply -f k8s/deployment.yaml    # Signed image → succeeds
 kubectl run test --image=ml-platform-api:unsigned  # Unsigned → rejected
@@ -177,6 +185,7 @@ kubectl run test --image=ml-platform-api:unsigned  # Unsigned → rejected
 **Install:** `helm install kyverno kyverno/kyverno --namespace kyverno --create-namespace`
 
 **Policy (keyless):**
+
 ```yaml
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy
@@ -204,7 +213,7 @@ spec:
 ### Comparison
 
 | Feature | Sigstore Policy Controller | Kyverno |
-|---------|---------------------------|---------|
+|---------|----------------------------|---------|
 | **Keyless signing** | Native ✅ | Supported ✅ |
 | **Key-based signing** | Supported ✅ | Native ✅ |
 | **Sigstore integration** | Deep ✅ | Basic ⚠️ |

@@ -23,6 +23,7 @@ This document explains OpenID Connect (OIDC) authentication between GitHub Actio
 **ARN:** `arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions`
 
 **Trust Policy:**
+
 ```json
 {
   "Version": "2012-10-17",
@@ -57,7 +58,7 @@ sequenceDiagram
     GHA->>OIDC: 1. Request OIDC token (repo, branch, workflow)
     OIDC->>GHA: 2. Return signed JWT (short-lived)
     GHA->>STS: 3. AssumeRoleWithWebIdentity(JWT, role ARN)
-    STS->>STS: 4. Validate: JWT signature, trust policy,<br/>audience, repo match
+    STS->>STS: 4. Validate: JWT, trust policy, audience, repo
     STS->>GHA: 5. Return temp credentials (1hr)
     GHA->>AWS: 6. Call AWS APIs with temp credentials
 ```
@@ -168,6 +169,7 @@ uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d
 ## Migration from Access Keys
 
 ### Before (Access Keys)
+
 ```yaml
 - uses: aws-actions/configure-aws-credentials@v4
   with:
@@ -177,6 +179,7 @@ uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d
 ```
 
 ### After (OIDC)
+
 ```yaml
 permissions:
   id-token: write
@@ -194,16 +197,19 @@ permissions:
 ## References
 
 **AWS:**
+
 - [IAM OIDC Identity Providers][aws-oidc]
 - [AssumeRoleWithWebIdentity API][aws-assume]
 - [AWS Security Best Practices][aws-bp]
 
 **GitHub:**
+
 - [About security hardening with OIDC][gh-oidc]
 - [Configuring OIDC in AWS][gh-aws]
 - [GitHub Actions OIDC claims][gh-claims]
 
 **Project:**
+
 - `.github/workflows/test-oidc-aws.yml` - Test workflow
 - `CLAUDE.md` - AWS profile configuration
 

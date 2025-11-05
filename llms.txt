@@ -17,7 +17,7 @@
 
 ### CLAUDE.md
 **Purpose**: Primary guidance for Claude Code when working with this repository
-**Length**: 150 lines
+**Length**: 150 lines (condensed)
 **Summary**: Environment requirements (Python 3.13 + uv + .skops), essential commands, code standards, workflow, security practices, documentation index
 **Link**: /CLAUDE.md
 **When to read**: Always (Claude Code auto-loads this file at session start)

@@ -5,6 +5,7 @@ Guidance for Claude Code working with this ML platform learning project.
 ## 🎯 Quick Navigation (Index)
 
 **Common Questions** → Direct Answers:
+
 - **"How do I run the API?"** → `uvicorn app.main:app --reload` (details: [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server))
 - **"How do I run tests?"** → `pytest` (full options: [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements))
 - **"What Python version?"** → **Python 3.13 + uv** (setup: [README.md](README.md#local-development-setup))
@@ -12,6 +13,7 @@ Guidance for Claude Code working with this ML platform learning project.
 - **"Security scanning tools?"** → pre-commit, Trivy, Syft, Cosign (details: [SECURITY.md](SECURITY.md))
 
 **By Task**:
+
 - **Setup/Getting Started** → [README.md](README.md#getting-started) (Prerequisites, local dev, Docker, K8s)
 - **All Commands** → [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (Docker, K8s, Python, testing, security)
 - **Workflow & Standards** → [CONTRIBUTING.md](CONTRIBUTING.md) (Branch strategy, PR process, code quality)
@@ -19,6 +21,7 @@ Guidance for Claude Code working with this ML platform learning project.
 - **Project Roadmap** → [ROADMAP.md](ROADMAP.md) (Phase-by-phase implementation plan)
 
 **Specialized Topics**:
+
 - Image signing (Cosign) → [docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)
 - Model security (pickle) → [docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)
 - AWS OIDC setup → [docs/AWS_OIDC_SETUP.md](docs/AWS_OIDC_SETUP.md)
@@ -38,6 +41,7 @@ Guidance for Claude Code working with this ML platform learning project.
 ## Environment Requirements
 
 **Critical**:
+
 - **Python 3.13 + uv** (package manager)
 - **.skops format** for models (NOT .pkl/.joblib - security requirement)
 - **Pre-commit hooks** mandatory (blocks secrets, runs linters)
@@ -57,7 +61,7 @@ pre-commit run --all-files     # Run all quality checks
 pre-commit install             # Install git hooks (first time)
 
 # Before Push
-pytest && pre-commit run --all-files && /pre-push-review
+pytest && pre-commit run --all-files
 ```
 
 **Complete command reference**: [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)
@@ -65,12 +69,14 @@ pytest && pre-commit run --all-files && /pre-push-review
 ## Code Standards
 
 **Project-specific patterns**:
+
 - **Model loading**: Singleton pattern in `app/model.py:get_model()`
 - **Model security**: .skops format + SHA-256 verification (see [PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md))
 - **FastAPI**: Lifespan events, dependency injection, HTTPException with status codes
 - **Testing**: 90% coverage target (SonarCloud gate: 80% minimum)
 
 **Full standards**: [CONTRIBUTING.md](CONTRIBUTING.md)
+
 - PEP 8 style (black formatter)
 - Type hints required
 - Docstrings for modules, classes, functions
@@ -83,11 +89,13 @@ pytest && pre-commit run --all-files && /pre-push-review
 **Commit format**: `<type>(<scope>): <subject>` (e.g., `feat(api): add health check endpoint`)
 
 **Before pushing**:
+
 1. Run tests: `pytest`
 2. Run quality checks: `pre-commit run --all-files`
-3. Optional: Run `/pre-push-review` skill
+3. Optional: Run pre-push-review Claude skill
 
 **Complete workflow**: [CONTRIBUTING.md](CONTRIBUTING.md)
+
 - Pull request process
 - Code review checklist
 - Merge strategy (squash merge)
@@ -95,6 +103,7 @@ pytest && pre-commit run --all-files && /pre-push-review
 ## Security
 
 **Never commit**:
+
 - Secrets, API keys, credentials (pre-commit blocks: detect-secrets, Gitleaks)
 - Binary files (images, models) - use Git LFS or external storage
 - `.env` files with real credentials
@@ -102,6 +111,7 @@ pytest && pre-commit run --all-files && /pre-push-review
 **Model security**: .skops format + SHA-256 hash verification (NOT pickle/joblib - arbitrary code execution risk)
 
 **Full security policy**: [SECURITY.md](SECURITY.md)
+
 - Vulnerability scanning (Trivy, Bandit)
 - SBOM generation (Syft)
 - Image signing (Cosign)
@@ -110,13 +120,15 @@ pytest && pre-commit run --all-files && /pre-push-review
 ## Documentation Structure
 
 **Core docs** (project root):
+
 - `README.md` - Project overview, getting started, architecture
-- `CONTRIBUTING.md` - Workflow, standards, PR process (623 lines)
+- `CONTRIBUTING.md` - Workflow, standards, PR process (622 lines)
 - `SECURITY.md` - Security practices, scanning tools (150 lines)
 - `ROADMAP.md` - Phase-by-phase implementation plan
 - `CLAUDE.md` - This file (you are here)
 
 **Specialized docs** (`docs/` directory):
+
 - `QUICK_REFERENCE.md` - All commands (Docker, K8s, Python, AWS)
 - `IMAGE_SIGNING.md` - Container image signing with Cosign
 - `PICKLE_SECURITY.md` - Model deserialization security
@@ -128,6 +140,7 @@ pytest && pre-commit run --all-files && /pre-push-review
 ## Forbidden Directories
 
 **Ignore when exploring** (performance + irrelevant content):
+
 - `.venv/` - Python virtual environment
 - `.git/` - Git metadata
 - `__pycache__/` - Python bytecode
@@ -138,6 +151,7 @@ pytest && pre-commit run --all-files && /pre-push-review
 ## Quick Troubleshooting
 
 **Common issues**:
+
 - `ModuleNotFoundError` → Activate venv: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
 - Pre-commit fails → Install hooks: `pre-commit install`, then retry commit
 - Tests fail → Check Python version: `python --version` (must be 3.13+)
@@ -147,4 +161,4 @@ pytest && pre-commit run --all-files && /pre-push-review
 
 ---
 
-**Last Updated**: 2025-01-04 (Enhanced with index layer for progressive disclosure)
+**Last Updated**: 2025-11-05 (Enhanced with index layer for progressive disclosure)

@@ -118,7 +118,7 @@ Each phase should be measured against:
 - **Phase 6:** 3-4 weeks (Observability stack)
 - **Phase 7:** 2-3 weeks (Optimization + documentation)
 
-**Total Estimated Duration:** 4-6 months (already completed ~6 weeks)
+**Total Estimated Duration:** 5-7 months (already completed ~6 weeks)
 
 ## Current Status
 
@@ -129,6 +129,7 @@ Each phase should be measured against:
 **Blockers:** None
 
 **Recent Completions:**
+
 - Container image signing with Cosign
 - OpenSSF Scorecard integration
 - SBOM generation with Syft

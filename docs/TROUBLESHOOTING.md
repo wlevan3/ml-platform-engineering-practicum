@@ -7,11 +7,13 @@ Common issues and solutions for ML Platform Engineering Practicum.
 ### Python Version Issues
 
 **Problem**: `ModuleNotFoundError`, import errors, or syntax errors
+
 ```bash
 ModuleNotFoundError: No module named 'app'
 ```
 
 **Solution**: Verify Python 3.13+ is active
+
 ```bash
 # Check Python version
 python --version  # Should show 3.13.x
@@ -31,6 +33,7 @@ python --version
 **Problem**: `bash: .venv/bin/activate: No such file or directory`
 
 **Solution**: Create virtual environment first
+
 ```bash
 # Create venv with Python 3.13
 python3.13 -m venv .venv
@@ -44,6 +47,7 @@ pip install -r requirements.txt
 ```
 
 **Alternative (using uv)**:
+
 ```bash
 # Install uv (recommended)
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -59,6 +63,7 @@ uv sync
 **Problem**: `pip install` errors, version conflicts
 
 **Solution 1 - Clean reinstall**:
+
 ```bash
 # Remove existing venv
 rm -rf .venv
@@ -75,6 +80,7 @@ pip install -r requirements.txt
 ```
 
 **Solution 2 - Use uv (recommended)**:
+
 ```bash
 # uv handles dependency resolution better
 uv sync
@@ -89,6 +95,7 @@ uv sync
 **Problem**: Commit succeeds without running checks (secrets, linting)
 
 **Solution**: Install pre-commit hooks
+
 ```bash
 # Install pre-commit package
 pip install pre-commit
@@ -105,6 +112,7 @@ pre-commit run --all-files
 ### Pre-Commit Hook Fails
 
 **Problem**: Commit blocked by pre-commit checks
+
 ```bash
 detect-secrets...........................................................Failed
 ```
@@ -112,6 +120,7 @@ detect-secrets...........................................................Failed
 **Common Failures**:
 
 **1. Secrets Detected**:
+
 ```bash
 # Review what was detected
 detect-secrets scan
@@ -125,6 +134,7 @@ git commit -m "Update secrets baseline"
 ```
 
 **2. Code Formatting (black)**:
+
 ```bash
 # Black will auto-fix most issues
 black .
@@ -135,6 +145,7 @@ git commit -m "Your message"
 ```
 
 **3. Linting Errors (ruff)**:
+
 ```bash
 # Check what failed
 ruff check .
@@ -148,6 +159,7 @@ git commit -m "Your message"
 ```
 
 **4. Type Checking (mypy)**:
+
 ```bash
 # Review type errors
 mypy app/
@@ -178,6 +190,7 @@ git commit -m "Your message" --no-verify
 **Problem**: `pytest` exits with failures
 
 **Solution 1 - Verify environment**:
+
 ```bash
 # Ensure venv is active
 which python  # Should show .venv/bin/python
@@ -187,6 +200,7 @@ pip install -r requirements.txt
 ```
 
 **Solution 2 - Run tests verbosely**:
+
 ```bash
 # Get detailed output
 pytest -v
@@ -199,6 +213,7 @@ pytest -s
 ```
 
 **Solution 3 - Check test coverage**:
+
 ```bash
 # Run with coverage report
 pytest --cov=app --cov-report=term-missing
@@ -215,6 +230,7 @@ pytest --cov=app --cov-report=html
 **Problem**: `ModuleNotFoundError: No module named 'app'`
 
 **Solution**: Ensure project root is in PYTHONPATH
+
 ```bash
 # Run pytest from project root
 cd /path/to/ml-platform-engineering-practicum
@@ -236,6 +252,7 @@ pytest
 **Common Causes**:
 
 **1. Port Already in Use**:
+
 ```bash
 # Error: Address already in use
 # Kill process on port 8000
@@ -246,6 +263,7 @@ uvicorn app.main:app --reload --port 8001
 ```
 
 **2. Module Not Found**:
+
 ```bash
 # Error: ModuleNotFoundError: No module named 'app'
 # Verify you're in project root
@@ -256,6 +274,7 @@ ls -la  # Should see app/ directory
 ```
 
 **3. Model File Missing**:
+
 ```bash
 # Error: FileNotFoundError: models/iris_classifier.skops
 # Train model first
@@ -272,6 +291,7 @@ ls -lh models/iris_classifier.skops
 **Problem**: Requests to `/predict` return Internal Server Error
 
 **Solution 1 - Check logs**:
+
 ```bash
 # Run with debug logging
 uvicorn app.main:app --reload --log-level debug
@@ -280,6 +300,7 @@ uvicorn app.main:app --reload --log-level debug
 ```
 
 **Solution 2 - Test model loading**:
+
 ```bash
 # Verify model loads correctly
 python -c "from app.model import get_model; print(get_model())"
@@ -288,6 +309,7 @@ python -c "from app.model import get_model; print(get_model())"
 ```
 
 **Solution 3 - Check request format**:
+
 ```bash
 # Correct format
 curl -X POST http://localhost:8000/predict \
@@ -308,6 +330,7 @@ curl -X POST http://localhost:8000/predict \
 **Common Issues**:
 
 **1. Base Image Pull Fails**:
+
 ```bash
 # Check Docker daemon is running
 docker ps
@@ -320,6 +343,7 @@ docker build -t ml-platform-api:v1.0.0 .
 ```
 
 **2. File Not Found in Build**:
+
 ```bash
 # Error: COPY failed: file not found
 # Verify files exist
@@ -336,6 +360,7 @@ cat .dockerignore
 **Problem**: `docker run` exits immediately
 
 **Solution - Check logs**:
+
 ```bash
 # Get container ID
 docker ps -a
@@ -356,6 +381,7 @@ docker run -it ml-platform-api:v1.0.0 /bin/bash
 **Problem**: `kubectl get pods` shows `Pending` status
 
 **Solution**:
+
 ```bash
 # Check why pending
 kubectl describe pod <pod-name>
@@ -376,6 +402,7 @@ kubectl top nodes
 **Problem**: `ErrImagePull` or `ImagePullBackOff`
 
 **Solution**:
+
 ```bash
 # Verify image exists locally (Minikube)
 minikube image ls | grep ml-platform-api
@@ -395,6 +422,7 @@ kubectl get deployment ml-platform-api -o yaml | grep imagePullPolicy
 **Problem**: Cannot access service via `minikube service ml-platform-api`
 
 **Solution**:
+
 ```bash
 # Check service exists
 kubectl get svc
@@ -419,6 +447,7 @@ curl $(minikube service ml-platform-api --url)/health/ready
 **Problem**: Pre-commit rejects commit message
 
 **Solution**: Follow conventional commits format
+
 ```bash
 # ✅ Valid formats
 git commit -m "feat(api): add health check endpoint"
@@ -439,6 +468,7 @@ git commit -m "fix bug"         # Too vague
 **Problem**: `git pull` shows merge conflicts
 
 **Solution**:
+
 ```bash
 # See conflicting files
 git status
@@ -465,6 +495,7 @@ git merge --abort
 **Common Issues**:
 
 **1. Coverage Below 80%**:
+
 ```bash
 # Check local coverage
 pytest --cov=app --cov-report=term-missing
@@ -474,12 +505,14 @@ pytest --cov=app --cov-report=term-missing
 ```
 
 **2. Code Duplication > 3%**:
+
 ```bash
 # Refactor duplicated blocks into functions
 # Extract common logic to reduce duplication
 ```
 
 **3. Bugs/Vulnerabilities**:
+
 ```bash
 # Click "Details" on SonarCloud check in PR
 # Review specific issues
@@ -496,6 +529,7 @@ pytest --cov=app --cov-report=term-missing
 **Problem**: Container image has HIGH/CRITICAL vulnerabilities
 
 **Solution**:
+
 ```bash
 # See detailed report
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
@@ -516,6 +550,7 @@ docker build -t ml-platform-api:v1.0.0 .
 **Problem**: `bandit` identifies Python security vulnerability
 
 **Solution**:
+
 ```bash
 # Review specific issue
 bandit -r app/
@@ -534,6 +569,7 @@ bandit -r app/
 **Problem**: `FileNotFoundError: models/iris_classifier.skops`
 
 **Solution**:
+
 ```bash
 # Train model to generate .skops file
 python train_model.py
@@ -544,7 +580,8 @@ ls -lh models/iris_classifier.skops
 # Check SHA-256 hash (if metadata exists)
 python -c "
 import hashlib
-hash = hashlib.sha256(open('models/iris_classifier.skops', 'rb').read()).hexdigest()
+with open('models/iris_classifier.skops', 'rb') as f:
+    hash = hashlib.sha256(f.read()).hexdigest()
 print(f'SHA-256: {hash}')
 "
 ```
@@ -556,6 +593,7 @@ print(f'SHA-256: {hash}')
 **Problem**: `SecurityError: Model hash mismatch!`
 
 **Solution**: Retrain model or update hash
+
 ```bash
 # Option 1: Retrain model (regenerates hash)
 python train_model.py
@@ -574,14 +612,14 @@ python train_model.py
 1. **Check logs** - Most errors have detailed logs with root cause
 2. **Search issues** - Check GitHub Issues for similar problems
 3. **Review docs** - Relevant docs for each component:
-   - API: `README.md`, `docs/QUICK_REFERENCE.md`
+   - API: `README.md`
    - Security: `SECURITY.md`, `docs/PICKLE_SECURITY.md`
    - Kubernetes: `docs/KUBERNETES_SECURITY.md`
    - Workflow: `CONTRIBUTING.md`
 
 4. **Create issue** - If problem persists, create GitHub issue with:
    - Steps to reproduce
-   - Error messages (full stack trace)
+   - Error messages (full-stack trace)
    - Environment info (`python --version`, `docker --version`, etc.)
 
 ---
