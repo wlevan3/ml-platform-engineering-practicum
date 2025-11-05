@@ -608,7 +608,6 @@ jobs:
     needs: [docker-build-scan]  # Run after Docker image is built and scanned
     permissions:
       contents: read
-      actions: write  # Required to upload artifacts
 
     steps:
       - name: Checkout code
