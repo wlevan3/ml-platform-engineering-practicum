@@ -7,12 +7,9 @@ Hub, GuardDuty, and Inspector in the ML Platform infrastructure.
 
 - [Overview](#overview)
 - [Security Monitoring Stack](#security-monitoring-stack)
-- [Alert Notification Flow](#alert-notification-flow)
 - [Severity Levels](#severity-levels)
 - [Incident Response Phases](#incident-response-phases)
-- [Response Procedures by Finding Type](#response-procedures-by-finding-type)
-- [Common Security Findings](#common-security-findings)
-- [Automated Remediation](#automated-remediation)
+- [Finding Type Quick Reference](#finding-type-quick-reference)
 - [Escalation Procedures](#escalation-procedures)
 - [Post-Incident Activities](#post-incident-activities)
 - [Tools and Resources](#tools-and-resources)
@@ -53,35 +50,7 @@ handling security incidents detected by our automated monitoring systems.
    - Real-time alerting for HIGH and CRITICAL findings
    - Email notifications to designated security contacts
 
-## Alert Notification Flow
-
-```text
-┌─────────────────┐
-│  Security Hub   │
-│   GuardDuty     │──┐
-│   Inspector     │  │
-└─────────────────┘  │
-                     │
-                     ▼
-              ┌──────────────┐
-              │ EventBridge  │
-              │    Rules     │
-              └──────────────┘
-                     │
-                     │ Filter: HIGH/CRITICAL
-                     │ Status: NEW
-                     ▼
-              ┌──────────────┐
-              │  SNS Topic   │
-              │ (Encrypted)  │
-              └──────────────┘
-                     │
-                     ▼
-              ┌──────────────┐
-              │    Email     │
-              │ Notification │
-              └──────────────┘
-```
+Alerts flow: Security Hub/GuardDuty/Inspector → EventBridge → SNS → Email (HIGH/CRITICAL findings only)
 
 ## Severity Levels
 
@@ -258,272 +227,30 @@ aws s3api put-public-access-block \
    - Monitor GuardDuty findings
    - Check Security Hub dashboard
 
-### 6. Lessons Learned
+## Finding Type Quick Reference
 
-**Post-incident review (within 48 hours):**
+| Finding Type | Severity | Immediate Action | Key Command |
+|---|---|---|---|
+| UnauthorizedAccess:EC2/MaliciousIPCaller | HIGH/CRITICAL | Isolate instance, snapshot, review CloudTrail | `aws ec2 modify-instance-attribute --instance-id ID --groups RESTRICTED_SG` |
+| CryptoCurrency:EC2/BitcoinTool | HIGH | Stop instance, check access, terminate | `aws ec2 stop-instances --instance-ids ID` |
+| Recon:EC2/PortProbeUnprotectedPort | MEDIUM | Review SG rules, restrict ports | `aws ec2 describe-security-groups --group-ids SG_ID` |
+| IAM.1 Root Access Key Exists | CRITICAL | Delete root access keys immediately | `aws iam delete-access-key --access-key-id KEY_ID` |
+| EC2.2 Default SG Open | HIGH | Remove all ingress/egress rules | `aws ec2 revoke-security-group-ingress/egress` |
+| S3.1 Public Access Enabled | HIGH | Block public access | `aws s3api put-public-access-block --bucket NAME --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true` |
+| CVE Package Vulnerability | HIGH | Update package/container image | `yum update PACKAGE` or rebuild Docker image |
+| Network Exposure Port 0.0.0.0/0 | MEDIUM/HIGH | Restrict to specific IP range | `aws ec2 revoke/authorize-security-group-ingress` |
+| IAM Password Policy Missing | MEDIUM | Configure via Console or Terraform | Update terraform/environments/dev/main.tf |
+| CloudTrail Not Enabled | MEDIUM | Enable via Terraform | `terraform apply -var="enable_cloudtrail=true"` |
 
-1. Document the incident:
-   - Timeline of events
-   - Root cause analysis
-   - Actions taken
-   - Effectiveness of response
+**For detailed remediation steps**, refer to AWS documentation or contact platform engineering team.
 
-2. Update procedures:
-   - Improve detection rules
-   - Enhance response playbooks
-   - Update Terraform configurations
-
-3. Implement preventive measures:
-   - Add automated remediation
-   - Strengthen security controls
-   - Update training materials
-
-## Response Procedures by Finding Type
-
-### GuardDuty Findings
-
-#### 1. UnauthorizedAccess:EC2/MaliciousIPCaller
-
-**Description:** EC2 instance is communicating with a known malicious IP
-
-**Response:**
+### Remediation via Terraform
 
 ```bash
-# 1. Immediately isolate the instance
-aws ec2 modify-instance-attribute \
-  --instance-id <INSTANCE_ID> \
-  --groups sg-xxxxxxxxx  # Use restricted security group
-
-# 2. Create forensic snapshot
-aws ec2 create-snapshot \
-  --volume-id <VOLUME_ID> \
-  --description "Forensic snapshot - GuardDuty finding $(date +%Y%m%d)"
-
-# 3. Review CloudTrail logs for API activity
-aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<INSTANCE_ID> \
-  --max-results 50
-
-# 4. Terminate and replace
-kubectl drain <NODE_NAME> --ignore-daemonsets --delete-emptydir-data
-aws ec2 terminate-instances --instance-ids <INSTANCE_ID>
-```
-
-#### 2. CryptoCurrency:EC2/BitcoinTool
-
-**Description:** EC2 instance running cryptocurrency mining software
-
-**Response:**
-
-```bash
-# 1. Stop the instance immediately
-aws ec2 stop-instances --instance-ids <INSTANCE_ID>
-
-# 2. Check for unauthorized access
-aws cloudtrail lookup-events \
-  --lookup-attributes AttributeKey=ResourceName,AttributeValue=<INSTANCE_ID>
-
-# 3. Review IAM access
-aws iam list-attached-user-policies --user-name <USER_NAME>
-aws iam list-access-keys --user-name <USER_NAME>
-
-# 4. Terminate and launch fresh instance
-# Ensure proper IAM permissions and security groups
-```
-
-#### 3. Recon:EC2/PortProbeUnprotectedPort
-
-**Description:** Port scanning activity detected on EC2 instance
-
-**Response:**
-
-```bash
-# 1. Review security group rules
-aws ec2 describe-security-groups --group-ids <SG_ID>
-
-# 2. Restrict unnecessary ports
-# Update terraform/environments/dev/main.tf
-# Remove overly permissive ingress rules
-
-# 3. Enable VPC Flow Logs (if not already enabled)
-aws ec2 create-flow-logs \
-  --resource-type VPC \
-  --resource-ids <VPC_ID> \
-  --traffic-type ALL \
-  --log-destination-type cloud-watch-logs \
-  --log-group-name /aws/vpc/flowlogs
-
-# 4. Monitor for follow-up attacks
-```
-
-### Security Hub Findings
-
-#### 1. IAM.1 - Root account access key should not exist
-
-**Description:** AWS root account has active access keys
-
-**Response:**
-
-```bash
-# 1. List root account access keys
-aws iam get-account-summary | grep "AccountAccessKeysPresent"
-
-# 2. Delete root access keys immediately
-aws iam delete-access-key --access-key-id <ROOT_ACCESS_KEY_ID>
-
-# 3. Enable MFA for root account
-# (Must be done via AWS Console)
-
-# 4. Set up AWS Organizations and SCPs to prevent root usage
-```
-
-#### 2. EC2.2 - VPC default security group should not allow inbound/outbound traffic
-
-**Description:** Default security group has open rules
-
-**Response:**
-
-```bash
-# 1. Identify default security group
-aws ec2 describe-security-groups \
-  --filters "Name=group-name,Values=default" \
-  --query "SecurityGroups[*].[GroupId,VpcId]"
-
-# 2. Remove all ingress rules
-aws ec2 revoke-security-group-ingress \
-  --group-id <DEFAULT_SG_ID> \
-  --ip-permissions <EXISTING_RULES>
-
-# 3. Remove all egress rules
-aws ec2 revoke-security-group-egress \
-  --group-id <DEFAULT_SG_ID> \
-  --ip-permissions <EXISTING_RULES>
-
-# 4. Verify no resources are using default SG
-aws ec2 describe-instances \
-  --filters "Name=instance.group-id,Values=<DEFAULT_SG_ID>"
-```
-
-#### 3. S3.1 - S3 Block Public Access setting should be enabled
-
-**Description:** S3 bucket allows public access
-
-**Response:**
-
-```bash
-# 1. Check current public access settings
-aws s3api get-public-access-block --bucket <BUCKET_NAME>
-
-# 2. Enable block public access
-aws s3api put-public-access-block \
-  --bucket <BUCKET_NAME> \
-  --public-access-block-configuration \
-    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
-
-# 3. Review bucket policy for public access
-aws s3api get-bucket-policy --bucket <BUCKET_NAME>
-
-# 4. Remove public access from bucket ACL
-aws s3api put-bucket-acl --bucket <BUCKET_NAME> --acl private
-```
-
-### Inspector Findings
-
-#### 1. CVE-xxxx-xxxxx - Package vulnerability
-
-**Description:** Package vulnerability detected in EC2/ECR
-
-**Response:**
-
-```bash
-# For EC2 instances:
-# 1. Update the vulnerable package
-ssh ec2-user@<INSTANCE_IP>
-sudo yum update <PACKAGE_NAME>  # For Amazon Linux 2
-sudo apt update && sudo apt upgrade <PACKAGE_NAME>  # For Ubuntu
-
-# For ECR container images:
-# 1. Update Dockerfile
-# 2. Rebuild and push image
-docker build -t ml-platform-api:v1.0.1 .
-docker tag ml-platform-api:v1.0.1 <ECR_URL>:v1.0.1
-docker push <ECR_URL>:v1.0.1
-
-# 3. Update Kubernetes deployment
-kubectl set image deployment/ml-platform-api \
-  ml-platform-api=<ECR_URL>:v1.0.1
-
-# 4. Verify fix with Inspector rescan
-```
-
-#### 2. Network Exposure - Port accessible from internet
-
-**Description:** Instance has port exposed to 0.0.0.0/0
-
-**Response:**
-
-```bash
-# 1. Review security group rules
-aws ec2 describe-security-groups --group-ids <SG_ID>
-
-# 2. Restrict to specific IP ranges
-aws ec2 revoke-security-group-ingress \
-  --group-id <SG_ID> \
-  --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges='[{CidrIp=0.0.0.0/0}]'
-
-aws ec2 authorize-security-group-ingress \
-  --group-id <SG_ID> \
-  --ip-permissions IpProtocol=tcp,FromPort=22,ToPort=22,IpRanges='[{CidrIp=203.0.113.0/24,Description="Office IP"}]'
-
-# 3. Use Systems Manager Session Manager instead of SSH
-# (Already configured in terraform/environments/dev/main.tf)
-```
-
-## Common Security Findings
-
-### Top 10 Most Common Findings
-
-1. **IAM password policy not configured** → Enable in AWS Console or via Terraform
-2. **Root account MFA not enabled** → Enable via AWS Console
-3. **CloudTrail not enabled** → Enable via Terraform
-4. **S3 bucket public access** → Block public access
-5. **Security group allows 0.0.0.0/0** → Restrict to specific IPs
-6. **Unencrypted EBS volumes** → Enable encryption by default
-7. **IAM access keys not rotated** → Rotate every 90 days
-8. **VPC flow logs not enabled** → Enable via Terraform
-9. **RDS instance publicly accessible** → Disable public access
-10. **Unused security groups** → Remove unused resources
-
-## Automated Remediation
-
-### Auto-Remediation with AWS Config Rules (Future Enhancement)
-
-**Not currently implemented** - Planned for Phase 4 (Compliance & Observability)
-
-Example auto-remediation actions:
-
-- Automatically remediate S3 bucket public access
-- Automatically enable encryption on new EBS volumes
-- Automatically remove overly permissive security group rules
-- Automatically revoke unused IAM access keys
-
-### Manual Remediation via Terraform
-
-**Preferred approach for infrastructure fixes:**
-
-```bash
-# 1. Update Terraform configuration
 cd terraform/environments/dev
-vim main.tf  # or variables.tf
-
-# 2. Review changes
 terraform plan
-
-# 3. Apply fixes
 terraform apply
-
-# 4. Verify in Security Hub
-# Wait 12-24 hours for compliance check refresh
+# Wait 12-24 hours for Security Hub compliance refresh
 ```
 
 ## Escalation Procedures
@@ -557,75 +284,11 @@ Escalate to senior security personnel if:
 
 ## Post-Incident Activities
 
-### Incident Report Template
+**Document incidents in:** `docs/incidents/YYYY-MM-DD-summary.md`
 
-**File:** `docs/incidents/YYYY-MM-DD-incident-summary.md`
+**Track metrics**: MTTD (detection), MTTA (acknowledgment), MTTC (containment), MTTR (remediation)
 
-```markdown
-# Security Incident Report - [Date]
-
-## Summary
-- **Date/Time:** [UTC timestamp]
-- **Severity:** [CRITICAL/HIGH/MEDIUM/LOW]
-- **Finding Type:** [GuardDuty/Security Hub/Inspector]
-- **Affected Resources:** [List ARNs/IDs]
-
-## Timeline
-- **00:00 UTC:** Finding detected
-- **00:15 UTC:** Alert received
-- **00:30 UTC:** Investigation started
-- **01:00 UTC:** Containment completed
-- **02:00 UTC:** Remediation applied
-- **03:00 UTC:** Verification completed
-
-## Root Cause
-[Description of what caused the finding]
-
-## Impact Assessment
-- **Confidentiality:** [None/Low/Medium/High]
-- **Integrity:** [None/Low/Medium/High]
-- **Availability:** [None/Low/Medium/High]
-
-## Actions Taken
-1. [Containment actions]
-2. [Eradication steps]
-3. [Recovery procedures]
-
-## Lessons Learned
-- What worked well
-- What could be improved
-- Preventive measures implemented
-
-## Follow-up Actions
-- [ ] Update Terraform configurations
-- [ ] Update incident response procedures
-- [ ] Schedule security training
-- [ ] Implement additional monitoring
-```
-
-### Metrics to Track
-
-- **Mean Time to Detect (MTTD):** Time from event to detection
-- **Mean Time to Acknowledge (MTTA):** Time from detection to acknowledgment
-- **Mean Time to Contain (MTTC):** Time from detection to containment
-- **Mean Time to Remediate (MTTR):** Time from detection to full remediation
-
-### Continuous Improvement
-
-1. **Quarterly Security Reviews**
-   - Review Security Hub compliance score
-   - Analyze trend of findings over time
-   - Identify recurring issues
-
-2. **Update Terraform Configurations**
-   - Add preventive controls
-   - Enable additional security services
-   - Implement security best practices
-
-3. **Security Training**
-   - Conduct incident response drills
-   - Share lessons learned
-   - Update documentation
+**Quarterly review**: Update Terraform configs based on root cause, review Security Hub compliance trends
 
 ## Tools and Resources
 
@@ -683,17 +346,7 @@ terraform output security_alerts_topic_arn
 
 ## Additional Resources
 
-- [AWS Security Hub User Guide](https://docs.aws.amazon.com/securityhub/latest/userguide/)
-- [AWS GuardDuty User Guide](https://docs.aws.amazon.com/guardduty/latest/ug/)
-- [AWS Inspector User Guide](https://docs.aws.amazon.com/inspector/latest/user/)
-- [CIS AWS Foundations Benchmark](https://www.cisecurity.org/benchmark/amazon_web_services)
-- [AWS Security Best Practices](https://docs.aws.amazon.com/security/)
+- [AWS Security Hub](https://docs.aws.amazon.com/securityhub/)
+- [AWS GuardDuty](https://docs.aws.amazon.com/guardduty/)
+- [AWS Inspector](https://docs.aws.amazon.com/inspector/)
 - [AWS Incident Response Guide](https://docs.aws.amazon.com/whitepapers/latest/aws-security-incident-response-guide/)
-
-## Support
-
-For questions about incident response procedures:
-
-- **Documentation:** `CLAUDE.md`, `SECURITY.md`
-- **Security Issues:** Create confidential issue in GitHub
-- **AWS Support:** [AWS Support Console](https://console.aws.amazon.com/support/)
