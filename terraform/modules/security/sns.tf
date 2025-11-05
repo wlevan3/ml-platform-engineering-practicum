@@ -8,7 +8,7 @@
 
 # KMS key for SNS topic encryption
 resource "aws_kms_key" "sns" {
-  count = var.enable_security_hub ? 1 : 0
+  count = var.enable_security_hub || var.enable_guardduty ? 1 : 0
 
   description             = "KMS key for ${local.sns_topic_name} encryption"
   deletion_window_in_days = 10
@@ -63,7 +63,7 @@ resource "aws_kms_key" "sns" {
 
 # KMS key alias for easier identification
 resource "aws_kms_alias" "sns" {
-  count = var.enable_security_hub ? 1 : 0
+  count = var.enable_security_hub || var.enable_guardduty ? 1 : 0
 
   name          = local.kms_key_alias
   target_key_id = aws_kms_key.sns[0].key_id
@@ -71,7 +71,7 @@ resource "aws_kms_alias" "sns" {
 
 # SNS topic for security alerts
 resource "aws_sns_topic" "security_alerts" {
-  count = var.enable_security_hub ? 1 : 0
+  count = var.enable_security_hub || var.enable_guardduty ? 1 : 0
 
   name              = local.sns_topic_name
   display_name      = "ML Platform Security Alerts"
@@ -87,7 +87,7 @@ resource "aws_sns_topic" "security_alerts" {
 
 # SNS topic policy - Allow EventBridge to publish
 resource "aws_sns_topic_policy" "security_alerts" {
-  count = var.enable_security_hub ? 1 : 0
+  count = var.enable_security_hub || var.enable_guardduty ? 1 : 0
 
   arn = aws_sns_topic.security_alerts[0].arn
 
@@ -109,7 +109,7 @@ resource "aws_sns_topic_policy" "security_alerts" {
 
 # Email subscription for security alerts
 resource "aws_sns_topic_subscription" "security_alerts_email" {
-  count = var.enable_security_hub && var.security_alert_email != "" ? 1 : 0
+  count = (var.enable_security_hub || var.enable_guardduty) && var.security_alert_email != "" ? 1 : 0
 
   topic_arn = aws_sns_topic.security_alerts[0].arn
   protocol  = "email"

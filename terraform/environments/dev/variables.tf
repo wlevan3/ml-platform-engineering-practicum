@@ -219,6 +219,14 @@ variable "security_alert_email" {
   description = "Email address for HIGH/CRITICAL security findings (REQUIRED when Security Hub enabled)"
   type        = string
   default     = "" # REPLACE WITH YOUR EMAIL: "your-email@example.com"
+
+  validation {
+    condition = (
+      var.security_alert_email == "" ||
+      can(regex("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", var.security_alert_email))
+    )
+    error_message = "security_alert_email must be empty or a valid email address."
+  }
 }
 
 # ===================================================================

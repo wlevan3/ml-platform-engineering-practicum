@@ -10,11 +10,11 @@
 # ===================================================================
 
 locals {
-  # GuardDuty severity ranges (simplified)
-  # HIGH: 7.0-8.9, CRITICAL: 9.0-10.0
-  guardduty_high_severities     = [for i in range(70, 90) : i / 10.0]
-  guardduty_critical_severities = [for i in range(90, 101) : i / 10.0]
-  guardduty_alert_severities    = concat(local.guardduty_high_severities, local.guardduty_critical_severities)
+  # GuardDuty severity threshold (numeric-based)
+  # GuardDuty only supports 0.1-8.9 (LOW: 0.1-3.9, MEDIUM: 4.0-6.9, HIGH: 7.0-8.9)
+  # Note: GuardDuty has NO "CRITICAL" severity level
+  # Security Hub may re-score GuardDuty HIGH findings as CRITICAL
+  guardduty_alert_severity_min = 7.0
 }
 
 # ===================================================================
@@ -87,18 +87,20 @@ resource "aws_cloudwatch_event_target" "security_hub_to_sns" {
 # GuardDuty EventBridge Rules
 # ===================================================================
 
-# EventBridge Rule: GuardDuty HIGH/CRITICAL findings
+# EventBridge Rule: GuardDuty HIGH severity findings
 resource "aws_cloudwatch_event_rule" "guardduty_findings" {
   count = var.enable_guardduty ? 1 : 0
 
-  name        = "${var.cluster_name}-guardduty-critical-findings"
-  description = "Capture GuardDuty HIGH and CRITICAL severity findings"
+  name        = "${var.cluster_name}-guardduty-high-findings"
+  description = "Capture GuardDuty HIGH severity findings (7.0-8.9)"
 
   event_pattern = jsonencode({
     source      = ["aws.guardduty"]
     detail-type = ["GuardDuty Finding"]
     detail = {
-      severity = local.guardduty_alert_severities
+      severity = [{
+        numeric = [">=", local.guardduty_alert_severity_min]
+      }]
     }
   })
 
@@ -107,7 +109,7 @@ resource "aws_cloudwatch_event_rule" "guardduty_findings" {
 
 # EventBridge Target: Send GuardDuty findings to SNS
 resource "aws_cloudwatch_event_target" "guardduty_to_sns" {
-  count = var.enable_guardduty && var.enable_security_hub ? 1 : 0
+  count = var.enable_guardduty ? 1 : 0
 
   rule      = aws_cloudwatch_event_rule.guardduty_findings[0].name
   target_id = "SendToSNS"
