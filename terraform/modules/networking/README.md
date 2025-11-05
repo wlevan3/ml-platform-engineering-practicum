@@ -149,12 +149,14 @@ module "networking" {
 When `cluster_name` is provided, the module automatically adds the following tags to subnets:
 
 ### Public Subnets
+
 ```
 kubernetes.io/role/elb                 = "1"
 kubernetes.io/cluster/${cluster_name}" = "shared"
 ```
 
 ### Private Subnets
+
 ```
 kubernetes.io/role/internal-elb        = "1"
 kubernetes.io/cluster/${cluster_name}" = "shared"
@@ -165,12 +167,14 @@ These tags are required for EKS to automatically discover subnets for load balan
 ## NAT Gateway Considerations
 
 ### Single NAT Gateway (Cost Optimization)
+
 - **Use for**: Development, testing environments
 - **Cost**: ~$32/month (1 NAT gateway)
 - **Trade-off**: All private subnets route through one NAT gateway
 - **Risk**: If NAT gateway AZ fails, private subnets in other AZs lose internet access
 
 ### Multi-NAT Gateway (High Availability)
+
 - **Use for**: Production environments
 - **Cost**: ~$96/month (3 NAT gateways @ 3 AZs)
 - **Benefit**: Each AZ has its own NAT gateway for redundancy

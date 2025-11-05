@@ -90,6 +90,7 @@ The module automatically creates a lifecycle policy with two rules:
 ### Cost Optimization
 
 Lifecycle policies help reduce storage costs by automatically cleaning up:
+
 - Old image versions that are no longer needed
 - Intermediate build images without tags
 - Failed/test builds
