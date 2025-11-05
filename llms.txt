@@ -1,6 +1,6 @@
 # ML Platform Engineering Practicum - AI Assistant Navigation Guide
 
-> This file follows the llms.txt standard (Sept 2024) to help AI assistants navigate documentation efficiently.
+> This file follows the llms.txt standard (September 2024) to help AI assistants navigate documentation efficiently.
 > Learn more: https://llmstxt.org/
 
 ## Quick Answers
@@ -17,7 +17,7 @@
 
 ### CLAUDE.md
 **Purpose**: Primary guidance for Claude Code when working with this repository
-**Length**: 150 lines (condensed)
+**Length**: 234 lines
 **Summary**: Environment requirements (Python 3.13 + uv + .skops), essential commands, code standards, workflow, security practices, documentation index
 **Link**: /CLAUDE.md
 **When to read**: Always (Claude Code auto-loads this file at session start)

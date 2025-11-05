@@ -58,14 +58,14 @@ sequenceDiagram
     GHA->>OIDC: 1. Request OIDC token (repo, branch, workflow)
     OIDC->>GHA: 2. Return signed JWT (short-lived)
     GHA->>STS: 3. AssumeRoleWithWebIdentity(JWT, role ARN)
-    STS->>STS: 4. Validate: JWT, trust policy, audience, repo
+    STS->>STS: 4. Validate JWT, trust policy, audience, repo
     STS->>GHA: 5. Return temp credentials (1hr)
     GHA->>AWS: 6. Call AWS APIs with temp credentials
 ```
 
 **Token Claims:** `aud`=sts.amazonaws.com | `sub`=repo:wlevan3/* | `exp`=not expired | Signature=valid
 
-**Temp Credentials:** Valid 1hr (max 12hr) | Scoped to role permissions | Auto-expire
+**Temp Credentials:** Valid 1 hour (max 12 hours) | Scoped to role permissions | Auto-expire
 
 ---
 

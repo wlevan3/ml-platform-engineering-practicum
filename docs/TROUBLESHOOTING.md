@@ -704,7 +704,7 @@ pytest --cov=app --cov-report=html
 
 - **Quick Reference**: `docs/QUICK_REFERENCE.md` - Git commands, GitHub CLI, conventions
 - **Security**: `docs/VULNERABILITY_REMEDIATION.md` - Vulnerability handling workflow
-- **Contributing**: `CONTRIBUTING.md` - PR workflow, merge conflicts
+- **Contributing**: [CONTRIBUTING.md](../CONTRIBUTING.md) - PR workflow, merge conflicts
 - **Project Management**: `docs/PROJECT_MANAGEMENT.md` - GitHub Projects setup
 
 ### CI Logs

@@ -105,7 +105,7 @@ curl -X POST http://localhost:8000/predict \
   -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
 ```
 
-**All Docker commands:** `docs/QUICK_REFERENCE.md` (build, run, scan, SBOM)
+**All Docker commands:** [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (build, run, scan, SBOM)
 
 ### Kubernetes Quick Start
 

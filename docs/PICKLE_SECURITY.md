@@ -33,7 +33,13 @@ pickle.dump(Exploit(), open('malicious.joblib', 'wb'))
 joblib.load('malicious.joblib')  # ← Credentials stolen!
 ```
 
-**Attack Vectors:** User-uploaded models | Compromised model registry | Supply chain | MITM | Insider threat
+**Attack Vectors:**
+
+- User-uploaded models
+- Compromised model registry
+- Supply chain attacks
+- Man-in-the-middle (MITM)
+- Insider threats
 
 ---
 
@@ -56,6 +62,7 @@ self.model = joblib.load(self.model_path)  # models/iris_classifier.joblib
 ### Solution 1: Model Signing & Verification (⭐ Production)
 
 **Training:**
+
 ```python
 import hmac, hashlib, json
 sig = hmac.new(secret_key.encode(), model_bytes, hashlib.sha256).hexdigest()
@@ -63,6 +70,7 @@ json.dump({"signature": sig, "algorithm": "HMAC-SHA256"}, open("model_sig.json",
 ```
 
 **Loading:**
+
 ```python
 sig_data = json.load(open("model_sig.json"))
 expected = hmac.new(secret_key.encode(), model_bytes, hashlib.sha256).hexdigest()
@@ -79,6 +87,7 @@ return joblib.load(model_path)
 ### Solution 2: Model Registry with Checksums (MLflow)
 
 **Training:**
+
 ```python
 import mlflow.sklearn
 with mlflow.start_run():
@@ -87,6 +96,7 @@ with mlflow.start_run():
 ```
 
 **Loading:**
+
 ```python
 model = mlflow.sklearn.load_model(f"models:/{model_name}/{version}")  # Auto-verifies checksum
 ```
@@ -102,8 +112,15 @@ model = mlflow.sklearn.load_model(f"models:/{model_name}/{version}")  # Auto-ver
 pip install safetensors scikit-learn-safetensors
 ```
 
-**Training:** `save_model(model, "iris_classifier.safetensors")`
-**Loading:** `model = load_model("iris_classifier.safetensors")`
+```python
+from safetensors.sklearn import save_model, load_model
+
+# Training
+save_model(model, "iris_classifier.safetensors")
+
+# Loading
+model = load_model("iris_classifier.safetensors")
+```
 
 **Pros:** Cannot execute code ✅ | Faster than pickle ✅ | Memory-efficient ✅
 **Cons:** Relatively new ❌ | Limited ecosystem ❌
@@ -117,6 +134,7 @@ pip install skl2onnx onnxruntime
 ```
 
 **Training:**
+
 ```python
 from skl2onnx import convert_sklearn
 from skl2onnx.common.data_types import FloatTensorType
@@ -125,6 +143,7 @@ open("iris_classifier.onnx", "wb").write(onnx_model.SerializeToString())
 ```
 
 **Loading:**
+
 ```python
 import onnxruntime as rt
 sess = rt.InferenceSession("iris_classifier.onnx")
@@ -188,14 +207,16 @@ model = SafeUnpickler(open(filepath, 'rb')).load()
 
 ### Phase 1 (Now) - Low-Risk Learning
 
-**Option A: Document**
+#### Option A: Document
+
 ```python
 # Security Note: joblib.load() with locally trained model (controlled environment, low risk)
 # Production: Migrate to MLflow/ONNX (Phase 3)
 self.model = joblib.load(self.model_path)  # nosemgrep: unsafe-pickle-deserialization
 ```
 
-**Option B: Hash Verification** (Learning Exercise)
+#### Option B: Hash Verification (Learning Exercise)
+
 ```python
 # train_model.py
 model_hash = hashlib.sha256(open(filepath, 'rb').read()).hexdigest()
