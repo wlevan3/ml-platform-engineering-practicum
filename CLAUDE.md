@@ -4,11 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with th
 
 ## Project Context
 
-Personal **learning project** building a production-grade ML platform from scratch. Focus on hands-on experience with infrastructure, MLOps, and platform engineering. Uses production-like workflows (issues, PRs, CI/CD) to build professional habits.
+Personal **learning project** building a production-grade ML platform from scratch. Focus on
+hands-on experience with infrastructure, MLOps, and platform engineering. Uses production-like
+workflows (issues, PRs, CI/CD) to build professional habits.
 
-**Current Phase**: Foundation & Setup (Phase 1) - FastAPI ML inference service (Iris classifier) is functional. Infrastructure (EKS, Terraform) coming in Phase 2+.
+**Current Phase**: Foundation & Setup (Phase 1) - FastAPI ML inference service (Iris
+classifier) is functional. Infrastructure (EKS, Terraform) coming in Phase 2+.
 
-**Learning philosophy**: Document the "why" behind decisions, reflect on trade-offs, don't just complete tasks—understand them deeply.
+**Learning philosophy**: Document the "why" behind decisions, reflect on trade-offs, don't
+just complete tasks—understand them deeply.
 
 ## Development Environment
 
@@ -83,7 +87,7 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 ### Branch Naming
 
-```
+```text
 <type>/<short-description>
 ```
 
@@ -95,13 +99,14 @@ Example: `feature/add-mlflow-integration`
 
 Follow Conventional Commits:
 
-```
+```text
 <type>(<scope>): <subject>
 ```
 
 Types: `feat`, `fix`, `infra`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
 
 Examples:
+
 - `feat(model-registry): add MLflow integration`
 - `fix(api): resolve prediction timeout issue`
 - `infra(eks): upgrade cluster to v1.28`
@@ -115,6 +120,7 @@ YOU MUST complete before pushing:
 3. Run `/pre-push-review` (Claude Code skill) - shellcheck + actionlint
 
 After creating PR:
+
 ```bash
 gh pr checks $PR_NUMBER --watch  # Monitor CI
 ```
@@ -124,11 +130,13 @@ Then review automated PR comments and address them.
 ### When to Create Issues
 
 **Create issue first**:
+
 - New features, non-trivial bugs, infrastructure changes
 - Changes requiring discussion or architectural decisions
 - Work taking multiple commits/sessions
 
 **Skip issue**:
+
 - Typo fixes, broken links, minor dependency updates
 - Small refactoring, documentation improvements
 
@@ -139,6 +147,7 @@ IMPORTANT: Never commit secrets - pre-commit hooks (detect-secrets, Gitleaks) wi
 IMPORTANT: Model security uses **skops.io** format (.skops) with SHA-256 hash verification.
 
 **Multi-layer scanning**:
+
 - **Local**: Pre-commit hooks (detect-secrets, semgrep)
 - **CI**: Trivy (filesystem + containers), Gitleaks (secrets), Semgrep (SAST), SonarCloud
 - **Container**: Fail-fast on HIGH/CRITICAL vulnerabilities
@@ -147,7 +156,7 @@ See `docs/SECURITY.md` for detailed security practices.
 
 ## Project Structure
 
-```
+```text
 ml-platform-engineering-practicum/
 ├── app/                    # FastAPI application
 │   ├── main.py            # API endpoints
@@ -168,6 +177,7 @@ ml-platform-engineering-practicum/
 ## CI/CD Pipeline
 
 Runs on PRs and pushes to `main`:
+
 - Markdown linting, Python linting (Black, Ruff)
 - Tests with coverage → SonarCloud
 - Security: Trivy, Gitleaks, Semgrep

@@ -8,17 +8,20 @@ This document outlines the security practices, scanning tools, and policies for 
 - [Secret Management](#secret-management)
 - [Security Scanning](#security-scanning)
 - [Vulnerability Management](#vulnerability-management)
-- [GitHub Actions Security](#github-actions-security)
 
 ## Model Security
 
 ### Secure Deserialization (skops.io)
 
-Models are serialized using **skops.io** (v0.13.0+), which provides pickle-free deserialization to address [CWE-502](https://cwe.mitre.org/data/definitions/502.html) (Deserialization of Untrusted Data).
+Models are serialized using **skops.io** (v0.13.0+), which provides pickle-free deserialization
+to address [CWE-502](https://cwe.mitre.org/data/definitions/502.html) (Deserialization of
+Untrusted Data).
 
 **Why skops.io?**
 
-Traditional Python model serialization (pickle/joblib) can execute arbitrary code during deserialization, creating a serious security vulnerability. skops.io provides a safe alternative that:
+Traditional Python model serialization (pickle/joblib) can execute arbitrary code during
+deserialization, creating a serious security vulnerability. skops.io provides a safe
+alternative that:
 
 - **Prevents arbitrary code execution** during deserialization
 - **Validates object types** before loading
@@ -42,6 +45,7 @@ if untrusted_types:
     raise ModelIntegrityError(f"Model contains untrusted types: {untrusted_types}")
 
 # Load with only default trusted types
+# Note: untrusted_types is [] here (validated empty above - only trust defaults)
 self.model = sio.load(self.model_path, trusted=untrusted_types)
 ```
 
@@ -182,11 +186,13 @@ Run on every PR and push to `main`:
 #### Trivy (Container and Filesystem Scanning)
 
 Scans for vulnerabilities in:
+
 - **OS packages** (Debian base image)
 - **Python dependencies** (requirements.txt)
 - **Dockerfile best practices**
 
 **Configuration**:
+
 - Separate scans for builder and runtime stages
 - Fail-fast on HIGH/CRITICAL vulnerabilities
 - Results uploaded to GitHub Security tab
@@ -224,6 +230,7 @@ trivy fs . --severity HIGH,CRITICAL
 Security scanning actions use **pinned SHA hashes** instead of version tags to prevent supply chain attacks.
 
 **Example**:
+
 ```yaml
 # Bad: Uses mutable tag
 - uses: aquasecurity/trivy-action@master
@@ -233,6 +240,7 @@ Security scanning actions use **pinned SHA hashes** instead of version tags to p
 ```
 
 **Benefits**:
+
 - Prevents malicious updates to action code
 - Ensures reproducible builds
 - GitHub Dependabot updates SHAs automatically
@@ -253,12 +261,14 @@ See `docs/VULNERABILITY_REMEDIATION.md` for detailed workflow.
 **High/Critical vulnerabilities**: Must be fixed before merge
 
 **Options**:
+
 1. **Update dependency**: Preferred solution
 2. **Mitigation**: If no fix available, document risk
 3. **Suppress**: Use `.trivyignore` with justification
 
 **Example .trivyignore**:
-```
+
+```text
 # CVE-2024-1234 - No fix available, low exploitability
 # Risk: Requires local access to exploit
 # Mitigation: AWS WAF blocks malicious requests
@@ -268,6 +278,7 @@ CVE-2024-1234
 ### SBOM Tracking
 
 Software Bill of Materials (SBOM) provides:
+
 - **Dependency inventory**: Complete list of all components
 - **Vulnerability tracking**: Map CVEs to components
 - **Compliance**: Required for government contracts (EO 14028)
@@ -288,6 +299,7 @@ For **discovered vulnerabilities**:
 **Do not report security vulnerabilities through public GitHub issues.**
 
 Instead:
+
 1. Use GitHub Security Advisories
 2. Or email: [your-security-email]
 3. Include:
@@ -315,5 +327,5 @@ Before merging PRs, ensure:
 - **SBOM Generation**: `docs/SBOM_GENERATION.md`
 - **Model Security**: `docs/PICKLE_SECURITY.md`
 - **AWS OIDC Setup**: `docs/AWS_OIDC_SETUP.md`
-- **CWE-502**: https://cwe.mitre.org/data/definitions/502.html
-- **OWASP Top 10**: https://owasp.org/www-project-top-ten/
+- **CWE-502**: <https://cwe.mitre.org/data/definitions/502.html>
+- **OWASP Top 10**: <https://owasp.org/www-project-top-ten/>
