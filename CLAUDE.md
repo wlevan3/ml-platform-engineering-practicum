@@ -1,394 +1,150 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code working with this ML platform learning project.
 
-## Project Overview
+## 🎯 Quick Navigation (Index)
 
-This is a **personal learning project** building a production-grade ML platform from scratch. The goal is
-hands-on experience with infrastructure, MLOps, and platform engineering practices. The project follows
-production-like workflows (issues, PRs, CI/CD) to build professional engineering habits.
+**Common Questions** → Direct Answers:
+- **"How do I run the API?"** → `uvicorn app.main:app --reload` (details: [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server))
+- **"How do I run tests?"** → `pytest` (full options: [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements))
+- **"What Python version?"** → **Python 3.13 + uv** (setup: [README.md](README.md#local-development-setup))
+- **"How do I commit code?"** → **Conventional commits** `<type>(<scope>): <subject>` (guide: [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines))
+- **"Security scanning tools?"** → pre-commit, Trivy, Syft, Cosign (details: [SECURITY.md](SECURITY.md))
 
-**Current Phase**: Foundation & Setup (Phase 1) - Python ML service is functional, infrastructure (EKS,
-Terraform) coming in Phase 2+.
+**By Task**:
+- **Setup/Getting Started** → [README.md](README.md#getting-started) (Prerequisites, local dev, Docker, K8s)
+- **All Commands** → [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (Docker, K8s, Python, testing, security)
+- **Workflow & Standards** → [CONTRIBUTING.md](CONTRIBUTING.md) (Branch strategy, PR process, code quality)
+- **Security Practices** → [SECURITY.md](SECURITY.md) (Scanning, vulnerabilities, SBOM, image signing)
+- **Project Roadmap** → [ROADMAP.md](ROADMAP.md) (Phase-by-phase implementation plan)
 
-## Architecture
+**Specialized Topics**:
+- Image signing (Cosign) → [docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)
+- Model security (pickle) → [docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)
+- AWS OIDC setup → [docs/AWS_OIDC_SETUP.md](docs/AWS_OIDC_SETUP.md)
+- SonarCloud quality → [docs/SONARCLOUD_QUALITY_STANDARDS.md](docs/SONARCLOUD_QUALITY_STANDARDS.md)
+- Kubernetes security → [docs/KUBERNETES_SECURITY.md](docs/KUBERNETES_SECURITY.md)
+- SBOM generation → [docs/SBOM_GENERATION.md](docs/SBOM_GENERATION.md)
 
-### Current Implementation
+---
 
-The project currently has a **simple ML inference service** as a foundation:
+## Project Context
 
-- **FastAPI application** (`app/`) - REST API for iris flower classification
-  - `main.py` - API endpoints (health, prediction, model info)
-  - `model.py` - Model loading and inference logic (singleton pattern)
-  - `schemas.py` - Pydantic models for request/response validation
-- **Model training** (`train_model.py`) - Trains RandomForest classifier on Iris dataset
-- **Model artifacts** (`models/`) - Serialized model (joblib) and metadata (JSON)
+- **Type**: Learning project (production-grade ML platform)
+- **Current Phase**: Phase 1 complete (FastAPI inference functional) → transitioning to Phase 2 (EKS & Kubernetes)
+- **Philosophy**: Document "why" behind decisions, understand deeply (not just complete tasks)
+- **Workflow**: Production practices (issues, PRs, CI/CD) to build professional habits
 
-### Planned Architecture (Phases 2-7)
+## Environment Requirements
 
-- **AWS EKS** - Kubernetes cluster for ML workloads
-- **MLflow** - Model registry and experiment tracking
-- **Terraform** - Infrastructure as Code (no terraform/ directory yet)
-- **Observability** - Prometheus, Grafana, ELK stack
-- **Feature Store** - Feast (planned)
+**Critical**:
+- **Python 3.13 + uv** (package manager)
+- **.skops format** for models (NOT .pkl/.joblib - security requirement)
+- **Pre-commit hooks** mandatory (blocks secrets, runs linters)
 
-## Development Commands
+**Setup**: [README.md - Getting Started](README.md#getting-started)
 
-### Python Development
-
-**Important**: This project uses **Python 3.13** with **uv** for package management and a **.venv** virtual environment.
-
-```bash
-# Setup virtual environment (Python 3.13 with uv)
-uv venv .venv --python 3.13
-source .venv/bin/activate  # or .venv\Scripts\activate on Windows
-uv pip install -r requirements.txt
-
-# Alternative: Standard venv (if uv not available)
-python3.13 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-
-# Train model (creates models/iris_classifier.joblib and metadata)
-python train_model.py
-
-# Run FastAPI server locally
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-
-# Run tests with coverage
-pytest                           # Run all tests
-pytest tests/test_api.py         # Run specific test file
-pytest -v                        # Verbose output
-pytest -k "test_health"          # Run tests matching pattern
-
-# Code quality
-black .                          # Format code
-black --check .                  # Check formatting without changes
-ruff check .                     # Lint code
-ruff check . --fix               # Auto-fix linting issues
-mypy app/                        # Type checking
-```
-
-### Pre-commit Hooks
+## Essential Commands
 
 ```bash
-# Install hooks
-pre-commit install
+# Development
+uvicorn app.main:app --reload  # Run API server
+pytest                          # Run all tests
+pytest --cov=app               # With coverage
 
-# Run manually on all files
-pre-commit run --all-files
+# Quality & Security
+pre-commit run --all-files     # Run all quality checks
+pre-commit install             # Install git hooks (first time)
 
-# Run specific hook
-pre-commit run black --all-files
+# Before Push
+pytest && pre-commit run --all-files && /pre-push-review
 ```
 
-### CI/CD
-
-The CI pipeline (`.github/workflows/ci.yml`) runs automatically on PRs and pushes to `main`. It includes:
-
-- **Markdown linting** - Always runs
-- **Terraform validation** - Only if `terraform/` exists
-- **Kubernetes validation** - Only if `k8s/` exists
-- **Python linting** (Black, Ruff) - Only if `.py` files exist
-- **Python tests with coverage** - Only if `.py` files exist
-- **SonarCloud analysis** - Code quality and security (requires tests)
-- **Security scanning** - Trivy (filesystem + Docker images), Gitleaks (secrets), Semgrep (SAST)
-- **Docker image scanning** - Builds and scans Docker images (builder + runtime stages) with fail-fast on HIGH/CRITICAL
-- **SBOM generation** - Creates Software Bill of Materials (SPDX + CycloneDX formats) for Docker images and Python app
-
-Jobs with conditionals (`if: hashFiles()`) will show as "skipped" in summary when their files don't exist.
-
-### Docker
-
-```bash
-# Build image
-docker build -t ml-platform-api:latest .
-
-# Run container
-docker run -p 8000:8000 ml-platform-api:latest
-
-# Scan for vulnerabilities (local)
-trivy image ml-platform-api:latest --severity HIGH,CRITICAL
-
-# Build and scan multi-stage targets
-docker build --target builder -t ml-platform-api:builder .
-docker build --target runtime -t ml-platform-api:runtime .
-trivy image ml-platform-api:builder --severity HIGH,CRITICAL
-trivy image ml-platform-api:runtime --severity HIGH,CRITICAL
-```
-
-### SBOM (Software Bill of Materials)
-
-SBOMs provide a complete inventory of software components for vulnerability management and compliance.
-See [docs/SBOM_GENERATION.md](./docs/SBOM_GENERATION.md) for comprehensive documentation.
-
-```bash
-# Install Syft (required for local SBOM generation)
-brew install syft  # macOS
-# OR
-curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-
-# Verify installation
-syft version
-
-# Generate SBOM for Docker image
-syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
-syft ml-platform-api:latest -o cyclonedx-json --file sbom-docker-cyclonedx.json
-
-# Generate SBOM for Python application
-syft dir:. -o spdx-json --file sbom-python-spdx.json
-syft dir:. -o cyclonedx-json --file sbom-python-cyclonedx.json
-
-# View SBOM in terminal (human-readable)
-syft ml-platform-api:latest
-
-# Scan SBOM for vulnerabilities with Grype
-brew install grype  # macOS
-grype sbom:sbom-docker-cyclonedx.json --severity HIGH,CRITICAL
-```
-
-**CI/CD Integration**: SBOMs are automatically generated in CI and uploaded as artifacts (90-day retention).
-Access them from the Actions tab → Workflow run → Artifacts section.
-
-## Commit and PR Workflow
-
-### Branch Naming
-
-```text
-<type>/<short-description>
-```
-
-Types: `feature/`, `fix/`, `infra/`, `docs/`, `refactor/`, `ci/`
-
-Example: `feature/add-mlflow-integration`
-
-### Commit Format (Conventional Commits)
-
-```text
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-Types: `feat`, `fix`, `infra`, `docs`, `style`, `refactor`, `test`, `chore`, `ci`
-
-Examples:
-
-- `feat(model-registry): add MLflow integration`
-- `fix(api): resolve prediction timeout issue`
-- `infra(eks): upgrade cluster to v1.28`
-- `docs(readme): add architecture diagram`
-
-### Pull Request Process
-
-1. Create feature branch from `main`
-2. Make changes with atomic commits
-3. Run tests locally: `pytest` and `pre-commit run --all-files`
-4. Push and create PR using template
-5. Self-review your changes
-6. Ensure CI passes
-7. **Squash merge** to `main` (keeps history clean)
-
-### Before Creating PRs
-
-Run the `pre-push-review` skill (Claude Code skill) to automatically check shell scripts and GitHub Actions:
-
-```bash
-/pre-push-review
-```
-
-This runs `shellcheck` on `.sh/.bash` files and `actionlint` on `.github/workflows/*.yml` files in your changes.
+**Complete command reference**: [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)
 
 ## Code Standards
 
-### Python
+**Project-specific patterns**:
+- **Model loading**: Singleton pattern in `app/model.py:get_model()`
+- **Model security**: .skops format + SHA-256 verification (see [PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md))
+- **FastAPI**: Lifespan events, dependency injection, HTTPException with status codes
+- **Testing**: 90% coverage target (SonarCloud gate: 80% minimum)
 
-- Follow **PEP 8** via `black` (line length: 88)
-- Use **type hints** for function signatures
-- **Docstrings** for modules, classes, and public functions
-- Exception handling with specific exceptions, never bare `except:`
-- Pydantic models for data validation (FastAPI schemas)
+**Full standards**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- PEP 8 style (black formatter)
+- Type hints required
+- Docstrings for modules, classes, functions
+- Conventional commits
 
-### FastAPI Patterns
+## Workflow
 
-- **Singleton pattern** for model loading (see `app/model.py:get_model()`)
-- **Lifespan events** for startup/shutdown logic (see `app/main.py:lifespan()`)
-- **Dependency injection** for shared resources
-- **HTTPException** for error responses with proper status codes
-- **Response models** for all endpoints (type safety and auto-docs)
+**Branch naming**: `<type>/<description>` (e.g., `feature/add-mlflow`, `fix/api-timeout`)
 
-### Testing
+**Commit format**: `<type>(<scope>): <subject>` (e.g., `feat(api): add health check endpoint`)
 
-- Tests in `tests/` directory
-- Use `pytest` fixtures for shared setup
-- FastAPI `TestClient` for API testing (see `tests/test_api.py`)
-- Coverage target: 80%+ (configured in `pytest.ini`)
-- Test file naming: `test_*.py`
+**Before pushing**:
+1. Run tests: `pytest`
+2. Run quality checks: `pre-commit run --all-files`
+3. Optional: Run `/pre-push-review` skill
 
-### Infrastructure (Future)
+**Complete workflow**: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Pull request process
+- Code review checklist
+- Merge strategy (squash merge)
 
-When Terraform is added:
+## Security
 
-- Descriptive resource names with consistent prefixes
-- Tag all AWS resources: `Project`, `Environment`, `ManagedBy`
-- Use variables for reusable values
-- Organize by service/component
-- Always review `terraform plan` before apply
+**Never commit**:
+- Secrets, API keys, credentials (pre-commit blocks: detect-secrets, Gitleaks)
+- Binary files (images, models) - use Git LFS or external storage
+- `.env` files with real credentials
 
-## Project Structure
+**Model security**: .skops format + SHA-256 hash verification (NOT pickle/joblib - arbitrary code execution risk)
 
-```text
-ml-platform-engineering-practicum/
-├── .github/
-│   ├── workflows/           # CI/CD pipelines
-│   │   ├── ci.yml          # Main CI pipeline
-│   │   ├── codeql.yml      # Security scanning
-│   │   └── resolve-comments.yml  # Auto-resolve outdated PR comments
-│   └── PULL_REQUEST_TEMPLATE.md
-├── app/                     # FastAPI application
-│   ├── __init__.py         # Package init with version
-│   ├── main.py             # API endpoints
-│   ├── model.py            # Model loading/inference (singleton)
-│   └── schemas.py          # Pydantic models
-├── models/                  # Model artifacts (gitignored except metadata)
-│   ├── iris_classifier.joblib  # Trained model
-│   └── model_metadata.json     # Model metadata
-├── tests/                   # Test suite
-│   └── test_api.py         # FastAPI endpoint tests
-├── docs/                    # Documentation
-│   ├── PROJECT_MANAGEMENT.md
-│   ├── QUICK_REFERENCE.md
-│   └── ALPINE_MIGRATION_ANALYSIS.md
-├── train_model.py          # Model training script
-├── requirements.txt        # Python dependencies
-├── pytest.ini              # Pytest and coverage config
-├── Dockerfile              # Container image
-├── .pre-commit-config.yaml # Pre-commit hooks
-└── README.md               # Project overview
-```
+**Full security policy**: [SECURITY.md](SECURITY.md)
+- Vulnerability scanning (Trivy, Bandit)
+- SBOM generation (Syft)
+- Image signing (Cosign)
+- Dependency updates (Dependabot)
 
-**Future additions** (Phases 2+):
+## Documentation Structure
 
-- `terraform/` - Infrastructure as Code
-- `k8s/` - Kubernetes manifests
-- `scripts/` - Automation scripts
+**Core docs** (project root):
+- `README.md` - Project overview, getting started, architecture
+- `CONTRIBUTING.md` - Workflow, standards, PR process (623 lines)
+- `SECURITY.md` - Security practices, scanning tools (150 lines)
+- `ROADMAP.md` - Phase-by-phase implementation plan
+- `CLAUDE.md` - This file (you are here)
 
-## Important Notes
+**Specialized docs** (`docs/` directory):
+- `QUICK_REFERENCE.md` - All commands (Docker, K8s, Python, AWS)
+- `IMAGE_SIGNING.md` - Container image signing with Cosign
+- `PICKLE_SECURITY.md` - Model deserialization security
+- `AWS_OIDC_SETUP.md` - GitHub Actions AWS authentication
+- `SONARCLOUD_QUALITY_STANDARDS.md` - Code quality metrics
+- `KUBERNETES_SECURITY.md` - K8s security best practices
+- `SBOM_GENERATION.md` - Software Bill of Materials
 
-### Model Management
+## Forbidden Directories
 
-- Models are **trained locally** via `train_model.py` (for now)
-- Model files are **gitignored** (too large), only metadata is tracked
-- Model loading uses **singleton pattern** to avoid reloading on each request
-- Metadata in `models/model_metadata.json` includes version, accuracy, features, classes
+**Ignore when exploring** (performance + irrelevant content):
+- `.venv/` - Python virtual environment
+- `.git/` - Git metadata
+- `__pycache__/` - Python bytecode
+- `.pytest_cache/` - Test cache
+- `models/` - Binary ML artifacts (.skops files)
+- `node_modules/` - If present (not currently in project)
 
-#### Model Security (Secure Deserialization)
+## Quick Troubleshooting
 
-Models are serialized using **skops.io** (v0.13.0+), which provides pickle-free deserialization to address CWE-502:
+**Common issues**:
+- `ModuleNotFoundError` → Activate venv: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
+- Pre-commit fails → Install hooks: `pre-commit install`, then retry commit
+- Tests fail → Check Python version: `python --version` (must be 3.13+)
+- Model loading fails → Verify .skops file exists: `ls -lh models/iris_classifier.skops`
 
-- **Execution safety**: skops.io prevents arbitrary code execution during deserialization
-- **Source control**: Models trained locally via `train_model.py` in controlled environment
-- **No user input**: Model path is hardcoded (`models/iris_classifier.skops`)
-- **Integrity verification**: SHA-256 hash verification detects tampering
-  - Hash generated during training and stored in `model_metadata.json`
-  - Hash verified before loading in `app/model.py`
-  - Raises `ModelIntegrityError` if file corrupted or modified
+**Detailed troubleshooting**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (comprehensive guide for common issues)
 
-**Security Model**:
+---
 
-- **Hash verification** = File integrity (detects tampering/corruption)
-- **skops.io** = Execution safety (prevents code execution, addresses CWE-502)
-- These protections are complementary, not redundant
-
-**Phase 3 migration**: Will integrate with MLflow Model Registry using custom PyFunc wrapper.
-See `docs/PICKLE_SECURITY.md` for comprehensive security analysis and migration decisions.
-
-### Security
-
-- **No secrets in code** - Use environment variables or AWS Secrets Manager
-- Pre-commit hook `detect-secrets` scans for accidental credential commits
-- Pre-commit hook `semgrep` scans for security vulnerabilities (custom ruleset in `.semgrep.yml`)
-- CI includes Gitleaks (secrets), Trivy (filesystem + container images), Semgrep (comprehensive SAST rulesets)
-- **Container security** - Trivy scans Docker images with fail-fast on HIGH/CRITICAL vulnerabilities
-  - Scans OS packages, Python dependencies, and Dockerfile best practices
-  - Separate scans for builder and runtime stages
-  - Results uploaded to GitHub Security tab
-- **Image signing** - Cosign signs container images with cryptographic signatures
-  - Keyless signing via GitHub Actions OIDC (no key management overhead)
-  - Signatures stored in OCI registry alongside images
-  - Transparency log records all signatures in Rekor
-  - Signatures verified before deployment to prevent tampering
-  - Supports Kubernetes admission controllers (Sigstore Policy Controller, Kyverno)
-- GitHub Actions use **pinned SHA hashes** for security scanning actions
-
-**Vulnerability handling**: See `docs/VULNERABILITY_REMEDIATION.md` for workflow on handling Trivy findings.
-
-**Image signing**: See `docs/IMAGE_SIGNING.md` for container image signing implementation and verification.
-
-### CI/CD Behavior
-
-- CI jobs are **conditional** based on file existence (e.g., Python jobs only run if `.py` files exist)
-- The `summary` job always runs (`if: always()`) and shows status of all jobs, including "skipped"
-- SonarCloud requires test coverage XML (`coverage.xml` uploaded as artifact)
-
-### Branch Protection
-
-- `main` branch is protected:
-  - Requires pull request
-  - Requires conversation resolution
-  - No force pushes
-  - No direct commits
-
-## Documentation Reference
-
-For detailed guidance on project workflows and management, refer to:
-
-- **docs/PROJECT_MANAGEMENT.md** - Complete guide to GitHub Projects setup, issue
-  templates, custom fields, automation workflows, and project board configuration
-- **docs/QUICK_REFERENCE.md** - Quick reference for Git commands, GitHub CLI, commit
-  conventions, project field values, and useful links
-- **docs/VULNERABILITY_REMEDIATION.md** - Workflow for handling security vulnerabilities
-  detected by Trivy, including remediation steps, .trivyignore usage, and debugging
-- **docs/SBOM_GENERATION.md** - Software Bill of Materials (SBOM) generation using Syft.
-  Covers SBOM formats (SPDX, CycloneDX), compliance requirements (EO 14028, EU CRA),
-  CI/CD integration, local generation commands, and vulnerability scanning workflows
-- **docs/PICKLE_SECURITY.md** - Model deserialization security analysis and skops.io migration
-- **docs/ALPINE_MIGRATION_ANALYSIS.md** - Alpine Linux Docker base image investigation findings
-  and decision analysis. Documents why Alpine is not optimal for scientific Python workloads
-  despite security benefits. Key learning: application dependencies dominate image size for ML platforms.
-- **docs/AWS_OIDC_SETUP.md** - AWS OIDC authentication setup for GitHub Actions. Explains
-  how to configure OpenID Connect between GitHub Actions and AWS IAM for secure,
-  credential-free deployments using temporary tokens instead of long-lived access keys.
-- **docs/IMAGE_SIGNING.md** - Container image signing implementation with Cosign. Documents
-  keyless signing via GitHub Actions OIDC, signature verification procedures, Kubernetes
-  admission controller integration (Sigstore Policy Controller, Kyverno), and local testing workflows.
-
-## Issue Templates and GitHub Projects
-
-The project uses **GitHub Projects** for tracking work:
-
-- **Issue templates** for features, bugs, infrastructure changes, and learning reflections
-- **Project boards** for status tracking (Backlog → In Progress → Done)
-- **Component views** for organizing by platform component
-- **Roadmap view** for timeline visualization
-
-See docs/PROJECT_MANAGEMENT.md for complete setup instructions.
-
-## Learning Focus
-
-This is a **learning project**, not a production service. Key goals:
-
-- Build professional engineering habits (PRs, code review, CI/CD)
-- Gain hands-on experience with ML infrastructure
-- Document learnings and design decisions (use Learning Reflection issue template)
-- Practice trade-off analysis and architectural thinking
-
-When making changes:
-
-- Consider production best practices (even for a learning project)
-- Document the "why" behind decisions
-- Reflect on trade-offs and alternatives
-- Don't just complete tasks—understand them deeply
-- after creating pr, run `gh pr $PR_NUMBER checks --watch, then after its done, review the new pr comments and address them.
+**Last Updated**: 2025-01-04 (Enhanced with index layer for progressive disclosure)

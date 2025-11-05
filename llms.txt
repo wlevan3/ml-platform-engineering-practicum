@@ -1,0 +1,169 @@
+# ML Platform Engineering Practicum - AI Assistant Navigation Guide
+
+> This file follows the llms.txt standard (Sept 2024) to help AI assistants navigate documentation efficiently.
+> Learn more: https://llmstxt.org/
+
+## Quick Answers
+
+**Common Questions**:
+- "How do I run the API?" → `uvicorn app.main:app --reload`
+- "How do I run tests?" → `pytest` (with coverage: `pytest --cov=app`)
+- "What Python version?" → Python 3.13 + uv package manager
+- "How do I commit code?" → Conventional commits: `<type>(<scope>): <subject>`
+- "What's the model format?" → .skops format (NOT .pkl/.joblib for security)
+- "Something's broken, how do I fix it?" → See docs/TROUBLESHOOTING.md
+
+## Core Documentation
+
+### CLAUDE.md
+**Purpose**: Primary guidance for Claude Code when working with this repository
+**Length**: 150 lines
+**Summary**: Environment requirements (Python 3.13 + uv + .skops), essential commands, code standards, workflow, security practices, documentation index
+**Link**: /CLAUDE.md
+**When to read**: Always (Claude Code auto-loads this file at session start)
+
+### README.md
+**Purpose**: Project overview and getting started guide
+**Length**: 226 lines
+**Summary**: ML platform practicum overview, architecture, quick start (local dev, Docker, K8s), technology stack, learning philosophy
+**Link**: /README.md
+**When to read**: For project context, setup instructions, or architecture understanding
+
+### CONTRIBUTING.md
+**Purpose**: Development workflow, branch strategy, commit conventions, PR process, code standards
+**Length**: 623 lines
+**Summary**: Pre-commit hooks setup, workflow (create issue → branch → develop → test → PR → merge), commit guidelines, code quality (SonarCloud), testing requirements
+**Link**: /CONTRIBUTING.md
+**When to read**: Before making commits, creating PRs, or setting up development environment
+
+### SECURITY.md
+**Purpose**: Security practices, scanning tools, vulnerability management
+**Length**: 150 lines
+**Summary**: Never commit secrets (detect-secrets, Gitleaks), model security (.skops format), vulnerability scanning (Trivy, Bandit), SBOM generation (Syft), image signing (Cosign)
+**Link**: /SECURITY.md
+**When to read**: Before committing code, handling models, or deploying containers
+
+### ROADMAP.md
+**Purpose**: Phase-by-phase implementation plan
+**Length**: 104 lines
+**Summary**: Phase 1 (Foundation - complete), Phase 2 (EKS & Kubernetes - current), Phase 3+ (Model Registry, Feature Store, Observability)
+**Link**: /ROADMAP.md
+**When to read**: For project timeline, upcoming features, or phase-specific context
+
+## Command Reference
+
+### docs/QUICK_REFERENCE.md
+**Purpose**: All commands for Docker, Kubernetes, Python, testing, security scanning
+**Length**: 344 lines
+**Summary**: Copy-paste commands organized by tool (Docker build/run/scan, K8s deploy/debug, Python dev/test, AWS CLI, security tools)
+**Link**: /docs/QUICK_REFERENCE.md
+**When to read**: When you need a specific command (prefer this over searching CONTRIBUTING.md)
+
+## Specialized Documentation
+
+### docs/IMAGE_SIGNING.md
+**Purpose**: Container image signing with Cosign (Sigstore)
+**Length**: 273 lines
+**Summary**: Keyless signing via GitHub Actions OIDC, Phase 1 (offline signing - current), Phase 2 (registry signing - planned), verification workflows
+**Link**: /docs/IMAGE_SIGNING.md
+**When to read**: For container image signing implementation or verification
+
+### docs/PICKLE_SECURITY.md
+**Purpose**: Model deserialization security (CWE-502)
+**Length**: 251 lines
+**Summary**: Why pickle is dangerous (arbitrary code execution), solutions (model signing, MLflow, safetensors, ONNX, skops.io), current approach (.skops + SHA-256)
+**Link**: /docs/PICKLE_SECURITY.md
+**When to read**: For model loading security, joblib alternatives, or understanding .skops requirement
+
+### docs/AWS_OIDC_SETUP.md
+**Purpose**: AWS OIDC authentication for GitHub Actions (no long-lived credentials)
+**Length**: 231 lines
+**Summary**: OIDC provider setup, IAM role configuration, GitHub Actions workflow integration, troubleshooting
+**Link**: /docs/AWS_OIDC_SETUP.md
+**When to read**: For AWS authentication in CI/CD, GitHub Actions AWS integration
+
+### docs/SONARCLOUD_QUALITY_STANDARDS.md
+**Purpose**: Code quality metrics and SonarCloud integration
+**Length**: 872 lines
+**Summary**: Quality gate (≥80% coverage, A ratings), issue types (bugs, vulnerabilities, code smells), remediation workflows
+**Link**: /docs/SONARCLOUD_QUALITY_STANDARDS.md
+**When to read**: For understanding quality requirements, addressing SonarCloud issues
+
+### docs/KUBERNETES_SECURITY.md
+**Purpose**: Kubernetes security best practices
+**Summary**: Pod security standards, RBAC, network policies, secrets management, admission controllers
+**Link**: /docs/KUBERNETES_SECURITY.md
+**When to read**: For Kubernetes security implementation
+
+### docs/SBOM_GENERATION.md
+**Purpose**: Software Bill of Materials generation with Syft
+**Summary**: SBOM formats (SPDX, CycloneDX), Syft usage, CI/CD integration
+**Link**: /docs/SBOM_GENERATION.md
+**When to read**: For supply chain security, vulnerability tracking
+
+### docs/TROUBLESHOOTING.md
+**Purpose**: Common issues and solutions
+**Length**: 400+ lines
+**Summary**: Environment setup, pre-commit hooks, testing, API server, Docker, Kubernetes, Git, SonarCloud, security scanning, model loading
+**Link**: /docs/TROUBLESHOOTING.md
+**When to read**: When encountering errors or unexpected behavior
+
+## Project Structure
+
+```
+ml-platform-engineering-practicum/
+├── CLAUDE.md              # This project's AI assistant guide
+├── README.md              # Overview and getting started
+├── CONTRIBUTING.md        # Workflow and standards
+├── SECURITY.md            # Security practices
+├── ROADMAP.md             # Implementation phases
+├── app/                   # FastAPI application
+│   ├── main.py           # API endpoints
+│   └── model.py          # Model loading (singleton pattern)
+├── docs/                  # Specialized documentation
+│   ├── QUICK_REFERENCE.md
+│   ├── IMAGE_SIGNING.md
+│   ├── PICKLE_SECURITY.md
+│   ├── AWS_OIDC_SETUP.md
+│   ├── SONARCLOUD_QUALITY_STANDARDS.md
+│   └── [other specialized docs]
+├── models/                # ML model artifacts (.skops format)
+├── tests/                 # Test suite (pytest)
+└── .github/
+    └── workflows/         # CI/CD pipelines
+
+```
+
+## Critical Constraints
+
+**Environment**:
+- Python 3.13 (required)
+- uv package manager (preferred over pip)
+- Pre-commit hooks mandatory
+
+**Security**:
+- Never commit secrets (pre-commit blocks: detect-secrets, Gitleaks)
+- Models must use .skops format (NOT .pkl/.joblib - security risk)
+- .skops models verified with SHA-256 hash
+
+**Code Quality**:
+- 90% test coverage target (SonarCloud gate: 80% minimum)
+- Conventional commits enforced
+- PEP 8 style (black formatter)
+- Type hints required
+
+## Workflow Summary
+
+1. Create issue for work
+2. Create feature branch: `<type>/<description>`
+3. Develop with commits: `<type>(<scope>): <subject>`
+4. Before push: `pytest && pre-commit run --all-files`
+5. Create PR using template
+6. Wait for CI/CD (tests, SonarCloud, security scans)
+7. Merge using squash merge
+
+---
+
+**Standard**: llms.txt v1.0 (September 2024)
+**Last Updated**: 2025-01-04
+**Maintained By**: Project owner (learning practicum)

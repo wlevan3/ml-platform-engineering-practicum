@@ -2,18 +2,9 @@
 
 ## Overview
 
-This document explains the OpenID Connect (OIDC) authentication setup between
-GitHub Actions and AWS. OIDC allows GitHub Actions workflows to securely
-authenticate to AWS without storing long-lived AWS credentials (access keys) in
-GitHub Secrets.
+This document explains OpenID Connect (OIDC) authentication between GitHub Actions and AWS. OIDC allows GitHub Actions workflows to securely authenticate to AWS without storing long-lived AWS credentials.
 
-**Benefits of OIDC over Access Keys:**
-
-- ✅ **No long-lived credentials** - Temporary credentials expire automatically
-- ✅ **Automatic credential rotation** - AWS STS generates new credentials per workflow run
-- ✅ **Reduced security risk** - No need to manage/rotate static access keys
-- ✅ **Fine-grained access control** - Restrict access to specific repositories/branches
-- ✅ **AWS IAM best practices** - Follows AWS recommended security practices
+**Benefits over Access Keys:** No long-lived creds ✅ | Auto rotation ✅ | Reduced risk ✅ | Fine-grained access ✅ | IAM best practices ✅
 
 ---
 
@@ -23,159 +14,74 @@ GitHub Secrets.
 
 **ARN:** `arn:aws:iam::984479408136:oidc-provider/token.actions.githubusercontent.com`
 
-**Purpose:** Allows AWS to trust GitHub as an identity provider for federated authentication.
+**Config:** Provider URL: `https://token.actions.githubusercontent.com` | Audience: `sts.amazonaws.com` | Thumbprint: Auto-managed
 
-**Configuration:**
-
-- **Provider URL:** `https://token.actions.githubusercontent.com`
-- **Audience:** `sts.amazonaws.com` (AWS Security Token Service)
-- **Thumbprint:** Automatically managed by AWS
-
-**How to view:**
-
-```bash
-AWS_PROFILE=kodekloud aws iam list-open-id-connect-providers
-```
-
----
+**View:** `AWS_PROFILE=kodekloud aws iam list-open-id-connect-providers`
 
 ### 2. IAM Role for GitHub Actions
 
 **ARN:** `arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions`
 
-**Purpose:** IAM role that GitHub Actions assumes to access AWS resources.
-
 **Trust Policy:**
-
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Federated": "arn:aws:iam::984479408136:oidc-provider/token.actions.githubusercontent.com"
-      },
-      "Action": "sts:AssumeRoleWithWebIdentity",
-      "Condition": {
-        "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:wlevan3/*"
-        },
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        }
-      }
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {"Federated": "arn:aws:iam::984479408136:oidc-provider/token.actions.githubusercontent.com"},
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringLike": {"token.actions.githubusercontent.com:sub": "repo:wlevan3/*"},
+      "StringEquals": {"token.actions.githubusercontent.com:aud": "sts.amazonaws.com"}
     }
-  ]
+  }]
 }
 ```
 
-**Key Conditions:**
+**Conditions:** Repository: `repo:wlevan3/*` | Audience: `sts.amazonaws.com`
+**Permissions:** AdministratorAccess (testing) → Least-privilege (production)
 
-- **Repository restriction:** `repo:wlevan3/*` - Only repositories under `wlevan3` user can assume this role
-- **Audience validation:** `sts.amazonaws.com` - Ensures the OIDC token is intended for AWS STS
-
-**Permissions:**
-
-- Currently: **AdministratorAccess** (for testing/learning)
-- Production recommendation: Scope down to least-privilege permissions
-
-**How to view:**
-
-```bash
-AWS_PROFILE=kodekloud aws iam get-role --role-name GitHubActions-AssumeRoleForActions
-```
+**View:** `AWS_PROFILE=kodekloud aws iam get-role --role-name GitHubActions-AssumeRoleForActions`
 
 ---
 
 ## How OIDC Authentication Works
 
-### Authentication Flow
+```mermaid
+sequenceDiagram
+    participant GHA as GitHub Actions
+    participant OIDC as GitHub OIDC
+    participant STS as AWS STS
+    participant AWS as AWS APIs
 
-```text
-┌─────────────────┐
-│ GitHub Actions  │
-│ Workflow Runs   │
-└────────┬────────┘
-         │ 1. Request OIDC token
-         │    (includes repo, branch, workflow info)
-         ▼
-┌──────────────────────────────────────────────────────────────────┐
-│ GitHub OIDC Token Endpoint                                       │
-│ https://token.actions.githubusercontent.com/.well-known/jwks     │
-└────────┬─────────────────────────────────────────────────────────┘
-         │ 2. Return signed JWT token
-         │    (short-lived, cryptographically signed)
-         ▼
-┌─────────────────┐
-│ GitHub Actions  │
-│ Workflow        │
-└────────┬────────┘
-         │ 3. AssumeRoleWithWebIdentity
-         │    (pass JWT token + role ARN)
-         ▼
-┌─────────────────────────────────────────┐
-│ AWS STS (Security Token Service)        │
-│ - Validates JWT signature               │
-│ - Checks trust policy conditions        │
-│ - Verifies audience (sts.amazonaws.com) │
-│ - Confirms repo matches (wlevan3/*)     │
-└────────┬────────────────────────────────┘
-         │ 4. Return temporary AWS credentials
-         │    (access key, secret key, session token)
-         │    Valid for 1 hour
-         ▼
-┌─────────────────┐
-│ GitHub Actions  │
-│ Workflow        │
-│ - Run AWS CLI   │
-│ - Call AWS APIs │
-└─────────────────┘
+    GHA->>OIDC: 1. Request OIDC token (repo, branch, workflow)
+    OIDC->>GHA: 2. Return signed JWT (short-lived)
+    GHA->>STS: 3. AssumeRoleWithWebIdentity(JWT, role ARN)
+    STS->>STS: 4. Validate: JWT signature, trust policy,<br/>audience, repo match
+    STS->>GHA: 5. Return temp credentials (1hr)
+    GHA->>AWS: 6. Call AWS APIs with temp credentials
 ```
 
-### Security Model
+**Token Claims:** `aud`=sts.amazonaws.com | `sub`=repo:wlevan3/* | `exp`=not expired | Signature=valid
 
-**Token Claims Validated:**
-
-- `aud` (audience): Must be `sts.amazonaws.com`
-- `sub` (subject): Must match `repo:wlevan3/*` (repository pattern)
-- `exp` (expiration): Token must not be expired
-- **Signature:** Token must be signed by GitHub's OIDC provider
-
-**Temporary Credentials:**
-
-- **Validity:** 1 hour by default (configurable up to 12 hours)
-- **Scope:** Limited to permissions granted by IAM role
-- **Automatic cleanup:** Credentials expire and cannot be reused
+**Temp Credentials:** Valid 1hr (max 12hr) | Scoped to role permissions | Auto-expire
 
 ---
 
-## Usage in GitHub Actions Workflows
-
-### Basic Example
+## Usage in GitHub Actions
 
 ```yaml
-name: Deploy to AWS
-
-on:
-  push:
-    branches:
-      - main
-
 permissions:
-  id-token: write  # Required for OIDC authentication
-  contents: read   # Required to checkout code
+  id-token: write  # Required for OIDC
+  contents: read
 
 jobs:
   deploy:
-    name: Deploy to AWS
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials using OIDC
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
@@ -183,120 +89,34 @@ jobs:
           role-session-name: GitHubActions-Deploy-${{ github.run_id }}
 
       - name: Verify AWS identity
-        run: |
-          echo "Authenticated as:"
-          aws sts get-caller-identity
-
-      - name: Deploy application
-        run: |
-          # Your deployment commands here
-          aws s3 sync ./build s3://my-bucket/
+        run: aws sts get-caller-identity
 ```
 
-### Key Configuration
-
-**Permissions block (required):**
-
-```yaml
-permissions:
-  id-token: write  # REQUIRED for OIDC - allows workflow to request OIDC token
-  contents: read   # Standard permission for checkout
-```
-
-**aws-actions/configure-aws-credentials@v4:**
-
-- **role-to-assume:** IAM role ARN to assume
-- **aws-region:** AWS region for API calls
-- **role-session-name:** Unique identifier for this session (helpful for CloudTrail logs)
+**Key params:** `role-to-assume` (IAM role ARN) | `aws-region` | `role-session-name` (CloudTrail tracking)
 
 ---
 
 ## Testing OIDC Setup
 
-### Test Workflow
-
-A test workflow is available at `.github/workflows/test-oidc-aws.yml`:
-
-**Manual trigger:**
+**Test workflow:** `.github/workflows/test-oidc-aws.yml`
 
 ```bash
-gh workflow run test-oidc-aws.yml
+gh workflow run test-oidc-aws.yml  # Manual trigger
+gh run watch                       # Monitor
 ```
 
-**What the test does:**
-
-1. ✅ Authenticates to AWS using OIDC
-2. ✅ Verifies identity with `aws sts get-caller-identity`
-3. ✅ Lists S3 buckets (tests read permissions)
-4. ✅ Lists EC2 instances in us-west-2 (tests compute permissions)
-
-**How to monitor:**
-
-```bash
-gh run watch
-```
+**Tests:** OIDC auth ✅ | Identity verification ✅ | S3 list ✅ | EC2 list ✅
 
 ---
 
 ## Troubleshooting
 
-### Error: "Not authorized to perform sts:AssumeRoleWithWebIdentity"
-
-**Cause:** Trust policy doesn't allow the repository to assume the role
-
-**Solution:**
-
-1. Verify repository name matches trust policy pattern:
-
-   ```bash
-   AWS_PROFILE=kodekloud aws iam get-role --role-name GitHubActions-AssumeRoleForActions \
-     --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition'
-   ```
-
-2. Ensure `sub` claim allows `repo:wlevan3/*` or specific repo
-
----
-
-### Error: "Missing permissions: id-token: write"
-
-**Cause:** Workflow doesn't have OIDC token generation permission
-
-**Solution:** Add `permissions` block to workflow:
-
-```yaml
-permissions:
-  id-token: write
-  contents: read
-```
-
----
-
-### Error: "Unable to assume role - invalid token"
-
-**Cause:** OIDC token validation failed
-
-**Check:**
-
-1. Verify audience is `sts.amazonaws.com` in trust policy
-2. Check OIDC provider exists in AWS account
-3. Ensure role ARN is correct
-
----
-
-### Error: "Access Denied" on AWS API calls
-
-**Cause:** IAM role doesn't have required permissions
-
-**Solution:**
-
-1. Check role permissions:
-
-   ```bash
-   AWS_PROFILE=kodekloud aws iam list-attached-role-policies \
-     --role-name GitHubActions-AssumeRoleForActions
-   ```
-
-2. Add required permissions to role or attached policies
+| Error | Cause | Solution |
+|-------|-------|----------|
+| `Not authorized to perform sts:AssumeRoleWithWebIdentity` | Trust policy mismatch | `aws iam get-role --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition'` |
+| `Missing permissions: id-token: write` | No OIDC permission | Add `permissions: id-token: write` to workflow |
+| `Unable to assume role - invalid token` | OIDC validation failed | Verify `aud`=sts.amazonaws.com | Check OIDC provider exists |
+| `Access Denied` on AWS APIs | Insufficient role perms | `aws iam list-attached-role-policies --role-name <role>` |
 
 ---
 
@@ -304,16 +124,7 @@ permissions:
 
 ### 0. Pin GitHub Actions to Commit SHAs
 
-**Recommended approach:** Pin all GitHub Actions to specific commit SHAs instead of version tags for better security.
-
-**Why SHA pinning is important:**
-
-- **Immutability**: Version tags can be moved to point to different commits, but commit SHAs are permanent
-- **Supply chain security**: Prevents maintainers from retroactively modifying released versions
-- **Reproducibility**: Ensures consistent behavior across workflow runs
-- **Transparency**: Makes it clear exactly which code version is executing
-
-**Example (implemented in this project):**
+**Why:** Immutability ✅ | Supply chain security ✅ | Reproducibility ✅ | Transparency ✅
 
 ```yaml
 # ❌ Less secure - version tag can be changed
@@ -323,132 +134,42 @@ uses: aws-actions/configure-aws-credentials@v4
 uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
 ```
 
-**Benefits:**
-
-- Even if the v4.3.1 tag is compromised, your workflow continues using the verified commit
-- Version comment (`# v4.3.1`) provides human-readable context
-- GitHub Dependabot can still update SHA pins automatically
-
-**Trade-offs:**
-
-- Requires updating SHAs when new versions release (automated by Dependabot)
-- Less readable than version tags (mitigated by inline comments)
-
----
-
 ### 1. Scope Role Permissions (Least Privilege)
 
-**Current state:** Role has `AdministratorAccess` (for testing)
-
-**Production recommendation:**
-
-- Create separate roles for different environments (dev, staging, prod)
-- Grant only required permissions (e.g., S3 read/write, ECS deploy)
-- Use IAM policy conditions to restrict actions
-
-**Example least-privilege policy:**
+**Current:** AdministratorAccess (testing) → **Production:** Least-privilege only
 
 ```json
 {
-  "Version": "2012-10-17",
   "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::my-app-bucket",
-        "arn:aws:s3:::my-app-bucket/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ecs:UpdateService",
-        "ecs:DescribeServices"
-      ],
-      "Resource": "arn:aws:ecs:us-west-2:984479408136:service/my-cluster/my-service"
-    }
+    {"Effect": "Allow", "Action": ["s3:PutObject", "s3:GetObject"], "Resource": "arn:aws:s3:::my-bucket/*"},
+    {"Effect": "Allow", "Action": ["ecs:UpdateService"], "Resource": "arn:aws:ecs:...:service/my-service"}
   ]
 }
 ```
 
----
-
 ### 2. Restrict by Repository/Branch
 
-**Current trust policy:** Allows all repos under `wlevan3/*`
+**Trust Policy Patterns:**
 
-**More restrictive options:**
-
-**Specific repository only:**
-
-```json
-"Condition": {
-  "StringEquals": {
-    "token.actions.githubusercontent.com:sub": "repo:wlevan3/ml-platform-engineering-practicum:ref:refs/heads/main"
-  }
-}
-```
-
-**Multiple repositories:**
-
-```json
-"Condition": {
-  "StringLike": {
-    "token.actions.githubusercontent.com:sub": [
-      "repo:wlevan3/ml-platform-engineering-practicum:*",
-      "repo:wlevan3/another-repo:*"
-    ]
-  }
-}
-```
-
-**Main branch only:**
-
-```json
-"Condition": {
-  "StringLike": {
-    "token.actions.githubusercontent.com:sub": "repo:wlevan3/*:ref:refs/heads/main"
-  }
-}
-```
-
----
+| Restriction | Condition |
+|-------------|-----------|
+| Specific repo | `"sub": "repo:owner/repo:ref:refs/heads/main"` |
+| Multiple repos | `"sub": ["repo:owner/repo1:*", "repo:owner/repo2:*"]` |
+| Main branch only | `"sub": "repo:owner/*:ref:refs/heads/main"` |
 
 ### 3. Monitor and Audit
 
-**CloudTrail Logging:**
-
-- All `AssumeRoleWithWebIdentity` calls are logged
-- Track which workflows accessed AWS and when
-- Review `role-session-name` to identify specific workflow runs
-
-**CloudWatch Alarms:**
-
-- Alert on unexpected role assumptions
-- Monitor for unusual AWS API calls from GitHub Actions
-
-**Regular Reviews:**
-
-- Review IAM role permissions quarterly
-- Check CloudTrail logs for suspicious activity
-- Update trust policies as repository structure changes
+- **CloudTrail:** All AssumeRoleWithWebIdentity logged | Track workflows via `role-session-name`
+- **CloudWatch:** Alert on unexpected assumptions | Monitor unusual API calls
+- **Reviews:** Quarterly permission review | CloudTrail audit | Update trust policies
 
 ---
 
 ## Migration from Access Keys
 
-If you have existing workflows using AWS access keys in GitHub Secrets:
-
 ### Before (Access Keys)
-
 ```yaml
-- name: Configure AWS credentials
-  uses: aws-actions/configure-aws-credentials@v4
+- uses: aws-actions/configure-aws-credentials@v4
   with:
     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -456,118 +177,55 @@ If you have existing workflows using AWS access keys in GitHub Secrets:
 ```
 
 ### After (OIDC)
-
 ```yaml
 permissions:
   id-token: write
-  contents: read
 
-# ...
-
-- name: Configure AWS credentials using OIDC
-  uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
+- uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4.3.1
   with:
     role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
     aws-region: us-west-2
 ```
 
-**Migration steps:**
-
-1. ✅ Create OIDC provider in AWS (already done)
-2. ✅ Create IAM role with trust policy (already done)
-3. ✅ Test OIDC authentication (`.github/workflows/test-oidc-aws.yml`)
-4. ⏭️ Update workflows to use OIDC instead of access keys
-5. ⏭️ Remove AWS access keys from GitHub Secrets
-6. ⏭️ Deactivate/delete access keys in AWS IAM
+**Steps:** Create OIDC provider ✅ | Create IAM role ✅ | Test OIDC ✅ | Update workflows ⏭️ | Remove secrets ⏭️ | Deactivate keys ⏭️
 
 ---
 
 ## References
 
-### AWS Documentation
+**AWS:**
+- [IAM OIDC Identity Providers][aws-oidc]
+- [AssumeRoleWithWebIdentity API][aws-assume]
+- [AWS Security Best Practices][aws-bp]
 
-- [IAM OIDC Identity Providers](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html)
-- [AssumeRoleWithWebIdentity API](https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithWebIdentity.html)
-- [AWS Security Best Practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html)
+**GitHub:**
+- [About security hardening with OIDC][gh-oidc]
+- [Configuring OIDC in AWS][gh-aws]
+- [GitHub Actions OIDC claims][gh-claims]
 
-### GitHub Documentation
+**Project:**
+- `.github/workflows/test-oidc-aws.yml` - Test workflow
+- `CLAUDE.md` - AWS profile configuration
 
-- [About security hardening with OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
-- [Configuring OIDC in AWS](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services)
-- [GitHub Actions OIDC claims](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token)
-
-### Related Files
-
-- `.github/workflows/test-oidc-aws.yml` - Test workflow for OIDC verification
-- `CLAUDE.md` - Project documentation with AWS profile configuration
+[aws-oidc]: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_providers_create_oidc.html
+[aws-assume]: https://docs.aws.amazon.com/STS/latest/APIReference/API_AssumeRoleWithWebIdentity.html
+[aws-bp]: https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html
+[gh-oidc]: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect
+[gh-aws]: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services
+[gh-claims]: https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect#understanding-the-oidc-token
 
 ---
 
 ## Infrastructure as Code (Future Enhancement)
 
-**Current state:** OIDC provider and IAM role created manually via AWS Console
-
-**Phase 2+ recommendation:** Manage with Terraform
-
-**Example Terraform configuration:**
-
-```hcl
-# OIDC Provider
-resource "aws_iam_openid_connect_provider" "github_actions" {
-  url = "https://token.actions.githubusercontent.com"
-
-  client_id_list = [
-    "sts.amazonaws.com",
-  ]
-
-  thumbprint_list = [
-    "6938fd4d98bab03faadb97b34396831e3780aea1",  # pragma: allowlist secret
-  ]
-}
-
-# IAM Role
-resource "aws_iam_role" "github_actions" {
-  name = "GitHubActions-AssumeRoleForActions"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Federated = aws_iam_openid_connect_provider.github_actions.arn
-        }
-        Action = "sts:AssumeRoleWithWebIdentity"
-        Condition = {
-          StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:wlevan3/*"
-          }
-          StringEquals = {
-            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          }
-        }
-      }
-    ]
-  })
-}
-
-# Attach policies (replace with least-privilege policies)
-resource "aws_iam_role_policy_attachment" "github_actions_admin" {
-  role       = aws_iam_role.github_actions.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-}
-```
+**Current:** Manual via AWS Console | **Phase 2+:** Terraform (see example in original doc)
 
 ---
 
 ## Notes
 
-- **Learning project:** This setup is for learning ML platform engineering, not production use
-- **AdministratorAccess:** Current role has full AWS access for testing - scope down for production
-- **AWS Profile:** Use `AWS_PROFILE=kodekloud` for local AWS CLI commands
-- **Test workflow:** Runs on pushes to `infra/issue-15-oidc-aws` branch or manual trigger
-- **Account ID:** 984479408136 (KodeKloud AWS sandbox account)
+- **Learning project:** Not production use
+- **AWS Profile:** Use `AWS_PROFILE=kodekloud` for local CLI
+- **Account:** 984479408136 (KodeKloud sandbox)
 
-**Created:** 2025-11-03
-**Last Updated:** 2025-11-03
-**Maintained By:** Will Levan (learning project)
+**Created:** 2025-11-03 | **Last Updated:** 2025-11-03
