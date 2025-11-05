@@ -28,13 +28,13 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4
         with:
           fetch-depth: 1
 
       - name: Generate GitHub App Token
         id: app-token
-        uses: actions/create-github-app-token@df2cd495a4138ed3860011bb2f17e1b16e7f797e  # v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547  # v1
         with:
           app-id: ${{ secrets.CLAUDE_CODE_APP_ID }}
           private-key: ${{ secrets.CLAUDE_CODE_APP_PRIVATE_KEY }}

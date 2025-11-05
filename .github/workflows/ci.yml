@@ -267,7 +267,7 @@ jobs:
         run: pytest
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: coverage-report
           path: coverage.xml
@@ -285,26 +285,26 @@ jobs:
           fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
 
       - name: Download coverage report
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: coverage-report
 
       - name: Download Trivy filesystem SARIF
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: trivy-fs-sarif
           path: sarif-reports/trivy-fs/
         continue-on-error: true
 
       - name: Download Semgrep SARIF
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: semgrep-sarif
           path: sarif-reports/semgrep/
         continue-on-error: true
 
       - name: Download Trivy Docker SARIF
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: trivy-docker-sarif
           path: sarif-reports/trivy-docker/
@@ -359,7 +359,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload Trivy SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: trivy-fs-sarif
@@ -412,7 +412,7 @@ jobs:
           sarif_file: semgrep.sarif
 
       - name: Upload Semgrep SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: semgrep-sarif
@@ -518,7 +518,7 @@ jobs:
           category: 'trivy-docker-scan'
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         if: always()
         with:
           name: trivy-docker-sarif
@@ -596,7 +596,7 @@ jobs:
         run: docker save ml-platform-api:${{ github.sha }} -o /tmp/ml-platform-api.tar
 
       - name: Upload Docker image artifact
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp/ml-platform-api.tar
@@ -629,7 +629,7 @@ jobs:
       # This avoids rebuilding the image (saves 2-5 minutes per CI run)
       # Artifact name defined in workflow-level env for consistency
       - name: Download Docker image artifact
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp
@@ -694,7 +694,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Docker SBOMs
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: sbom-docker
           path: |
@@ -703,7 +703,7 @@ jobs:
           retention-days: 90  # Keep SBOMs for 90 days (compliance)
 
       - name: Upload Python SBOMs
-        uses: actions/upload-artifact@ea165f3a80bae6d054d38bc68da73f49dd0f4ac5  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: sbom-python
           path: |
