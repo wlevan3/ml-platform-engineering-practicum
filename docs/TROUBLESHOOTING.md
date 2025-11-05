@@ -2,6 +2,21 @@
 
 Common issues and solutions for ML Platform Engineering Practicum.
 
+## Table of Contents
+
+- [Environment Setup](#environment-setup)
+- [Pre-Commit Hooks](#pre-commit-hooks)
+- [Testing](#testing)
+- [API Server](#api-server)
+- [Docker](#docker)
+- [Kubernetes](#kubernetes)
+- [Git & GitHub](#git--github)
+- [SonarCloud](#sonarcloud)
+- [Security Scanning](#security-scanning)
+- [Model Loading](#model-loading)
+- [CI/CD Issues](#cicd-issues)
+- [Getting Help](#getting-help)
+
 ## Environment Setup
 
 ### Python Version Issues
@@ -339,7 +354,7 @@ docker ps
 docker pull python:3.13-slim
 
 # Retry build
-docker build -t ml-platform-api:v1.0.0 .
+docker build -t ml-platform-api:latest .
 ```
 
 **2. File Not Found in Build**:
@@ -369,8 +384,18 @@ docker ps -a
 docker logs <container-id>
 
 # Run interactively to debug
-docker run -it ml-platform-api:v1.0.0 /bin/bash
+docker run -it ml-platform-api:latest /bin/bash
 ```
+
+---
+
+### Trivy Scan Failures
+
+**Problem**: Trivy finds HIGH/CRITICAL vulnerabilities in Docker image
+
+**Cause**: Vulnerable packages in base image or Python dependencies.
+
+**Solution**: See `docs/VULNERABILITY_REMEDIATION.md` for detailed workflow.
 
 ---
 
@@ -408,7 +433,7 @@ kubectl top nodes
 minikube image ls | grep ml-platform-api
 
 # Load image to Minikube
-minikube image load ml-platform-api:v1.0.0
+minikube image load ml-platform-api:latest
 
 # Verify image pull policy in deployment
 kubectl get deployment ml-platform-api -o yaml | grep imagePullPolicy
@@ -533,14 +558,14 @@ pytest --cov=app --cov-report=term-missing
 ```bash
 # See detailed report
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image ml-platform-api:v1.0.0
+  aquasec/trivy image ml-platform-api:latest
 
 # Update base image
 # In Dockerfile, change:
 FROM python:3.13-slim  # Update to latest patch version
 
 # Rebuild and rescan
-docker build -t ml-platform-api:v1.0.0 .
+docker build -t ml-platform-api:latest .
 ```
 
 ---
@@ -568,6 +593,8 @@ bandit -r app/
 
 **Problem**: `FileNotFoundError: models/iris_classifier.skops`
 
+**Cause**: The model file hasn't been trained yet or was deleted.
+
 **Solution**:
 
 ```bash
@@ -590,12 +617,14 @@ print(f'SHA-256: {hash}')
 
 ### Model Hash Mismatch
 
-**Problem**: `SecurityError: Model hash mismatch!`
+**Problem**: `SecurityError: Model hash mismatch!` or `ModelIntegrityError`
+
+**Cause**: Model file was corrupted or manually modified, causing hash mismatch.
 
 **Solution**: Retrain model or update hash
 
 ```bash
-# Option 1: Retrain model (regenerates hash)
+# Option 1: Retrain model (regenerates hash) - RECOMMENDED
 python train_model.py
 
 # Option 2: Update expected hash in code
@@ -603,24 +632,100 @@ python train_model.py
 # Calculate new hash and update in app/model.py
 ```
 
+**Prevention**: Never manually edit model files. Always retrain using `train_model.py`.
+
 ---
 
-## Getting More Help
+## CI/CD Issues
 
-**Still stuck?**
+### CI/CD Job Failures
 
-1. **Check logs** - Most errors have detailed logs with root cause
-2. **Search issues** - Check GitHub Issues for similar problems
-3. **Review docs** - Relevant docs for each component:
-   - API: `README.md`
-   - Security: `SECURITY.md`, `docs/PICKLE_SECURITY.md`
-   - Kubernetes: `docs/KUBERNETES_SECURITY.md`
-   - Workflow: `CONTRIBUTING.md`
+**Problem**: CI jobs fail unexpectedly
 
-4. **Create issue** - If problem persists, create GitHub issue with:
-   - Steps to reproduce
-   - Error messages (full-stack trace)
-   - Environment info (`python --version`, `docker --version`, etc.)
+**Cause**: Code doesn't pass linting, tests, or security scans.
+
+**Solution**:
+
+```bash
+# Run tests locally first
+pytest -v
+
+# Check code quality locally
+black --check .
+ruff check .
+mypy app/
+
+# View CI logs in GitHub Actions tab for specific error details
+```
+
+**Debugging steps**:
+
+1. Check the GitHub Actions tab for the failed workflow
+2. Click on the failed job to see detailed logs
+3. Reproduce the failure locally using the commands above
+4. Fix the issue and push again
+
+---
+
+### SonarCloud Failures
+
+**Problem**: SonarCloud quality gate fails
+
+**Cause**: Code quality metrics below threshold (coverage, code smells, duplications).
+
+**Solution**:
+
+1. Check SonarCloud dashboard for specific issues
+2. Address code smells and duplications
+3. Increase test coverage if below 80%
+
+```bash
+# Generate coverage report locally
+pytest --cov=app --cov-report=html
+
+# Open htmlcov/index.html to see coverage details
+```
+
+---
+
+### Security Scan Failures
+
+**Problem**: Trivy/Gitleaks/Semgrep finds vulnerabilities
+
+**Cause**: Known vulnerabilities in dependencies or code patterns.
+
+**Solution**: See `docs/VULNERABILITY_REMEDIATION.md` for detailed workflow.
+
+---
+
+## Getting Help
+
+### Documentation
+
+- **Quick Reference**: `docs/QUICK_REFERENCE.md` - Git commands, GitHub CLI, conventions
+- **Security**: `docs/VULNERABILITY_REMEDIATION.md` - Vulnerability handling workflow
+- **Contributing**: `CONTRIBUTING.md` - PR workflow, merge conflicts
+- **Project Management**: `docs/PROJECT_MANAGEMENT.md` - GitHub Projects setup
+
+### CI Logs
+
+1. Go to GitHub Actions tab
+2. Click on the failed workflow run
+3. Click on the failed job
+4. Expand the failed step to see detailed logs
+
+### Common Resources
+
+- **Python errors**: Check virtual environment activation and dependencies
+- **Git errors**: See `docs/QUICK_REFERENCE.md` for common Git commands
+- **Docker errors**: Check Docker daemon is running: `docker info`
+- **Security findings**: See `docs/VULNERABILITY_REMEDIATION.md`
+
+### Still Stuck?
+
+1. Search existing GitHub issues for similar problems
+2. Check the project documentation in `docs/`
+3. Create a new issue using the Bug Report template
 
 ---
 

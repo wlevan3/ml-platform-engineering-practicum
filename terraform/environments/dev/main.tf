@@ -13,194 +13,72 @@ locals {
   )
 }
 
-# VPC Module - Network foundation for EKS cluster
-module "vpc" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-vpc.git?ref=7c1f791efd61f326ed6102d564d1a65d1eceedf0"
+# ===================================================================
+# Networking Module - VPC foundation for EKS cluster
+# ===================================================================
 
-  name = "${local.cluster_name}-vpc"
-  cidr = var.vpc_cidr
+module "networking" {
+  source = "../../modules/networking"
 
-  azs             = var.azs
-  private_subnets = var.private_subnet_cidrs
-  public_subnets  = var.public_subnet_cidrs
+  vpc_name             = "${local.cluster_name}-vpc"
+  vpc_cidr             = var.vpc_cidr
+  azs                  = var.azs
+  private_subnet_cidrs = var.private_subnet_cidrs
+  public_subnet_cidrs  = var.public_subnet_cidrs
 
-  # NAT Gateway for private subnet egress (required for EKS nodes)
+  # EKS integration - enables Kubernetes subnet tagging
+  cluster_name = local.cluster_name
+
+  # NAT Gateway for private subnet egress (cost optimization for dev)
   enable_nat_gateway = var.enable_nat_gateway
-  single_nat_gateway = var.single_nat_gateway # Cost optimization for dev
-
-  # DNS settings required for EKS
-  enable_dns_hostnames = true
-  enable_dns_support   = true
-
-  # Kubernetes-specific subnet tags
-  # Required for EKS to identify subnets for load balancers
-  public_subnet_tags = {
-    "kubernetes.io/role/elb"                      = "1"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  }
-
-  private_subnet_tags = {
-    "kubernetes.io/role/internal-elb"             = "1"
-    "kubernetes.io/cluster/${local.cluster_name}" = "shared"
-  }
+  single_nat_gateway = var.single_nat_gateway
 
   tags = local.tags
 }
 
-# EKS Cluster Module
-module "eks" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=2cb1fac31b0fc2dd6a236b0c0678df75819c5a3b"
+# ===================================================================
+# EKS Cluster Module - Managed Kubernetes cluster with node groups
+# ===================================================================
+
+module "eks_cluster" {
+  source = "../../modules/eks-cluster"
 
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
 
-  # Networking
-  vpc_id                   = module.vpc.vpc_id
-  subnet_ids               = module.vpc.private_subnets
-  control_plane_subnet_ids = module.vpc.public_subnets
+  # Networking from networking module
+  vpc_id                   = module.networking.vpc_id
+  subnet_ids               = module.networking.private_subnet_ids
+  control_plane_subnet_ids = module.networking.public_subnet_ids
 
   # Cluster endpoint access
   cluster_endpoint_public_access  = true # Allow access from internet (for GitHub Actions)
   cluster_endpoint_private_access = true # Allow access from within VPC
 
-  # OIDC provider for service account IAM roles
-  enable_irsa = true
-
-  # Cluster addons (automatically managed)
-  cluster_addons = {
-    coredns = {
-      most_recent = true
-    }
-    kube-proxy = {
-      most_recent = true
-    }
-    vpc-cni = {
-      most_recent = true
-    }
-    # EBS CSI driver for persistent volumes (if needed in future)
-    aws-ebs-csi-driver = {
-      most_recent = true
-    }
-  }
-
-  # Managed node groups
-  eks_managed_node_groups = {
-    ml_platform_nodes = {
-      name = "${local.cluster_name}-node-group"
-
-      # Spot instances configuration for cost savings (70% discount)
-      # Use multiple instance types to increase spot fulfillment success rate
-      capacity_type = var.use_spot_instances ? "SPOT" : "ON_DEMAND"
-
-      instance_types = var.use_spot_instances ? [
-        "t3.medium",  # Primary: $0.0416/hour on-demand, ~$0.0125/hour spot
-        "t3a.medium", # AMD alternative: similar specs, ~$0.0112/hour spot
-        "t2.medium",  # Older generation fallback
-      ] : [var.node_instance_type]
-
-      min_size     = var.node_min_size
-      max_size     = var.node_max_size
-      desired_size = var.node_desired_size
-
-      # Disk size for worker nodes
-      disk_size = 50 # GB - enough for OS + container images
-
-      # Use Amazon Linux 2 optimized AMI
-      ami_type = "AL2_x86_64"
-
-      # Launch template configuration
-      # Increased max_unavailable for spot instances (faster node replacement)
-      update_config = {
-        max_unavailable_percentage = var.use_spot_instances ? 50 : 33
-      }
-
-      # IAM role for worker nodes
-      # Automatically gets permissions for ECR, CloudWatch, etc.
-      iam_role_additional_policies = {
-        AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore" # For Session Manager access
-      }
-
-      # Node labels for pod scheduling
-      labels = merge(
-        {
-          Environment = var.environment
-          NodeGroup   = "ml-platform-nodes"
-        },
-        var.use_spot_instances ? { "node-lifecycle" = "spot" } : {}
-      )
-
-      # Taints for spot instances (forces pods to explicitly tolerate spot interruptions)
-      # Disabled by default - can be enabled for stricter control
-      # taints = var.use_spot_instances ? [{
-      #   key    = "kubernetes.io/lifecycle"
-      #   value  = "spot"
-      #   effect = "NoSchedule"
-      # }] : []
-
-      tags = merge(
-        local.tags,
-        {
-          Name = "${local.cluster_name}-worker-node"
-        },
-        var.use_spot_instances ? { "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "spot" } : {}
-      )
-    }
-  }
-
-  # Cluster security group rules
-  cluster_security_group_additional_rules = {
-    # Allow worker nodes to communicate with control plane
-    egress_nodes_ephemeral_ports_tcp = {
-      description                = "To node 1025-65535"
-      protocol                   = "tcp"
-      from_port                  = 1025
-      to_port                    = 65535
-      type                       = "egress"
-      source_node_security_group = true
-    }
-  }
-
-  # Node security group rules
-  node_security_group_additional_rules = {
-    # Allow nodes to communicate with each other
-    ingress_self_all = {
-      description = "Node to node all ports/protocols"
-      protocol    = "-1"
-      from_port   = 0
-      to_port     = 0
-      type        = "ingress"
-      self        = true
-    }
-
-    # Allow worker nodes to receive traffic from control plane
-    ingress_cluster_to_node_all_traffic = {
-      description                   = "Cluster to node all traffic"
-      protocol                      = "-1"
-      from_port                     = 0
-      to_port                       = 0
-      type                          = "ingress"
-      source_cluster_security_group = true
-    }
-  }
+  # Node group configuration
+  use_spot_instances = var.use_spot_instances
+  node_instance_type = var.node_instance_type
+  node_desired_size  = var.node_desired_size
+  node_min_size      = var.node_min_size
+  node_max_size      = var.node_max_size
 
   tags = local.tags
+
+  depends_on = [module.networking]
 }
 
-# ECR Repository for container images
-resource "aws_ecr_repository" "ml_platform_api" {
-  name                 = var.ecr_repository_name
-  image_tag_mutability = var.ecr_image_tag_mutability
+# ===================================================================
+# Container Registry Module - ECR repository for container images
+# ===================================================================
 
-  # Vulnerability scanning on push
-  image_scanning_configuration {
-    scan_on_push = var.ecr_scan_on_push
-  }
+module "container_registry" {
+  source = "../../modules/container-registry"
 
-  # Encryption at rest with AWS-managed KMS key
-  encryption_configuration {
-    encryption_type = "KMS"
-    # No kms_key specified = uses AWS-managed KMS key (not customer-managed)
-  }
+  repository_name               = var.ecr_repository_name
+  image_tag_mutability          = var.ecr_image_tag_mutability
+  scan_on_push                  = var.ecr_scan_on_push
+  max_tagged_images             = 10
+  untagged_image_retention_days = 7
 
   tags = merge(
     local.tags,
@@ -210,92 +88,58 @@ resource "aws_ecr_repository" "ml_platform_api" {
   )
 }
 
-# ECR Lifecycle policy - clean up old images
-resource "aws_ecr_lifecycle_policy" "ml_platform_api" {
-  repository = aws_ecr_repository.ml_platform_api.name
+# ===================================================================
+# AWS Load Balancer Controller Module - DISABLED
+# ===================================================================
+#
+# This module is commented out because it requires the Helm provider,
+# which has been disabled to break the Terraform provider dependency cycle.
+#
+# The ALB controller will be installed via one of these methods:
+# 1. ArgoCD application (recommended GitOps approach)
+# 2. Manual Helm chart installation after EKS cluster creation
+# 3. Separate Terraform root that runs after EKS cluster exists
+#
+# See related GitHub issues for migration roadmap.
+#
+# ===================================================================
 
-  policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1
-        description  = "Keep last 10 images"
-        selection = {
-          tagStatus     = "tagged"
-          tagPrefixList = ["v"]
-          countType     = "imageCountMoreThan"
-          countNumber   = 10
-        }
-        action = {
-          type = "expire"
-        }
-      },
-      {
-        rulePriority = 2
-        description  = "Remove untagged images after 7 days"
-        selection = {
-          tagStatus   = "untagged"
-          countType   = "sinceImagePushed"
-          countUnit   = "days"
-          countNumber = 7
-        }
-        action = {
-          type = "expire"
-        }
-      }
-    ]
-  })
-}
+# module "alb_controller" {
+#   source = "../../modules/alb-controller"
+#
+#   cluster_name      = local.cluster_name
+#   oidc_provider_arn = module.eks_cluster.oidc_provider_arn
+#
+#   tags = local.tags
+#
+#   depends_on = [module.eks_cluster]
+# }
 
-# IAM role for AWS Load Balancer Controller
-# Allows the controller to manage ALBs for Kubernetes Ingress
-module "load_balancer_controller_irsa_role" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-iam.git//modules/iam-role-for-service-accounts-eks?ref=c29ec1ed409683086f63f83ff5b10a6f3c296ef2"
+# ===================================================================
+# Security Monitoring Module
+# ===================================================================
 
-  role_name = "${local.cluster_name}-aws-load-balancer-controller"
+module "security" {
+  source = "../../modules/security"
 
-  attach_load_balancer_controller_policy = true
+  # Required
+  cluster_name = local.cluster_name
+  region       = var.aws_region
 
-  oidc_providers = {
-    main = {
-      provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["kube-system:aws-load-balancer-controller"]
-    }
-  }
+  # Security Hub configuration
+  enable_security_hub          = var.enable_security_hub
+  enable_cis_standard          = var.enable_cis_standard
+  enable_foundational_security = var.enable_foundational_security
 
+  # GuardDuty configuration
+  enable_guardduty = var.enable_guardduty
+
+  # Inspector configuration
+  enable_inspector = var.enable_inspector
+
+  # Alerting
+  security_alert_email = var.security_alert_email
+
+  # Tagging
   tags = local.tags
-}
-
-# AWS Load Balancer Controller (via Helm)
-# Manages ALBs for Kubernetes Ingress resources
-resource "helm_release" "aws_load_balancer_controller" {
-  name       = "aws-load-balancer-controller"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = "1.14.1" # Helm chart version (controller appVersion: v2.14.1)
-
-  set {
-    name  = "clusterName"
-    value = module.eks.cluster_name
-  }
-
-  set {
-    name  = "serviceAccount.create"
-    value = "true"
-  }
-
-  set {
-    name  = "serviceAccount.name"
-    value = "aws-load-balancer-controller"
-  }
-
-  set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = module.load_balancer_controller_irsa_role.iam_role_arn
-  }
-
-  depends_on = [
-    module.eks,
-    module.load_balancer_controller_irsa_role
-  ]
 }
