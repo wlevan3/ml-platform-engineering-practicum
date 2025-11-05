@@ -112,7 +112,7 @@ jobs:
 
       - name: Upload tfsec SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         with:
           sarif_file: results.sarif
           category: tfsec-scan
@@ -131,7 +131,7 @@ jobs:
 
       - name: Upload Checkov SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         with:
           sarif_file: checkov-results.sarif
           category: checkov-scan
@@ -210,7 +210,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security
         if: steps.check_k8s.outputs.exists == 'true' && always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         with:
           sarif_file: trivy-k8s-results.sarif
           category: trivy-k8s-scan
@@ -353,7 +353,7 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         with:
           sarif_file: 'trivy-results.sarif'
         continue-on-error: true
@@ -407,7 +407,7 @@ jobs:
 
       - name: Upload Semgrep SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         with:
           sarif_file: semgrep.sarif
 
@@ -511,7 +511,7 @@ jobs:
           # GitHub Security auto-resolves false positives. Real vulnerabilities still visible in Security tab.
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
