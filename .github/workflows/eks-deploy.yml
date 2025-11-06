@@ -418,7 +418,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Create S3 bucket for Terraform state
         run: |
-          BUCKET="ml-platform-terraform-state"
+          BUCKET="ml-platform-terraform-state-984479408136"
           REGION="us-west-2"
 
           echo "🪣 Creating S3 bucket: ${BUCKET}"
@@ -645,7 +645,7 @@ jobs:
         run: |
           echo "🔍 Validating Terraform backend resources..."
 
-          BUCKET="ml-platform-terraform-state"
+          BUCKET="ml-platform-terraform-state-984479408136"
           TABLE="ml-platform-terraform-locks"
           REGION="us-west-2"
 
