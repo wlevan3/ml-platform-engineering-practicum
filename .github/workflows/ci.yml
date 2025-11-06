@@ -109,6 +109,7 @@ jobs:
           soft_fail: false
           format: sarif
           additional_args: --minimum-severity HIGH
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload tfsec SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
