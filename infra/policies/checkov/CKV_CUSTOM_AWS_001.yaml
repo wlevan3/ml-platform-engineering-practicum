@@ -1,0 +1,14 @@
+metadata:
+  id: "CKV_CUSTOM_AWS_001"
+  name: "Disallow customer-managed KMS keys"
+  category: "encryption"
+  description: "Customer-managed KMS keys are prohibited; use AWS-managed encryption instead."
+  remediation: "Remove aws_kms_key resources and ensure modules set create_kms_key = false."
+  guidelines: "See docs/terraform-policies.md#customer-managed-kms-keys"
+definition:
+  cond_type: attribute
+  resource_types:
+    - aws_kms_key
+  attribute: id
+  operator: exists
+  value: false

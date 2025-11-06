@@ -344,7 +344,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'Action to perform'
+        description: "Action to perform"
         required: true
         type: choice
         options:
@@ -353,38 +353,38 @@ on:
           - deploy
           - destroy
           - destroy-eks-only
-        default: 'bootstrap'
+        default: "bootstrap"
 
       environment:
-        description: 'Environment to target'
+        description: "Environment to target"
         required: true
         type: choice
         options:
           - dev
-        default: 'dev'
+        default: "dev"
 
       image_tag:
-        description: 'Docker image tag (for deploy action)'
+        description: "Docker image tag (for deploy action)"
         required: false
-        default: 'v1.0.0'
+        default: "v1.0.0"
 
       deploy_to_k8s:
-        description: 'Deploy to Kubernetes after ECR push (deploy action only)'
+        description: "Deploy to Kubernetes after ECR push (deploy action only)"
         required: false
         type: boolean
         default: false
 
       auto_approve:
-        description: '⚠️ Auto-approve terraform apply (CAUTION: use only for testing)'
+        description: "⚠️ Auto-approve terraform apply (CAUTION: use only for testing)"
         required: false
         type: boolean
         default: false
 
 # Required permissions for OIDC authentication
 permissions:
-  id-token: write  # Required for AWS OIDC authentication
-  contents: read   # Required to checkout repository
-  issues: write    # Optional: to comment on related issues
+  id-token: write # Required for AWS OIDC authentication
+  contents: read # Required to checkout repository
+  issues: write # Optional: to comment on related issues
 
 jobs:
   # ===========================================================================
@@ -401,13 +401,13 @@ jobs:
       # Step 1: Checkout repository
       # -----------------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       # -----------------------------------------------------------------------
       # Step 2: Configure AWS credentials
       # -----------------------------------------------------------------------
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -610,20 +610,20 @@ jobs:
 
     defaults:
       run:
-        working-directory: terraform/environments/${{ inputs.environment }}
+        working-directory: infra/aws-core/terraform/environments/${{ inputs.environment }}
 
     steps:
       # -----------------------------------------------------------------------
       # Step 1: Checkout repository
       # -----------------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       # -----------------------------------------------------------------------
       # Step 2: Configure AWS credentials using OIDC (no secrets required)
       # -----------------------------------------------------------------------
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -679,7 +679,7 @@ jobs:
       # Step 5: Setup Terraform
       # -----------------------------------------------------------------------
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: 1.6.0
 
@@ -723,10 +723,10 @@ jobs:
       # Step 9: Upload plan as artifact
       # -----------------------------------------------------------------------
       - name: Upload Terraform plan
-        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9  # v4.4.1
+        uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         with:
           name: terraform-plan-${{ inputs.environment }}-${{ github.run_id }}
-          path: terraform/environments/${{ inputs.environment }}/plan.txt
+          path: infra/aws-core/terraform/environments/${{ inputs.environment }}/plan.txt
           retention-days: 30
 
       # -----------------------------------------------------------------------
@@ -847,13 +847,13 @@ jobs:
       # Step 1: Checkout repository
       # -----------------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       # -----------------------------------------------------------------------
       # Step 2: Configure AWS credentials
       # -----------------------------------------------------------------------
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -930,13 +930,13 @@ jobs:
       # Step 1: Checkout repository
       # -----------------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       # -----------------------------------------------------------------------
       # Step 2: Configure AWS credentials
       # -----------------------------------------------------------------------
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -963,9 +963,9 @@ jobs:
           echo "🚀 Applying Kubernetes manifests..."
 
           # Apply manifests (creates or updates resources)
-          kubectl apply -f k8s/namespace.yaml || true
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
+          kubectl apply -f clusters/dev/bootstrap/k8s-manifests/namespace.yaml || true
+          kubectl apply -f clusters/dev/bootstrap/k8s-manifests/deployment.yaml
+          kubectl apply -f clusters/dev/bootstrap/k8s-manifests/service.yaml
 
           echo "✅ Manifests applied"
 
@@ -1031,20 +1031,20 @@ jobs:
 
     defaults:
       run:
-        working-directory: terraform/environments/${{ inputs.environment }}
+        working-directory: infra/aws-core/terraform/environments/${{ inputs.environment }}
 
     steps:
       # -----------------------------------------------------------------------
       # Step 1: Checkout repository
       # -----------------------------------------------------------------------
       - name: Checkout repository
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871  # v4.2.1
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       # -----------------------------------------------------------------------
       # Step 2: Configure AWS credentials
       # -----------------------------------------------------------------------
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
@@ -1054,7 +1054,7 @@ jobs:
       # Step 3: Setup Terraform
       # -----------------------------------------------------------------------
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: 1.6.0
 

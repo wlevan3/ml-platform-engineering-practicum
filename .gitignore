@@ -216,6 +216,7 @@ __marimo__/
 *.tfstate.*
 *.tfvars
 .terraform/
+.external_modules/
 .terraform.lock.hcl
 crash.log
 override.tf
@@ -291,15 +292,15 @@ temp/
 # ML Platform artifacts
 mlruns/
 artifacts/
-models/
+services/api/models/
 
 # Data directories (if storing locally)
 data/
 datasets/
 
 # Terraform plan artifacts generated for policy checks
-terraform/environments/*/plan.json
-policy/sentinel/mocks/*-plan.sentinel
+infra/aws-core/environments/*/plan.json
+infra/policies/sentinel/mocks/*-plan.sentinel
 
 # Git worktrees
 worktrees/

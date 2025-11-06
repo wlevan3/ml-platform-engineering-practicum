@@ -1,0 +1,211 @@
+#
+# Kubernetes Resource Quotas for Cost Control
+#
+# This file defines ResourceQuota objects to prevent runaway resource consumption
+# in the ml-platform-api namespace. These quotas enforce hard limits on:
+# - Pod count (prevents scaling beyond max)
+# - CPU/memory requests and limits (prevents unlimited consumption)
+# - Persistent volume claims (prevents storage bloat)
+# - Services and load balancers (prevents accidental ALB creation)
+#
+# Purpose: Layer 1 of cost control (HPA is Layer 2, Budget Alerts are Layer 3)
+#
+# IMPORTANT: These resources require the Kubernetes provider to be configured,
+# which depends on the EKS cluster being created first. This is why they are
+# defined at the environment level rather than in the eks-cluster module.
+#
+
+# ============================================================================
+# Resource Quota - Compute Resources
+# ============================================================================
+
+resource "kubernetes_resource_quota" "ml_platform_compute" {
+  metadata {
+    name      = "ml-platform-compute-quota"
+    namespace = "default" # Will be updated when namespaces are implemented
+
+    labels = {
+      "app.kubernetes.io/name"       = "ml-platform-api"
+      "app.kubernetes.io/component"  = "resource-quota"
+      "app.kubernetes.io/managed-by" = "terraform"
+      "Project"                      = "ml-platform-engineering-practicum"
+    }
+  }
+
+  spec {
+    hard = {
+      # Pod limits (aligned with clusters/dev/bootstrap/k8s-manifests/hpa.yaml maxReplicas = 10)
+      "pods" = "12" # 10 from HPA + 2 buffer for rolling updates (see clusters/dev/bootstrap/k8s-manifests/hpa.yaml)
+
+      # CPU limits (conservative for cost control)
+      # Pod actual requests: 250m CPU, 256Mi memory (see clusters/dev/bootstrap/k8s-manifests/deployment.yaml:48-51)
+      # Pod actual limits: 500m CPU, 512Mi memory (see clusters/dev/bootstrap/k8s-manifests/deployment.yaml:52-55)
+      "requests.cpu"    = "4000m" # 4 vCPUs total (enough for 16 pods @ 250m each, allows HPA scaling headroom)
+      "limits.cpu"      = "8000m" # 8 vCPUs max (enough for 16 pods @ 500m each)
+      "requests.memory" = "10Gi"  # 10 GB total (enough for ~40 pods @ 256Mi each, generous buffer)
+      "limits.memory"   = "20Gi"  # 20 GB max (enough for ~40 pods @ 512Mi each)
+
+      # Storage limits (prevent PVC bloat)
+      "persistentvolumeclaims"     = "5"     # Max 5 PVCs
+      "requests.storage"           = "100Gi" # Max 100 GB total storage
+      "requests.ephemeral-storage" = "50Gi"  # Ephemeral storage (aligned with pod limits)
+      "limits.ephemeral-storage"   = "50Gi"  # Ephemeral storage limits
+    }
+  }
+
+  depends_on = [
+    module.eks_cluster # Ensure cluster exists before creating quota
+  ]
+}
+
+# ============================================================================
+# Resource Quota - Object Counts
+# ============================================================================
+
+resource "kubernetes_resource_quota" "ml_platform_objects" {
+  metadata {
+    name      = "ml-platform-object-count-quota"
+    namespace = "default" # Will be updated when namespaces are implemented
+
+    labels = {
+      "app.kubernetes.io/name"       = "ml-platform-api"
+      "app.kubernetes.io/component"  = "resource-quota"
+      "app.kubernetes.io/managed-by" = "terraform"
+      "Project"                      = "ml-platform-engineering-practicum"
+    }
+  }
+
+  spec {
+    hard = {
+      # Object count limits
+      "count/deployments.apps" = "5"  # Max 5 deployments (should only need 1-2)
+      "count/services"         = "10" # Max 10 services (plenty for ml-platform-api)
+      "count/configmaps"       = "20" # Max 20 ConfigMaps
+      "count/secrets"          = "20" # Max 20 Secrets
+      "count/jobs.batch"       = "10" # Max 10 Jobs (for one-off tasks)
+      "count/cronjobs.batch"   = "5"  # Max 5 CronJobs
+
+      # Prevent accidental load balancer creation (cost control)
+      "services.loadbalancers" = "1" # Only 1 ALB allowed (created by Ingress)
+    }
+  }
+
+  depends_on = [
+    module.eks_cluster # Ensure cluster exists before creating quota
+  ]
+}
+
+# ============================================================================
+# Limit Range - Default Pod Limits
+# ============================================================================
+#
+# LimitRange sets default resource requests/limits for pods that don't specify them.
+# This prevents unbounded resource consumption and ensures predictable costs.
+#
+
+resource "kubernetes_limit_range" "ml_platform_defaults" {
+  metadata {
+    name      = "ml-platform-default-limits"
+    namespace = "default" # Will be updated when namespaces are implemented
+
+    labels = {
+      "app.kubernetes.io/name"       = "ml-platform-api"
+      "app.kubernetes.io/component"  = "limit-range"
+      "app.kubernetes.io/managed-by" = "terraform"
+      "Project"                      = "ml-platform-engineering-practicum"
+    }
+  }
+
+  spec {
+    # Default limits for containers
+    limit {
+      type = "Container"
+
+      # Default values (applied if not specified in pod spec)
+      default = {
+        cpu               = "500m" # Default CPU limit
+        memory            = "1Gi"  # Default memory limit
+        ephemeral-storage = "2Gi"  # Default ephemeral storage limit
+      }
+
+      # Default requests (applied if not specified in pod spec)
+      default_request = {
+        cpu               = "250m"  # Default CPU request
+        memory            = "512Mi" # Default memory request
+        ephemeral-storage = "1Gi"   # Default ephemeral storage request
+      }
+
+      # Maximum allowed (prevents setting limits too high)
+      max = {
+        cpu               = "2000m" # Max 2 vCPUs per container
+        memory            = "4Gi"   # Max 4 GB per container
+        ephemeral-storage = "10Gi"  # Max 10 GB ephemeral storage
+      }
+
+      # Minimum allowed (prevents setting limits too low)
+      min = {
+        cpu               = "100m"  # Min 100m CPU
+        memory            = "128Mi" # Min 128 MB memory
+        ephemeral-storage = "100Mi" # Min 100 MB ephemeral storage
+      }
+    }
+
+    # Pod-level limits (aggregated across all containers)
+    limit {
+      type = "Pod"
+
+      max = {
+        cpu               = "4000m" # Max 4 vCPUs per pod
+        memory            = "8Gi"   # Max 8 GB per pod
+        ephemeral-storage = "20Gi"  # Max 20 GB ephemeral storage per pod
+      }
+
+      min = {
+        cpu               = "100m"  # Min 100m CPU per pod
+        memory            = "128Mi" # Min 128 MB per pod
+        ephemeral-storage = "100Mi" # Min 100 MB ephemeral storage per pod
+      }
+    }
+
+    # PVC limits
+    limit {
+      type = "PersistentVolumeClaim"
+
+      max = {
+        storage = "50Gi" # Max 50 GB per PVC
+      }
+
+      min = {
+        storage = "1Gi" # Min 1 GB per PVC
+      }
+    }
+  }
+
+  depends_on = [
+    module.eks_cluster # Ensure cluster exists before creating limit range
+  ]
+}
+
+# ============================================================================
+# Outputs
+# ============================================================================
+
+output "resource_quota_compute_name" {
+  description = "Name of the compute resource quota"
+  value       = kubernetes_resource_quota.ml_platform_compute.metadata[0].name
+}
+
+output "resource_quota_objects_name" {
+  description = "Name of the object count resource quota"
+  value       = kubernetes_resource_quota.ml_platform_objects.metadata[0].name
+}
+
+output "limit_range_name" {
+  description = "Name of the default limit range"
+  value       = kubernetes_limit_range.ml_platform_defaults.metadata[0].name
+}
+
+output "quota_verification_command" {
+  description = "Command to verify resource quotas are applied"
+  value       = "kubectl describe quota -n default && kubectl describe limitrange -n default"
+}

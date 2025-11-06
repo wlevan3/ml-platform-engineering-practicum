@@ -11,9 +11,14 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.model import get_model, IrisModel
-from app.security import calculate_file_hash
+from services.api.main import app
+from services.api.model import get_model, IrisModel
+from services.api.security import calculate_file_hash
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+MODEL_ASSETS_DIR = REPO_ROOT / "services" / "api" / "models"
+MODEL_SKOPS = MODEL_ASSETS_DIR / "iris_classifier.skops"
+MODEL_METADATA = MODEL_ASSETS_DIR / "model_metadata.json"
 
 
 @pytest.fixture(scope="module")
@@ -60,7 +65,7 @@ def test_readiness_endpoint_when_model_loaded(client):
 
 def test_readiness_endpoint_when_model_not_loaded():
     """Test the readiness probe endpoint when model is not loaded."""
-    with patch("app.main.get_model") as mock_get_model:
+    with patch("services.api.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
         mock_model.is_loaded.return_value = False
 
@@ -161,15 +166,15 @@ def test_openapi_docs(client):
 
 def test_model_integrity_verification_detects_tampering():
     """Test that hash verification detects model file tampering."""
-    from app.model import ModelIntegrityError
+    from services.api.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
         # Copy original files
-        shutil.copy("models/iris_classifier.skops", model_path)
-        shutil.copy("models/model_metadata.json", metadata_path)
+        shutil.copy(MODEL_SKOPS, model_path)
+        shutil.copy(MODEL_METADATA, metadata_path)
 
         # Corrupt the model file
         with open(model_path, "ab") as f:
@@ -201,14 +206,14 @@ def test_model_loads_successfully_with_valid_hash():
 
 def test_hash_verification_happens_before_model_load():
     """Test that hash is verified BEFORE attempting model deserialization."""
-    from app.model import ModelIntegrityError
+    from services.api.model import ModelIntegrityError
 
     with tempfile.TemporaryDirectory() as tmpdir:
         model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
-        shutil.copy("models/iris_classifier.skops", model_path)
-        shutil.copy("models/model_metadata.json", metadata_path)
+        shutil.copy(MODEL_SKOPS, model_path)
+        shutil.copy(MODEL_METADATA, metadata_path)
 
         # Corrupt model
         with open(model_path, "ab") as f:
@@ -217,7 +222,7 @@ def test_hash_verification_happens_before_model_load():
         model = IrisModel(model_path=str(model_path), metadata_path=str(metadata_path))
 
         # Mock sio.load to verify it's never called
-        with patch("app.model.sio.load") as mock_sio:
+        with patch("services.api.model.sio.load") as mock_sio:
             with pytest.raises(ModelIntegrityError):
                 model.load()
 
@@ -232,7 +237,7 @@ def test_model_loads_without_hash_field():
         model_path = Path(tmpdir) / "iris_classifier.skops"
         metadata_path = Path(tmpdir) / "model_metadata.json"
 
-        shutil.copy("models/iris_classifier.skops", model_path)
+        shutil.copy(MODEL_SKOPS, model_path)
 
         # Create metadata WITHOUT hash field (simulate old metadata)
         metadata = {
@@ -262,7 +267,7 @@ def test_lifespan_handles_model_load_failure():
     """Test that lifespan properly handles model loading failures."""
 
     # Mock model.load() to raise an exception
-    with patch("app.main.get_model") as mock_get_model:
+    with patch("services.api.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
         mock_model.load.side_effect = RuntimeError("Model file corrupted")
 
@@ -275,7 +280,7 @@ def test_lifespan_handles_model_load_failure():
 def test_model_info_handles_generic_exception():
     """Test model info endpoint handles exceptions from get_info()."""
 
-    with patch("app.main.get_model") as mock_get_model:
+    with patch("services.api.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
         mock_model.is_loaded.return_value = True
         mock_model.get_info.side_effect = Exception("Unexpected error")
@@ -290,7 +295,7 @@ def test_model_info_handles_generic_exception():
 def test_predict_handles_generic_exception():
     """Test predict endpoint handles generic exceptions from model.predict()."""
 
-    with patch("app.main.get_model") as mock_get_model:
+    with patch("services.api.main.get_model") as mock_get_model:
         mock_model = mock_get_model.return_value
         mock_model.is_loaded.return_value = True
         mock_model.predict.side_effect = Exception("Model inference failed")
@@ -307,7 +312,7 @@ def test_model_load_with_missing_model_file():
 
     model = IrisModel(
         model_path="nonexistent/path/to/model.skops",
-        metadata_path="models/model_metadata.json",
+        metadata_path=str(MODEL_METADATA),
     )
 
     with pytest.raises(FileNotFoundError, match="Model file not found"):
@@ -318,7 +323,7 @@ def test_model_load_with_missing_metadata_file():
     """Test that load() raises FileNotFoundError when metadata file doesn't exist."""
 
     model = IrisModel(
-        model_path="models/iris_classifier.skops",
+        model_path=str(MODEL_SKOPS),
         metadata_path="nonexistent/path/to/metadata.json",
     )
 

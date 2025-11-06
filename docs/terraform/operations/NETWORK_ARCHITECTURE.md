@@ -207,7 +207,7 @@ kubectl get nodes
 **Implementation** (you would need to add this Terraform module):
 
 ```hcl
-# terraform/modules/bastion/main.tf
+# infra/aws-core/terraform/modules/bastion/main.tf
 resource "aws_instance" "bastion" {
   ami           = data.aws_ami.amazon_linux_2.id
   instance_type = "t3.micro"  # $0.0104/hour ($7.50/month)
@@ -332,7 +332,7 @@ ml-platform-api Pods (2 replicas)
 
 **Managed by**: AWS Load Balancer Controller (Kubernetes Ingress → AWS ALB)
 
-**Configuration**: Automatically created when you deploy `k8s/ingress.yaml`
+**Configuration**: Automatically created when you deploy `clusters/dev/bootstrap/k8s-manifests/ingress.yaml`
 
 **Features**:
 
@@ -349,7 +349,7 @@ k8s-mlplatfo-mlplatfo-abc123def456-1234567890.us-west-2.elb.amazonaws.com
 
 #### 2. Kubernetes Ingress
 
-**File**: `k8s/ingress.yaml` (just created)
+**File**: `clusters/dev/bootstrap/k8s-manifests/ingress.yaml` (just created)
 
 **Purpose**: Defines routing rules from ALB → Service
 
@@ -361,7 +361,7 @@ k8s-mlplatfo-mlplatfo-abc123def456-1234567890.us-west-2.elb.amazonaws.com
 
 #### 3. Kubernetes Service
 
-**File**: `k8s/service.yaml`
+**File**: `clusters/dev/bootstrap/k8s-manifests/service.yaml`
 
 **Type**: ClusterIP (internal service, not exposed outside cluster)
 
@@ -369,7 +369,7 @@ k8s-mlplatfo-mlplatfo-abc123def456-1234567890.us-west-2.elb.amazonaws.com
 
 #### 4. Kubernetes Pods
 
-**File**: `k8s/deployment.yaml`
+**File**: `clusters/dev/bootstrap/k8s-manifests/deployment.yaml`
 
 **Replicas**: 2 (high availability)
 
@@ -384,7 +384,7 @@ k8s-mlplatfo-mlplatfo-abc123def456-1234567890.us-west-2.elb.amazonaws.com
 
 ```bash
 # 1. Deploy EKS infrastructure
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform apply
 
 # 2. Update kubeconfig
@@ -397,14 +397,14 @@ docker tag ml-platform-api:v1.0.0 <account-id>.dkr.ecr.us-west-2.amazonaws.com/m
 docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/ml-platform-api:v1.0.0
 
 # 4. Update deployment.yaml with ECR image URL
-# Edit k8s/deployment.yaml line 42:
+# Edit clusters/dev/bootstrap/k8s-manifests/deployment.yaml line 42:
 # image: <account-id>.dkr.ecr.us-west-2.amazonaws.com/ml-platform-api:v1.0.0
 
 # 5. Deploy Kubernetes resources
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/ingress.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/namespace.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/deployment.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/service.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/ingress.yaml
 
 # 6. Wait for ALB to provision (2-3 minutes)
 kubectl get ingress -n ml-platform -w
@@ -432,7 +432,7 @@ To enable HTTPS, you need:
 **Setup**:
 
 ```hcl
-# terraform/environments/dev/acm.tf (NOT YET CREATED)
+# infra/aws-core/terraform/environments/dev/acm.tf (NOT YET CREATED)
 resource "aws_acm_certificate" "api" {
   domain_name       = "api.ml-platform.example.com"
   validation_method = "DNS"
@@ -458,7 +458,7 @@ resource "aws_route53_record" "api" {
 **Update Ingress for HTTPS**:
 
 ```yaml
-# k8s/ingress.yaml
+# clusters/dev/bootstrap/k8s-manifests/ingress.yaml
 metadata:
   annotations:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
@@ -478,15 +478,15 @@ Based on the README.md, here's what **Phase 2: EKS & Kubernetes** (similar to MI
 
 ### Phase 2 Checklist
 
-- [ ] Terraform configuration for EKS ✅ **DONE** (terraform/environments/dev/main.tf)
+- [ ] Terraform configuration for EKS ✅ **DONE** (infra/aws-core/terraform/environments/dev/main.tf)
 - [ ] VPC and networking setup ✅ **DONE** (VPC module with public/private subnets)
 - [ ] Node groups and autoscaling ✅ **DONE** (t3.medium, 1-4 nodes)
 - [ ] kubectl access configuration ✅ **DONE** (IAM-based, instructions above)
 - [ ] Deploy sample workload ⚠️ **PARTIALLY DONE**
-  - Deployment: ✅ k8s/deployment.yaml exists
-  - Service: ✅ k8s/service.yaml exists
-  - Ingress: ✅ k8s/ingress.yaml just created
-  - Namespace: ✅ k8s/namespace.yaml just created
+  - Deployment: ✅ clusters/dev/bootstrap/k8s-manifests/deployment.yaml exists
+  - Service: ✅ clusters/dev/bootstrap/k8s-manifests/service.yaml exists
+  - Ingress: ✅ clusters/dev/bootstrap/k8s-manifests/ingress.yaml just created
+  - Namespace: ✅ clusters/dev/bootstrap/k8s-manifests/namespace.yaml just created
   - **MISSING**: ECR image push and deployment with ECR URL
 
 ### What's Still Missing for Complete Phase 2

@@ -70,7 +70,7 @@ if not hmac.compare_digest(expected_hash, actual_hash):
 
 - **Training environment**: Models trained locally via `train_model.py`
 - **Controlled execution**: Only in development/CI environments
-- **No user input**: Model path is hardcoded (`models/iris_classifier.skops`)
+- **No user input**: Model path is hardcoded (`services/api/models/iris_classifier.skops`)
 - **No external models**: Never load models from untrusted sources
 
 ### Security Model Summary

@@ -1,0 +1,15 @@
+# Example AWS configuration for direnv
+# Copy this file to .envrc and customize for your AWS profile
+#
+# Usage:
+#   1. Copy: cp .envrc.example .envrc
+#   2. Edit: Update AWS_PROFILE and AWS_REGION
+#   3. Allow: direnv allow
+#
+# Security: .envrc is gitignored and requires explicit approval via 'direnv allow'
+
+# export AWS_PROFILE=your-profile-name
+# export AWS_REGION=us-west-2
+
+# Optional: Add visual confirmation
+# echo "🔧 AWS_PROFILE set to: your-profile-name"

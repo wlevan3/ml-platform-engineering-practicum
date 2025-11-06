@@ -122,7 +122,7 @@ sonar.python.version=3.13
 sonar.sources=app/
 sonar.tests=tests/
 sonar.python.coverage.reportPaths=coverage.xml
-sonar.exclusions=**/__pycache__/**,**/models/**,**/.venv/**
+sonar.exclusions=**/__pycache__/**,**/services/api/models/**,**/.venv/**
 sonar.sourceEncoding=UTF-8
 ```
 
@@ -135,7 +135,7 @@ python_files = test_*.py
 
 [coverage:run]
 source = app
-omit = tests/*,.venv/*,models/**,**/__pycache__/*
+omit = tests/*,.venv/*,services/api/models/**,**/__pycache__/*
 
 [coverage:report]
 show_missing = True

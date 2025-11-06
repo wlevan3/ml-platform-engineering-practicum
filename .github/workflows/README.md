@@ -87,8 +87,8 @@ gh workflow run eks-deploy.yml -f action=destroy
 
 **Related Files**:
 
-- `scripts/bootstrap-eks-backend.sh` - Backend setup script
-- `terraform/environments/dev/` - Terraform configurations
+- `platform/scripts/bootstrap-eks-backend.sh` - Backend setup script
+- `infra/aws-core/terraform/environments/dev/` - Terraform configurations
 - `docs/terraform/operations/DEPLOYMENT_GUIDE.md` - Detailed deployment guide
 
 ---
@@ -304,7 +304,7 @@ gh run download <run-id>
 
 ```bash
 # Bootstrap EKS backend (one-time setup)
-./scripts/bootstrap-eks-backend.sh dev
+./platform/scripts/bootstrap-eks-backend.sh dev
 
 # Deploy EKS infrastructure
 gh workflow run eks-deploy.yml -f action=deploy
@@ -400,7 +400,7 @@ terraform force-unlock <lock-id>
 Check conditional expressions:
 
 - Terraform jobs require `*.tf` file changes
-- Kubernetes jobs require `k8s/*.yaml` changes
+- Kubernetes jobs require `clusters/dev/bootstrap/k8s-manifests/*.yaml` changes
 - Python jobs require `*.py` file changes
 
 ---

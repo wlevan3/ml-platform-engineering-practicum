@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
-from app.security import calculate_file_hash
+from services.api.security import calculate_file_hash
 
 
 def train_model() -> None:
@@ -46,8 +46,8 @@ def train_model() -> None:
     print(classification_report(y_test, y_pred, target_names=iris.target_names))
 
     # Save model
-    models_dir = Path("models")
-    models_dir.mkdir(exist_ok=True)
+    models_dir = Path(__file__).resolve().parent / "services" / "api" / "models"
+    models_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = models_dir / "iris_classifier.skops"
     sio.dump(model, model_path)

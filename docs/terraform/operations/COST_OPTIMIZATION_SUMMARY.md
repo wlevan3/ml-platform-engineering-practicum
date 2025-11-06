@@ -18,9 +18,9 @@ Three cost-saving optimizations have been implemented to reduce AWS spending whi
 
 **Files Modified**:
 
-- `terraform/environments/dev/variables.tf` - Added `use_spot_instances` and `spot_max_price` variables
-- `terraform/environments/dev/main.tf` - Modified EKS node group to support spot instances
-- `k8s/deployment.yaml` - Added pod anti-affinity for high availability
+- `infra/aws-core/terraform/environments/dev/variables.tf` - Added `use_spot_instances` and `spot_max_price` variables
+- `infra/aws-core/terraform/environments/dev/main.tf` - Modified EKS node group to support spot instances
+- `clusters/dev/bootstrap/k8s-manifests/deployment.yaml` - Added pod anti-affinity for high availability
 
 **Key Configuration**:
 
@@ -68,7 +68,7 @@ To verify spot instances are active:
 
 ```bash
 # Deploy infrastructure
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform apply  # use_spot_instances=true by default
 
 # Verify nodes are spot instances
@@ -93,7 +93,7 @@ terraform apply
 
 ### Documentation
 
-- **terraform/environments/dev/SPOT_INSTANCES.md** - Comprehensive spot instance guide
+- **infra/aws-core/terraform/environments/dev/SPOT_INSTANCES.md** - Comprehensive spot instance guide
 - Covers: Configuration, monitoring, troubleshooting, cost analysis
 
 ---
@@ -135,7 +135,7 @@ terraform apply
 
 ```bash
 # Deploy to local k3d cluster (30 seconds)
-./scripts/deploy-local-k3d.sh
+./platform/scripts/deploy-local-k3d.sh
 
 # Service accessible at http://localhost:8000
 curl http://localhost:8000/health/ready
@@ -148,7 +148,7 @@ k3d cluster stop ml-platform-dev
 
 ```bash
 # Test AWS-specific features (ALB, ECR, IAM)
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform apply  # 15-20 min
 # ... test AWS integrations ...
 ./destroy-eks.sh  # 12-15 min
@@ -179,7 +179,7 @@ brew install k3d  # macOS
 curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash  # Linux
 
 # Deploy
-./scripts/deploy-local-k3d.sh
+./platform/scripts/deploy-local-k3d.sh
 ```
 
 ### Documentation - Local Development
@@ -216,11 +216,11 @@ This optimization prevents the **biggest cost risk**: Forgetting to destroy EKS 
 
 **Files to Create**:
 
-- `terraform/modules/auto-shutdown/` - Reusable module
+- `infra/aws-core/terraform/modules/auto-shutdown/` - Reusable module
   - `main.tf` - Lambda, EventBridge, Step Functions, IAM
   - `lambda/idle_detector.py` - Idle detection logic
   - `lambda/terraform_destroyer.py` - Trigger terraform destroy
-- `terraform/environments/dev/auto_shutdown.tf` - Module integration
+- `infra/aws-core/terraform/environments/dev/auto_shutdown.tf` - Module integration
 
 ### Cost Impact - Auto-Shutdown Lambda
 
@@ -328,7 +328,7 @@ Auto-shutdown prevents this risk entirely.
 
 ```bash
 # 1. Deploy with spot instances
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform apply  # use_spot_instances defaults to true
 
 # 2. Verify spot instances
@@ -349,7 +349,7 @@ curl http://${ALB_DNS}/health/ready
 
 ```bash
 # 1. Deploy to k3d
-./scripts/deploy-local-k3d.sh
+./platform/scripts/deploy-local-k3d.sh
 
 # 2. Test endpoints
 curl http://localhost:8000/health/ready
@@ -358,11 +358,11 @@ curl -X POST http://localhost:8000/predict \
   -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
 
 # 3. Measure iteration speed
-time ./scripts/deploy-local-k3d.sh
+time ./platform/scripts/deploy-local-k3d.sh
 # Expected: ~30 seconds
 
 # 4. Compare with EKS
-time (terraform apply && kubectl apply -f k8s/)
+time (terraform apply && kubectl apply -f clusters/dev/bootstrap/k8s-manifests/)
 # Expected: ~20 minutes (40x slower)
 ```
 
@@ -376,7 +376,7 @@ time (terraform apply && kubectl apply -f k8s/)
 
    ```bash
    brew install k3d
-   ./scripts/deploy-local-k3d.sh
+   ./platform/scripts/deploy-local-k3d.sh
    ```
 
 2. **Verify spot instances are working**
@@ -452,7 +452,7 @@ time (terraform apply && kubectl apply -f k8s/)
 
 ### Spot Instances Not Working?
 
-See `terraform/environments/dev/SPOT_INSTANCES.md` troubleshooting section.
+See `infra/aws-core/terraform/environments/dev/SPOT_INSTANCES.md` troubleshooting section.
 
 ### k3d Issues?
 
@@ -465,7 +465,7 @@ See `docs/LOCAL_VS_CLOUD.md` troubleshooting section.
 terraform apply -var="use_spot_instances=false"
 
 # Keep using Minikube instead of k3d
-./scripts/deploy-to-minikube.sh
+./platform/scripts/deploy-to-minikube.sh
 ```
 
 ---

@@ -46,7 +46,7 @@ echo "=========================================="
 echo "Step 1: Training model"
 echo "=========================================="
 
-if [ ! -f "models/iris_classifier.skops" ]; then
+if [ ! -f "services/api/models/iris_classifier.skops" ]; then
 	echo "Training model..."
 	python3 train_model.py
 	echo "✅ Model trained successfully"

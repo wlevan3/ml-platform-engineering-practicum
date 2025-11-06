@@ -48,7 +48,7 @@ joblib.load('malicious.joblib')  # ← Credentials stolen!
 ### Current Implementation (app/model.py:42)
 
 ```python
-self.model = joblib.load(self.model_path)  # models/iris_classifier.joblib
+self.model = joblib.load(self.model_path)  # services/api/models/iris_classifier.joblib
 ```
 
 **Risk Profile: LOW** (not zero)

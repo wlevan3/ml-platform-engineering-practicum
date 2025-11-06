@@ -87,7 +87,7 @@ pip install -r requirements.txt
 
 # Train model and run API
 python train_model.py
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Alternative:** Use `uv` package manager - see [CLAUDE.md](CLAUDE.md) for details.
@@ -116,7 +116,7 @@ minikube start --cpus=4 --memory=6144 --driver=docker
 # Build, load, and deploy
 docker build -t ml-platform-api:v1.0.0 .
 minikube image load ml-platform-api:v1.0.0
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Test
 minikube service ml-platform-api --url  # Get service URL
@@ -124,6 +124,29 @@ curl <SERVICE_URL>/health/ready
 ```
 
 **All Kubernetes commands:** `docs/QUICK_REFERENCE.md` (deployment, validation, logs, troubleshooting)
+
+## 🧭 Monorepo Layout
+
+```text
+infra/
+├── aws-core/terraform/     # Foundational AWS infrastructure (VPC, EKS, ECR)
+└── policies/               # Policy-as-code (Sentinel, OPA/Rego, Checkov)
+clusters/
+└── dev/bootstrap/          # GitOps entrypoint, bootstrap manifests (app-of-apps ready)
+services/
+└── api/                    # FastAPI inference service and packaged model assets
+platform/
+└── scripts/                # Shared automation (bootstrap, local deploy, diagnostics)
+docs/                       # Design docs, runbooks, and how-tos
+tests/                      # Automated tests (unit/integration)
+```
+
+Each top-level area owns a distinct concern:
+
+- **infra/** – cloud resource definitions and guardrail policies
+- **clusters/** – desired Kubernetes state tracked via GitOps (Argo CD app-of-apps)
+- **services/** – product/application code, Dockerfiles, ML assets
+- **platform/** – reusable tooling shared across teams (CLI helpers, bootstrap scripts)
 
 ## 📚 Documentation
 

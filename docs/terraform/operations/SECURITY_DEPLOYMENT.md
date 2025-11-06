@@ -4,7 +4,7 @@ Quick guide to deploy foundational security services (CloudTrail, GuardDuty, Bud
 
 ## Prerequisites
 
-✅ Terraform backend bootstrapped (`terraform/scripts/bootstrap-backend.sh`)
+✅ Terraform backend bootstrapped (`infra/aws-core/terraform/scripts/bootstrap-backend.sh`)
 ✅ AWS CLI configured with KodeKloud profile
 ✅ Your email address ready
 
@@ -23,7 +23,7 @@ variable "budget_alert_email" {
 ### 2. Deploy Security Module
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Review what will be created
 terraform plan
@@ -198,7 +198,7 @@ terraform destroy -target=module.security
 
 ## References
 
-- Full module documentation: `terraform/modules/security/README.md`
+- Full module documentation: `infra/aws-core/terraform/modules/security/README.md`
 - CloudTrail logs location: `s3://ml-platform-engineering-practicum-cloudtrail-logs-<YOUR_ACCOUNT_ID>/`
 - GuardDuty console: <https://console.aws.amazon.com/guardduty/>
 - Budgets console: <https://console.aws.amazon.com/billing/home#/budgets>

@@ -176,7 +176,7 @@ spec:
 **Testing:**
 
 ```bash
-kubectl apply -f k8s/deployment.yaml    # Signed image → succeeds
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/deployment.yaml    # Signed image → succeeds
 kubectl run test --image=ml-platform-api:unsigned  # Unsigned → rejected
 ```
 

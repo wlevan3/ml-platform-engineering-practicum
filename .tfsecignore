@@ -1,0 +1,1 @@
+aws-eks-encrypt-secrets:module.eks_cluster # EKS already encrypts secrets with AWS-owned KMS keys; CMKs are prohibited by policy.

@@ -6,7 +6,7 @@
 ## Quick Answers
 
 **Common Questions**:
-- "How do I run the API?" → `uvicorn app.main:app --reload`
+- "How do I run the API?" → `uvicorn services.api.main:app --reload`
 - "How do I run tests?" → `pytest` (with coverage: `pytest --cov=app`)
 - "What Python version?" → Python 3.13 + uv package manager
 - "How do I commit code?" → Conventional commits: `<type>(<scope>): <subject>`
@@ -127,7 +127,7 @@ ml-platform-engineering-practicum/
 │   ├── AWS_OIDC_SETUP.md
 │   ├── SONARCLOUD_QUALITY_STANDARDS.md
 │   └── [other specialized docs]
-├── models/                # ML model artifacts (.skops format)
+├── services/api/models/   # ML model artifacts (.skops format)
 ├── tests/                 # Test suite (pytest)
 └── .github/
     └── workflows/         # CI/CD pipelines

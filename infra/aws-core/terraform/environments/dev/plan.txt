@@ -1,0 +1,1358 @@
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  + create
+ <= read (data resources)
+
+Terraform planned the following actions, but then encountered a problem:
+
+  # module.container_registry.aws_ecr_lifecycle_policy.this will be created
+  + resource "aws_ecr_lifecycle_policy" "this" {
+      + id          = (known after apply)
+      + policy      = jsonencode(
+            {
+              + rules = [
+                  + {
+                      + action       = {
+                          + type = "expire"
+                        }
+                      + description  = "Keep last 10 tagged images"
+                      + rulePriority = 1
+                      + selection    = {
+                          + countNumber   = 10
+                          + countType     = "imageCountMoreThan"
+                          + tagPrefixList = [
+                              + "v",
+                            ]
+                          + tagStatus     = "tagged"
+                        }
+                    },
+                  + {
+                      + action       = {
+                          + type = "expire"
+                        }
+                      + description  = "Remove untagged images after 7 days"
+                      + rulePriority = 2
+                      + selection    = {
+                          + countNumber = 7
+                          + countType   = "sinceImagePushed"
+                          + countUnit   = "days"
+                          + tagStatus   = "untagged"
+                        }
+                    },
+                ]
+            }
+        )
+      + region      = "us-west-2"
+      + registry_id = (known after apply)
+      + repository  = "ml-platform-api"
+    }
+
+  # module.container_registry.aws_ecr_repository.this will be created
+  + resource "aws_ecr_repository" "this" {
+      + arn                  = (known after apply)
+      + id                   = (known after apply)
+      + image_tag_mutability = "IMMUTABLE"
+      + name                 = "ml-platform-api"
+      + region               = "us-west-2"
+      + registry_id          = (known after apply)
+      + repository_url       = (known after apply)
+      + tags                 = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-api"
+        }
+      + tags_all             = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-api"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+
+      + encryption_configuration {
+          + encryption_type = "KMS"
+          + kms_key         = (known after apply)
+        }
+
+      + image_scanning_configuration {
+          + scan_on_push = true
+        }
+    }
+
+  # module.eks_cluster.module.eks.data.aws_caller_identity.current[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_caller_identity" "current" {
+      + account_id = (known after apply)
+      + arn        = (known after apply)
+      + id         = (known after apply)
+      + user_id    = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_eks_addon_version.this["aws-ebs-csi-driver"] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_eks_addon_version" "this" {
+      + addon_name         = "aws-ebs-csi-driver"
+      + id                 = (known after apply)
+      + kubernetes_version = "1.34"
+      + most_recent        = true
+      + region             = (known after apply)
+      + version            = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_eks_addon_version.this["coredns"] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_eks_addon_version" "this" {
+      + addon_name         = "coredns"
+      + id                 = (known after apply)
+      + kubernetes_version = "1.34"
+      + most_recent        = true
+      + region             = (known after apply)
+      + version            = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_eks_addon_version.this["kube-proxy"] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_eks_addon_version" "this" {
+      + addon_name         = "kube-proxy"
+      + id                 = (known after apply)
+      + kubernetes_version = "1.34"
+      + most_recent        = true
+      + region             = (known after apply)
+      + version            = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_eks_addon_version.this["vpc-cni"] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_eks_addon_version" "this" {
+      + addon_name         = "vpc-cni"
+      + id                 = (known after apply)
+      + kubernetes_version = "1.34"
+      + most_recent        = true
+      + region             = (known after apply)
+      + version            = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_iam_policy_document.assume_role_policy[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_iam_policy_document" "assume_role_policy" {
+      + id            = (known after apply)
+      + json          = (known after apply)
+      + minified_json = (known after apply)
+
+      + statement {
+          + actions = [
+              + "sts:AssumeRole",
+              + "sts:TagSession",
+            ]
+          + sid     = "EKSClusterAssumeRole"
+
+          + principals {
+              + identifiers = [
+                  + "eks.amazonaws.com",
+                ]
+              + type        = "Service"
+            }
+        }
+    }
+
+  # module.eks_cluster.module.eks.data.aws_iam_session_context.current[0] will be read during apply
+  # (config refers to values not yet known)
+ <= data "aws_iam_session_context" "current" {
+      + arn          = (known after apply)
+      + id           = (known after apply)
+      + issuer_arn   = (known after apply)
+      + issuer_id    = (known after apply)
+      + issuer_name  = (known after apply)
+      + session_name = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.aws_partition.current[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_partition" "current" {
+      + dns_suffix         = (known after apply)
+      + id                 = (known after apply)
+      + partition          = (known after apply)
+      + reverse_dns_prefix = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.data.tls_certificate.this[0] will be read during apply
+  # (config refers to values not yet known)
+ <= data "tls_certificate" "this" {
+      + certificates = (known after apply)
+      + id           = (known after apply)
+      + url          = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_cloudwatch_log_group.this[0] will be created
+  + resource "aws_cloudwatch_log_group" "this" {
+      + arn               = (known after apply)
+      + id                = (known after apply)
+      + log_group_class   = (known after apply)
+      + name              = "/aws/eks/ml-platform-dev/cluster"
+      + name_prefix       = (known after apply)
+      + region            = "us-west-2"
+      + retention_in_days = 90
+      + skip_destroy      = false
+      + tags              = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "/aws/eks/ml-platform-dev/cluster"
+        }
+      + tags_all          = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "/aws/eks/ml-platform-dev/cluster"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+    }
+
+  # module.eks_cluster.module.eks.aws_ec2_tag.cluster_primary_security_group["Cluster"] will be created
+  + resource "aws_ec2_tag" "cluster_primary_security_group" {
+      + id          = (known after apply)
+      + key         = "Cluster"
+      + region      = "us-west-2"
+      + resource_id = (known after apply)
+      + value       = "ml-platform-dev"
+    }
+
+  # module.eks_cluster.module.eks.aws_ec2_tag.cluster_primary_security_group["Environment"] will be created
+  + resource "aws_ec2_tag" "cluster_primary_security_group" {
+      + id          = (known after apply)
+      + key         = "Environment"
+      + region      = "us-west-2"
+      + resource_id = (known after apply)
+      + value       = "dev"
+    }
+
+  # module.eks_cluster.module.eks.aws_eks_cluster.this[0] will be created
+  + resource "aws_eks_cluster" "this" {
+      + arn                           = (known after apply)
+      + bootstrap_self_managed_addons = false
+      + certificate_authority         = (known after apply)
+      + cluster_id                    = (known after apply)
+      + created_at                    = (known after apply)
+      + deletion_protection           = (known after apply)
+      + enabled_cluster_log_types     = [
+          + "api",
+          + "audit",
+          + "authenticator",
+        ]
+      + endpoint                      = (known after apply)
+      + id                            = (known after apply)
+      + identity                      = (known after apply)
+      + name                          = "ml-platform-dev"
+      + platform_version              = (known after apply)
+      + region                        = "us-west-2"
+      + role_arn                      = (known after apply)
+      + status                        = (known after apply)
+      + tags                          = {
+          + "Cluster"               = "ml-platform-dev"
+          + "Environment"           = "dev"
+          + "terraform-aws-modules" = "eks"
+        }
+      + tags_all                      = {
+          + "Cluster"               = "ml-platform-dev"
+          + "Environment"           = "dev"
+          + "ManagedBy"             = "Terraform"
+          + "Owner"                 = "wlevan3"
+          + "Project"               = "ml-platform-engineering-practicum"
+          + "terraform-aws-modules" = "eks"
+        }
+      + version                       = "1.34"
+
+      + access_config {
+          + authentication_mode                         = "API_AND_CONFIG_MAP"
+          + bootstrap_cluster_creator_admin_permissions = false
+        }
+
+      + compute_config (known after apply)
+
+      + kubernetes_network_config {
+          + ip_family         = "ipv4"
+          + service_ipv4_cidr = (known after apply)
+          + service_ipv6_cidr = (known after apply)
+
+          + elastic_load_balancing (known after apply)
+        }
+
+      + storage_config (known after apply)
+
+      + upgrade_policy (known after apply)
+
+      + vpc_config {
+          + cluster_security_group_id = (known after apply)
+          + endpoint_private_access   = true
+          + endpoint_public_access    = true
+          + public_access_cidrs       = [
+              + "0.0.0.0/0",
+            ]
+          + security_group_ids        = (known after apply)
+          + subnet_ids                = (known after apply)
+          + vpc_id                    = (known after apply)
+        }
+    }
+
+  # module.eks_cluster.module.eks.aws_iam_openid_connect_provider.oidc_provider[0] will be created
+  + resource "aws_iam_openid_connect_provider" "oidc_provider" {
+      + arn             = (known after apply)
+      + client_id_list  = [
+          + "sts.amazonaws.com",
+        ]
+      + id              = (known after apply)
+      + tags            = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-eks-irsa"
+        }
+      + tags_all        = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-eks-irsa"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + thumbprint_list = (known after apply)
+      + url             = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_iam_role.this[0] will be created
+  + resource "aws_iam_role" "this" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = (known after apply)
+      + create_date           = (known after apply)
+      + force_detach_policies = true
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = (known after apply)
+      + name_prefix           = "ml-platform-dev-cluster-"
+      + path                  = "/"
+      + tags                  = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+        }
+      + tags_all              = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_iam_role_policy_attachment.this["AmazonEKSClusterPolicy"] will be created
+  + resource "aws_iam_role_policy_attachment" "this" {
+      + id         = (known after apply)
+      + policy_arn = (known after apply)
+      + role       = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group.cluster[0] will be created
+  + resource "aws_security_group" "cluster" {
+      + arn                    = (known after apply)
+      + description            = "EKS cluster security group"
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = (known after apply)
+      + name_prefix            = "ml-platform-dev-cluster-"
+      + owner_id               = (known after apply)
+      + region                 = "us-west-2"
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-cluster"
+        }
+      + tags_all               = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-cluster"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group.node[0] will be created
+  + resource "aws_security_group" "node" {
+      + arn                    = (known after apply)
+      + description            = "EKS node shared security group"
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = (known after apply)
+      + name_prefix            = "ml-platform-dev-node-"
+      + owner_id               = (known after apply)
+      + region                 = "us-west-2"
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-node"
+          + "kubernetes.io/cluster/ml-platform-dev" = "owned"
+        }
+      + tags_all               = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-node"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "owned"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.cluster["egress_nodes_ephemeral_ports_tcp"] will be created
+  + resource "aws_security_group_rule" "cluster" {
+      + description              = "To node 1025-65535"
+      + from_port                = 1025
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 65535
+      + type                     = "egress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.cluster["ingress_nodes_443"] will be created
+  + resource "aws_security_group_rule" "cluster" {
+      + description              = "Node groups to cluster API"
+      + from_port                = 443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["egress_all"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + cidr_blocks              = [
+          + "0.0.0.0/0",
+        ]
+      + description              = "Allow all egress"
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "egress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_10251_webhook"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node 10251/tcp webhook"
+      + from_port                = 10251
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 10251
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_443"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node groups"
+      + from_port                = 443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_4443_webhook"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node 4443/tcp webhook"
+      + from_port                = 4443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 4443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_6443_webhook"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node 6443/tcp webhook"
+      + from_port                = 6443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 6443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_8443_webhook"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node 8443/tcp webhook"
+      + from_port                = 8443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 8443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_9443_webhook"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node 9443/tcp webhook"
+      + from_port                = 9443
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 9443
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_kubelet"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster API to node kubelets"
+      + from_port                = 10250
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 10250
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_cluster_to_node_all_traffic"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Cluster to node all traffic"
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = false
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_nodes_ephemeral"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Node to node ingress on ephemeral ports"
+      + from_port                = 1025
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = true
+      + source_security_group_id = (known after apply)
+      + to_port                  = 65535
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_self_all"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Node to node all ports/protocols"
+      + from_port                = 0
+      + id                       = (known after apply)
+      + protocol                 = "-1"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = true
+      + source_security_group_id = (known after apply)
+      + to_port                  = 0
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_self_coredns_tcp"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Node to node CoreDNS"
+      + from_port                = 53
+      + id                       = (known after apply)
+      + protocol                 = "tcp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = true
+      + source_security_group_id = (known after apply)
+      + to_port                  = 53
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.aws_security_group_rule.node["ingress_self_coredns_udp"] will be created
+  + resource "aws_security_group_rule" "node" {
+      + description              = "Node to node CoreDNS UDP"
+      + from_port                = 53
+      + id                       = (known after apply)
+      + protocol                 = "udp"
+      + region                   = "us-west-2"
+      + security_group_id        = (known after apply)
+      + security_group_rule_id   = (known after apply)
+      + self                     = true
+      + source_security_group_id = (known after apply)
+      + to_port                  = 53
+      + type                     = "ingress"
+    }
+
+  # module.eks_cluster.module.eks.time_sleep.this[0] will be created
+  + resource "time_sleep" "this" {
+      + create_duration = "30s"
+      + id              = (known after apply)
+      + triggers        = {
+          + "certificate_authority_data" = (known after apply)
+          + "endpoint"                   = (known after apply)
+          + "kubernetes_version"         = "1.34"
+          + "name"                       = (known after apply)
+          + "service_cidr"               = (known after apply)
+        }
+    }
+
+  # module.networking.module.vpc.aws_default_network_acl.this[0] will be created
+  + resource "aws_default_network_acl" "this" {
+      + arn                    = (known after apply)
+      + default_network_acl_id = (known after apply)
+      + id                     = (known after apply)
+      + owner_id               = (known after apply)
+      + region                 = "us-west-2"
+      + tags                   = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-default"
+        }
+      + tags_all               = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-default"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id                 = (known after apply)
+
+      + egress {
+          + action          = "allow"
+          + from_port       = 0
+          + ipv6_cidr_block = "::/0"
+          + protocol        = "-1"
+          + rule_no         = 101
+          + to_port         = 0
+            # (1 unchanged attribute hidden)
+        }
+      + egress {
+          + action          = "allow"
+          + cidr_block      = "0.0.0.0/0"
+          + from_port       = 0
+          + protocol        = "-1"
+          + rule_no         = 100
+          + to_port         = 0
+            # (1 unchanged attribute hidden)
+        }
+
+      + ingress {
+          + action          = "allow"
+          + from_port       = 0
+          + ipv6_cidr_block = "::/0"
+          + protocol        = "-1"
+          + rule_no         = 101
+          + to_port         = 0
+            # (1 unchanged attribute hidden)
+        }
+      + ingress {
+          + action          = "allow"
+          + cidr_block      = "0.0.0.0/0"
+          + from_port       = 0
+          + protocol        = "-1"
+          + rule_no         = 100
+          + to_port         = 0
+            # (1 unchanged attribute hidden)
+        }
+    }
+
+  # module.networking.module.vpc.aws_default_route_table.default[0] will be created
+  + resource "aws_default_route_table" "default" {
+      + arn                    = (known after apply)
+      + default_route_table_id = (known after apply)
+      + id                     = (known after apply)
+      + owner_id               = (known after apply)
+      + region                 = "us-west-2"
+      + route                  = (known after apply)
+      + tags                   = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-default"
+        }
+      + tags_all               = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-default"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id                 = (known after apply)
+
+      + timeouts {
+          + create = "5m"
+          + update = "5m"
+        }
+    }
+
+  # module.networking.module.vpc.aws_default_security_group.this[0] will be created
+  + resource "aws_default_security_group" "this" {
+      + arn                    = (known after apply)
+      + description            = (known after apply)
+      + egress                 = (known after apply)
+      + id                     = (known after apply)
+      + ingress                = (known after apply)
+      + name                   = (known after apply)
+      + name_prefix            = (known after apply)
+      + owner_id               = (known after apply)
+      + region                 = "us-west-2"
+      + revoke_rules_on_delete = false
+      + tags                   = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-default"
+        }
+      + tags_all               = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-default"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id                 = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_eip.nat[0] will be created
+  + resource "aws_eip" "nat" {
+      + allocation_id        = (known after apply)
+      + arn                  = (known after apply)
+      + association_id       = (known after apply)
+      + carrier_ip           = (known after apply)
+      + customer_owned_ip    = (known after apply)
+      + domain               = "vpc"
+      + id                   = (known after apply)
+      + instance             = (known after apply)
+      + ipam_pool_id         = (known after apply)
+      + network_border_group = (known after apply)
+      + network_interface    = (known after apply)
+      + private_dns          = (known after apply)
+      + private_ip           = (known after apply)
+      + ptr_record           = (known after apply)
+      + public_dns           = (known after apply)
+      + public_ip            = (known after apply)
+      + public_ipv4_pool     = (known after apply)
+      + region               = "us-west-2"
+      + tags                 = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-us-west-2a"
+        }
+      + tags_all             = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-us-west-2a"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+    }
+
+  # module.networking.module.vpc.aws_internet_gateway.this[0] will be created
+  + resource "aws_internet_gateway" "this" {
+      + arn      = (known after apply)
+      + id       = (known after apply)
+      + owner_id = (known after apply)
+      + region   = "us-west-2"
+      + tags     = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc"
+        }
+      + tags_all = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id   = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_nat_gateway.this[0] will be created
+  + resource "aws_nat_gateway" "this" {
+      + allocation_id                      = (known after apply)
+      + association_id                     = (known after apply)
+      + connectivity_type                  = "public"
+      + id                                 = (known after apply)
+      + network_interface_id               = (known after apply)
+      + private_ip                         = (known after apply)
+      + public_ip                          = (known after apply)
+      + region                             = "us-west-2"
+      + secondary_allocation_ids           = (known after apply)
+      + secondary_private_ip_address_count = (known after apply)
+      + secondary_private_ip_addresses     = (known after apply)
+      + subnet_id                          = (known after apply)
+      + tags                               = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-us-west-2a"
+        }
+      + tags_all                           = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-us-west-2a"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+    }
+
+  # module.networking.module.vpc.aws_route.private_nat_gateway[0] will be created
+  + resource "aws_route" "private_nat_gateway" {
+      + destination_cidr_block = "0.0.0.0/0"
+      + id                     = (known after apply)
+      + instance_id            = (known after apply)
+      + instance_owner_id      = (known after apply)
+      + nat_gateway_id         = (known after apply)
+      + network_interface_id   = (known after apply)
+      + origin                 = (known after apply)
+      + region                 = "us-west-2"
+      + route_table_id         = (known after apply)
+      + state                  = (known after apply)
+
+      + timeouts {
+          + create = "5m"
+        }
+    }
+
+  # module.networking.module.vpc.aws_route.public_internet_gateway[0] will be created
+  + resource "aws_route" "public_internet_gateway" {
+      + destination_cidr_block = "0.0.0.0/0"
+      + gateway_id             = (known after apply)
+      + id                     = (known after apply)
+      + instance_id            = (known after apply)
+      + instance_owner_id      = (known after apply)
+      + network_interface_id   = (known after apply)
+      + origin                 = (known after apply)
+      + region                 = "us-west-2"
+      + route_table_id         = (known after apply)
+      + state                  = (known after apply)
+
+      + timeouts {
+          + create = "5m"
+        }
+    }
+
+  # module.networking.module.vpc.aws_route_table.private[0] will be created
+  + resource "aws_route_table" "private" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + region           = "us-west-2"
+      + route            = (known after apply)
+      + tags             = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-private"
+        }
+      + tags_all         = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-private"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table.public[0] will be created
+  + resource "aws_route_table" "public" {
+      + arn              = (known after apply)
+      + id               = (known after apply)
+      + owner_id         = (known after apply)
+      + propagating_vgws = (known after apply)
+      + region           = "us-west-2"
+      + route            = (known after apply)
+      + tags             = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc-public"
+        }
+      + tags_all         = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc-public"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+      + vpc_id           = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.private[0] will be created
+  + resource "aws_route_table_association" "private" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.private[1] will be created
+  + resource "aws_route_table_association" "private" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.private[2] will be created
+  + resource "aws_route_table_association" "private" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.public[0] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.public[1] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_route_table_association.public[2] will be created
+  + resource "aws_route_table_association" "public" {
+      + id             = (known after apply)
+      + region         = "us-west-2"
+      + route_table_id = (known after apply)
+      + subnet_id      = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.private[0] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.1.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2a"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2a"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.private[1] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.2.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2b"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2b"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.private[2] will be created
+  + resource "aws_subnet" "private" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2c"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.3.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2c"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-private-us-west-2c"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/internal-elb"       = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.public[0] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2a"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.101.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2a"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2a"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.public[1] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2b"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.102.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2b"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2b"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_subnet.public[2] will be created
+  + resource "aws_subnet" "public" {
+      + arn                                            = (known after apply)
+      + assign_ipv6_address_on_creation                = false
+      + availability_zone                              = "us-west-2c"
+      + availability_zone_id                           = (known after apply)
+      + cidr_block                                     = "10.0.103.0/24"
+      + enable_dns64                                   = false
+      + enable_resource_name_dns_a_record_on_launch    = false
+      + enable_resource_name_dns_aaaa_record_on_launch = false
+      + id                                             = (known after apply)
+      + ipv6_cidr_block_association_id                 = (known after apply)
+      + ipv6_native                                    = false
+      + map_public_ip_on_launch                        = false
+      + owner_id                                       = (known after apply)
+      + private_dns_hostname_type_on_launch            = (known after apply)
+      + region                                         = "us-west-2"
+      + tags                                           = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2c"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + tags_all                                       = {
+          + "Cluster"                               = "ml-platform-dev"
+          + "Environment"                           = "dev"
+          + "ManagedBy"                             = "Terraform"
+          + "Name"                                  = "ml-platform-dev-vpc-public-us-west-2c"
+          + "Owner"                                 = "wlevan3"
+          + "Project"                               = "ml-platform-engineering-practicum"
+          + "kubernetes.io/cluster/ml-platform-dev" = "shared"
+          + "kubernetes.io/role/elb"                = "1"
+        }
+      + vpc_id                                         = (known after apply)
+    }
+
+  # module.networking.module.vpc.aws_vpc.this[0] will be created
+  + resource "aws_vpc" "this" {
+      + arn                                  = (known after apply)
+      + cidr_block                           = "10.0.0.0/16"
+      + default_network_acl_id               = (known after apply)
+      + default_route_table_id               = (known after apply)
+      + default_security_group_id            = (known after apply)
+      + dhcp_options_id                      = (known after apply)
+      + enable_dns_hostnames                 = true
+      + enable_dns_support                   = true
+      + enable_network_address_usage_metrics = (known after apply)
+      + id                                   = (known after apply)
+      + instance_tenancy                     = "default"
+      + ipv6_association_id                  = (known after apply)
+      + ipv6_cidr_block                      = (known after apply)
+      + ipv6_cidr_block_network_border_group = (known after apply)
+      + main_route_table_id                  = (known after apply)
+      + owner_id                             = (known after apply)
+      + region                               = "us-west-2"
+      + tags                                 = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "Name"        = "ml-platform-dev-vpc"
+        }
+      + tags_all                             = {
+          + "Cluster"     = "ml-platform-dev"
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "ml-platform-dev-vpc"
+          + "Owner"       = "wlevan3"
+          + "Project"     = "ml-platform-engineering-practicum"
+        }
+    }
+
+  # module.eks_cluster.module.eks.module.eks_managed_node_group["main"].data.aws_iam_policy_document.assume_role_policy[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_iam_policy_document" "assume_role_policy" {
+      + id            = (known after apply)
+      + json          = (known after apply)
+      + minified_json = (known after apply)
+
+      + statement {
+          + actions = [
+              + "sts:AssumeRole",
+            ]
+          + sid     = "EKSNodeAssumeRole"
+
+          + principals {
+              + identifiers = [
+                  + "ec2.amazonaws.com",
+                ]
+              + type        = "Service"
+            }
+        }
+    }
+
+  # module.eks_cluster.module.eks.module.eks_managed_node_group["main"].data.aws_ssm_parameter.ami[0] will be read during apply
+  # (depends on a resource or a module with changes pending)
+ <= data "aws_ssm_parameter" "ami" {
+      + arn            = (known after apply)
+      + id             = (known after apply)
+      + insecure_value = (known after apply)
+      + name           = "/aws/service/eks/optimized-ami/1.34/amazon-linux-2/recommended/release_version"
+      + region         = (known after apply)
+      + type           = (known after apply)
+      + value          = (sensitive value)
+      + version        = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.module.eks_managed_node_group["main"].aws_iam_role.this[0] will be created
+  + resource "aws_iam_role" "this" {
+      + arn                   = (known after apply)
+      + assume_role_policy    = (known after apply)
+      + create_date           = (known after apply)
+      + description           = "EKS managed node group IAM role"
+      + force_detach_policies = true
+      + id                    = (known after apply)
+      + managed_policy_arns   = (known after apply)
+      + max_session_duration  = 3600
+      + name                  = (known after apply)
+      + name_prefix           = "ml-platform-dev-ng-eks-node-group-"
+      + path                  = "/"
+      + tags                  = {
+          + "Cluster"                                                 = "ml-platform-dev"
+          + "Environment"                                             = "dev"
+          + "Name"                                                    = "ml-platform-dev-worker-node"
+          + "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "spot"
+        }
+      + tags_all              = {
+          + "Cluster"                                                 = "ml-platform-dev"
+          + "Environment"                                             = "dev"
+          + "ManagedBy"                                               = "Terraform"
+          + "Name"                                                    = "ml-platform-dev-worker-node"
+          + "Owner"                                                   = "wlevan3"
+          + "Project"                                                 = "ml-platform-engineering-practicum"
+          + "k8s.io/cluster-autoscaler/node-template/label/lifecycle" = "spot"
+        }
+      + unique_id             = (known after apply)
+
+      + inline_policy (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.module.eks_managed_node_group["main"].aws_iam_role_policy_attachment.additional["AmazonSSMManagedInstanceCore"] will be created
+  + resource "aws_iam_role_policy_attachment" "additional" {
+      + id         = (known after apply)
+      + policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+      + role       = (known after apply)
+    }
+
+  # module.eks_cluster.module.eks.module.eks_managed_node_group["main"].module.user_data.null_resource.validate_cluster_service_cidr will be created
+  + resource "null_resource" "validate_cluster_service_cidr" {
+      + id = (known after apply)
+    }
+
+Plan: 53 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + cluster_certificate_authority_data = (sensitive value)
+  + cluster_endpoint                   = (known after apply)
+  + cluster_id                         = (known after apply)
+  + cluster_name                       = (known after apply)
+  + cluster_security_group_id          = (known after apply)
+  + cluster_version                    = "1.34"
+  + ecr_login_command                  = (sensitive value)
+  + ecr_repository_arn                 = (known after apply)
+  + ecr_repository_name                = "ml-platform-api"
+  + ecr_repository_url                 = (known after apply)
+  + guardduty_enabled                  = false
+  + inspector_enabled                  = false
+  + kubeconfig_command                 = "aws eks update-kubeconfig --name ml-platform-dev --region us-west-2"
+  + node_security_group_id             = (known after apply)
+  + oidc_provider_arn                  = (known after apply)
+  + private_subnet_ids                 = [
+      + (known after apply),
+      + (known after apply),
+      + (known after apply),
+    ]
+  + public_subnet_ids                  = [
+      + (known after apply),
+      + (known after apply),
+      + (known after apply),
+    ]
+  + security_hub_enabled               = false
+  + vpc_id                             = (known after apply)

@@ -153,8 +153,8 @@ GitHub Advanced Security integration with automated alerts:
 The following CI jobs run conditionally and are **not** enforced as required checks:
 
 - **Lint and Validate** (markdown linting) - Always runs but allows failures
-- **Terraform Validation** - Only runs if `terraform/` directory exists
-- **Kubernetes Validation** - Only runs if `k8s/` directory exists
+- **Terraform Validation** - Only runs if `infra/aws-core/terraform/` directory exists
+- **Kubernetes Validation** - Only runs if `clusters/dev/bootstrap/k8s-manifests/` directory exists
 - **Python Linting** - Runs but not blocking (Black/Ruff)
 - **Pre-commit Checks** - Runs but not blocking
 
