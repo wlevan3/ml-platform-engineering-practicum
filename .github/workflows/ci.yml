@@ -82,12 +82,70 @@ jobs:
         working-directory: terraform/environments/dev
         run: terraform init
 
-      - name: Terraform Plan
+      - name: Install OPA CLI
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: |
+          OPA_VERSION=v0.67.0
+          curl -L -o opa "https://openpolicyagent.org/downloads/${OPA_VERSION}/opa_linux_amd64_static"
+          chmod +x opa
+          sudo mv opa /usr/local/bin/opa
+
+      - name: Install Sentinel CLI
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: |
+          SENTINEL_VERSION=0.40.0
+          curl -L -o sentinel.zip "https://releases.hashicorp.com/sentinel/${SENTINEL_VERSION}/sentinel_${SENTINEL_VERSION}_linux_amd64.zip"
+          unzip -o sentinel.zip sentinel
+          sudo mv sentinel /usr/local/bin/sentinel
+          rm -f sentinel.zip
+
+      - name: Terraform Plan (binary)
         if: steps.check_terraform.outputs.exists == 'true'
         working-directory: terraform/environments/dev
         run: |
           echo "📋 Running Terraform plan..."
-          terraform plan -no-color | tee plan.txt
+          terraform plan -out plan.tfplan -no-color
+
+      - name: Terraform Show (text)
+        if: steps.check_terraform.outputs.exists == 'true'
+        working-directory: terraform/environments/dev
+        run: |
+          terraform show -no-color plan.tfplan | tee plan.txt
+
+      - name: Evaluate Terraform plan with OPA
+        if: steps.check_terraform.outputs.exists == 'true'
+        working-directory: terraform/environments/dev
+        run: |
+          terraform show -json plan.tfplan > plan.json
+          opa eval \
+            --format json \
+            --data "$GITHUB_WORKSPACE/policy/terraform" \
+            --input plan.json \
+            "data.terraform.kms.deny" > opa_result.json
+          DENY_COUNT=$(jq '[.result[]?.expressions[]?.value[]?] | length' opa_result.json)
+          if [ "$DENY_COUNT" -gt 0 ]; then
+            {
+              echo "## OPA Policy Violations"
+              echo ""
+              echo '```'
+              jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "OPA policy violations detected:"
+            jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
+            exit 1
+          fi
+
+      - name: Generate Sentinel tfplan mock
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: python3 scripts/generate_sentinel_tfplan_mock.py --plan terraform/environments/dev/plan.json --output policy/sentinel/mocks/dev-plan.sentinel
+
+      - name: Evaluate Terraform plan with Sentinel
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: |
+          sentinel apply \
+            -config policy/sentinel/dev.hcl \
+            policy/sentinel/kms.sentinel
 
       - name: Post plan summary
         if: steps.check_terraform.outputs.exists == 'true' && always()
@@ -100,6 +158,11 @@ jobs:
             grep -A 10 "Plan:" plan.txt || echo "No changes detected"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove plan artifacts
+        if: steps.check_terraform.outputs.exists == 'true' && always()
+        run: |
+          rm -f terraform/environments/dev/plan.json policy/sentinel/mocks/dev-plan.sentinel
 
       - name: TFLint
         if: steps.check_terraform.outputs.exists == 'true'

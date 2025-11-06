@@ -2,7 +2,7 @@
 # Creates an Amazon EKS cluster with managed node groups
 
 module "eks" {
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=2cb1fac31b0fc2dd6a236b0c0678df75819c5a3b"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=v20.24.3"
 
   cluster_name    = var.cluster_name
   cluster_version = var.cluster_version
@@ -23,12 +23,9 @@ module "eks" {
   # OIDC provider for service account IAM roles
   enable_irsa = var.enable_irsa
 
-  # Disable aws-auth ConfigMap management to avoid provider dependency cycle
-  # The aws-auth ConfigMap is NOT managed by this module. It must be managed
-  # separately via kubectl, Helm, or GitOps tools (e.g., ArgoCD) to prevent
-  # circular dependencies between AWS and Kubernetes providers.
-  # See: terraform/environments/dev/providers.tf for detailed migration notes.
-  manage_aws_auth_configmap = false
+  # Enforce use of AWS-managed KMS only (no customer-managed CMKs)
+  create_kms_key             = false
+  cluster_encryption_config  = {}
 
   # Cluster addons (automatically managed)
   cluster_addons = var.cluster_addons

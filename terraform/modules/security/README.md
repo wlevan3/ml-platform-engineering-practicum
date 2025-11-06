@@ -188,8 +188,6 @@ For detailed incident response procedures, see: [SECURITY_INCIDENT_RESPONSE.md](
 | aws_securityhub_standards_subscription.foundational | resource |
 | aws_guardduty_detector.main | resource |
 | aws_inspector2_enabler.main | resource |
-| aws_kms_key.sns | resource |
-| aws_kms_alias.sns | resource |
 | aws_sns_topic.security_alerts | resource |
 | aws_sns_topic_policy.security_alerts | resource |
 | aws_sns_topic_subscription.security_alerts_email | resource |
@@ -227,8 +225,6 @@ For detailed incident response procedures, see: [SECURITY_INCIDENT_RESPONSE.md](
 | inspector_enabled | Whether AWS Inspector is enabled |
 | security_alerts_topic_arn | ARN of the SNS topic for security alerts |
 | security_alerts_topic_name | Name of the SNS topic for security alerts |
-| kms_key_id | ID of the KMS key used for SNS topic encryption |
-| kms_key_arn | ARN of the KMS key used for SNS topic encryption |
 | eventbridge_rules | Map of EventBridge rule names and ARNs |
 
 ## Examples
