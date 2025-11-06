@@ -36,8 +36,11 @@ aws sts get-caller-identity || {
 }
 echo ""
 
+# AWS region (configurable via environment variable)
+AWS_REGION="${AWS_REGION:-us-west-2}"
+
 # Check for cluster
-CLUSTER_NAME=$(aws eks list-clusters --region us-west-2 --query 'clusters[0]' --output text 2>/dev/null || echo "")
+CLUSTER_NAME=$(aws eks list-clusters --region "$AWS_REGION" --query 'clusters[0]' --output text 2>/dev/null || echo "")
 
 if [ "$CLUSTER_NAME" == "None" ] || [ -z "$CLUSTER_NAME" ]; then
 	echo -e "${GREEN}✓ No EKS cluster found. Already destroyed.${NC}"

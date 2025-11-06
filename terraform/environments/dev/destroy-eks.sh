@@ -123,7 +123,7 @@ echo ""
 
 # Verify destruction
 echo -e "${YELLOW}→ Verifying destruction...${NC}"
-REMAINING_CLUSTERS=$(aws eks list-clusters --region us-west-2 --query 'clusters | length(@)' --output text 2>/dev/null || echo "0")
+REMAINING_CLUSTERS=$(aws eks list-clusters --region "$AWS_REGION" --query 'clusters | length(@)' --output text 2>/dev/null || echo "0")
 
 if [ "$REMAINING_CLUSTERS" == "0" ]; then
 	echo -e "${GREEN}✓ EKS cluster successfully destroyed${NC}"
@@ -144,7 +144,7 @@ echo "  - VPC, subnets, NAT gateway"
 echo "  - Load balancers"
 echo ""
 echo -e "${GREEN}✓ Preserved resources:${NC}"
-echo "  - CloudTrail: $(aws cloudtrail list-trails --region us-west-2 --query 'Trails[0].Name' --output text 2>/dev/null || echo 'Not configured')"
+echo "  - CloudTrail: $(aws cloudtrail list-trails --region "$AWS_REGION" --query 'Trails[0].Name' --output text 2>/dev/null || echo 'Not configured')"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 echo "  - Budgets: $(aws budgets describe-budgets --account-id "$ACCOUNT_ID" --query 'Budgets[0].BudgetName' --output text 2>/dev/null || echo 'Not configured')"
 echo "  - S3 state bucket: ml-platform-terraform-state"

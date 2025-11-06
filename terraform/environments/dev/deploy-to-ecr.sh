@@ -26,7 +26,7 @@ cd "$(dirname "$0")"
 
 # Get image tag from argument or use default
 IMAGE_TAG="${1:-v1.0.0}"
-AWS_REGION="us-west-2"
+AWS_REGION="${AWS_REGION:-us-west-2}"
 
 echo -e "${YELLOW}→ Getting ECR repository URL...${NC}"
 ECR_REPO=$(terraform output -raw ecr_repository_url 2>/dev/null)
