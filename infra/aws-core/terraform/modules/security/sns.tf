@@ -10,8 +10,9 @@
 resource "aws_sns_topic" "security_alerts" {
   count = var.enable_security_hub || var.enable_guardduty ? 1 : 0
 
-  name         = local.sns_topic_name
-  display_name = "ML Platform Security Alerts"
+  name              = local.sns_topic_name
+  display_name      = "ML Platform Security Alerts"
+  kms_master_key_id = "alias/aws/sns" # Use AWS-managed key for encryption
 
   tags = merge(
     local.tags,

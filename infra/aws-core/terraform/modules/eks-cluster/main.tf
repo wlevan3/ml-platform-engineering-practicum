@@ -3,9 +3,9 @@
 
 module "eks" {
   #tfsec:ignore:aws-eks-encrypt-secrets EKS uses AWS-owned KMS keys; org policy forbids CMKs.
-  # Using v20.31.0 (last stable v20 before v21 API changes)
+  # Using v20.31.0 (commit c63a579) - last stable v20 before v21 API changes
   # v21.x has count expression issues with Terraform 1.13+
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=v20.31.0"
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=c63a57908d7b4d51895d3f8502d60daae758b761"
 
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
