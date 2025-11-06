@@ -18,6 +18,8 @@ module "eks" {
   # Public access is controlled by variable and may be required for CI/CD access
   # (e.g., GitHub Actions). Production environments should set
   # cluster_endpoint_public_access=false and use VPN/bastion access.
+  #trivy:ignore:avd-aws-0040 Public access intentionally configurable for CI/CD
+  #trivy:ignore:avd-aws-0041 Public CIDR intentionally configurable for CI/CD
   endpoint_public_access       = var.cluster_endpoint_public_access
   endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
   endpoint_private_access      = var.cluster_endpoint_private_access
@@ -40,6 +42,12 @@ module "eks" {
   security_group_additional_rules = local.cluster_security_group_additional_rules
 
   # Node security group rules (defined in security-groups.tf)
+  # Note: Upstream module creates egress_all rule for nodes (AVD-AWS-0104)
+  # This is intentional - EKS nodes require internet access for:
+  # - Pulling container images from ECR/registries
+  # - AWS API calls (EC2, S3, etc.)
+  # - Package downloads and updates
+  #trivy:ignore:avd-aws-0104 EKS nodes require unrestricted egress for container images and AWS APIs
   node_security_group_additional_rules         = local.node_security_group_additional_rules
   node_security_group_enable_recommended_rules = false
 
