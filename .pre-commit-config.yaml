@@ -122,3 +122,4 @@ repos:
     hooks:
       - id: markdownlint
         args: ['--fix']
+        exclude: ^terraform/environments/.*/README\.md$  # Exclude terraform-docs generated files

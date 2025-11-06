@@ -756,13 +756,37 @@ jobs:
         run: |
           echo "📤 Capturing Terraform outputs..."
 
-          # Export outputs for later steps
+          # Validate all required outputs exist
+          REQUIRED_OUTPUTS=("cluster_name" "cluster_endpoint" "ecr_repository_url" "kubeconfig_command")
+          MISSING_OUTPUTS=()
+
+          for output in "${REQUIRED_OUTPUTS[@]}"; do
+            if ! terraform output -raw "$output" >/dev/null 2>&1; then
+              MISSING_OUTPUTS+=("$output")
+            fi
+          done
+
+          if [ ${#MISSING_OUTPUTS[@]} -gt 0 ]; then
+            echo "❌ ERROR: Required Terraform outputs not defined:"
+            for output in "${MISSING_OUTPUTS[@]}"; do
+              echo "  - $output"
+            done
+            echo ""
+            echo "::error title=Missing Terraform Outputs::Required outputs not found: ${MISSING_OUTPUTS[*]}"
+            echo ""
+            echo "Check terraform/environments/${{ inputs.environment }}/main.tf outputs block"
+            exit 1
+          fi
+
+          # Export validated outputs
           {
             echo "cluster_name=$(terraform output -raw cluster_name)"
             echo "cluster_endpoint=$(terraform output -raw cluster_endpoint)"
             echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)"
             echo "kubeconfig_command=$(terraform output -raw kubeconfig_command)"
           } >> "$GITHUB_OUTPUT"
+
+          echo "✅ Terraform outputs captured successfully"
 
       # -----------------------------------------------------------------------
       # Step 12: Display deployment summary

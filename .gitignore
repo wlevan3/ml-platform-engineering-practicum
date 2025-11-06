@@ -302,3 +302,4 @@ worktrees/
 
 # Personal project management docs
 docs/backlog/
+/.claude/
