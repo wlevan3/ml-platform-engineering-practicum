@@ -29,9 +29,10 @@ module "eks" {
   # OIDC provider for service account IAM roles
   enable_irsa = var.enable_irsa
 
-  # Enforce use of AWS-managed KMS only (no customer-managed CMKs)
+  # Use default EKS encryption (v1.28+ encrypts secrets by default)
+  # Setting to null disables custom KMS encryption config
   create_kms_key           = false
-  encryption_config        = {}
+  encryption_config        = null
   attach_encryption_policy = false
 
   # Cluster addons (automatically managed)
