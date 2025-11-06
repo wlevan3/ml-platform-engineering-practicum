@@ -56,7 +56,7 @@ name: EKS Infrastructure Deployment
 #    Creates Terraform remote state backend infrastructure
 #
 #    What it creates:
-#      - S3 bucket: ml-platform-terraform-state (versioned, encrypted)
+#      - S3 bucket: ml-platform-terraform-state-984479408136 (versioned, encrypted)
 #      - DynamoDB table: ml-platform-terraform-locks (state locking)
 #
 #    When to use:
@@ -555,7 +555,7 @@ jobs:
 
           # Verify S3 bucket
           VERSIONING=$(aws s3api get-bucket-versioning \
-            --bucket ml-platform-terraform-state \
+            --bucket ml-platform-terraform-state-984479408136 \
             --query Status --output text)
           echo "✅ S3 bucket verified (versioning: ${VERSIONING})"
 
@@ -576,7 +576,7 @@ jobs:
             echo ""
             echo "### Resources Created"
             echo ""
-            echo "- **S3 Bucket**: \`ml-platform-terraform-state\`"
+            echo "- **S3 Bucket**: \`ml-platform-terraform-state-984479408136\`"
             echo "  - Versioning: Enabled"
             echo "  - Encryption: AES-256"
             echo "  - Public access: Blocked"
