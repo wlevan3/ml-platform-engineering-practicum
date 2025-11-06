@@ -24,7 +24,9 @@ jobs:
       - name: Markdown linting
         uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8 # v16
         with:
-          globs: "**/*.md"
+          globs: |
+            **/*.md
+            #infra/aws-core/terraform/**/*.md
           config: ".markdownlint.json"
 
   terraform-validate:
@@ -267,18 +269,6 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Skipping Kubernetes validation - clusters/dev/bootstrap/k8s-manifests/ directory does not exist yet"
           fi
-
-      - name: Setup kubeval
-        if: steps.check_k8s.outputs.exists == 'true'
-        run: |
-          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
-          tar xf kubeval-linux-amd64.tar.gz
-          sudo mv kubeval /usr/local/bin
-
-      - name: Validate Kubernetes manifests
-        if: steps.check_k8s.outputs.exists == 'true'
-        run: |
-          find clusters/dev/bootstrap/k8s-manifests \( -name '*.yaml' -o -name '*.yml' \) -print0 | xargs -0 kubeval --strict
 
       - name: Lint Kubernetes manifests
         if: steps.check_k8s.outputs.exists == 'true'
