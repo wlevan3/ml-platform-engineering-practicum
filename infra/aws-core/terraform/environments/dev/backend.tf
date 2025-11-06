@@ -4,11 +4,10 @@
 
 terraform {
   backend "s3" {
-    bucket       = "ml-platform-terraform-state-984479408136"
-    key          = "dev/terraform.tfstate"
-    region       = "us-west-2"
-    encrypt      = true
-    use_lockfile = true
+    bucket  = "ml-platform-terraform-state-984479408136"
+    key     = "dev/terraform.tfstate"
+    region  = "us-west-2"
+    encrypt = true
 
     # State protection via S3 bucket versioning (see terraform/README.md)
     # Versioning retains 30 previous state versions for recovery
