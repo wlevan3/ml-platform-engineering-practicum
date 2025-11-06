@@ -8,7 +8,7 @@ on:
 
 env:
   DOCKER_IMAGE_ARTIFACT: docker-image-${{ github.sha }}
-  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   OPA_VERSION: v0.67.0
   SENTINEL_VERSION: 0.40.0
 
