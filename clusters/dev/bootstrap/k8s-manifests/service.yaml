@@ -4,8 +4,11 @@ metadata:
   name: ml-platform-api
   labels:
     app: ml-platform-api
+  annotations:
+    # Ignore dangling-service check - deployment will be created separately
+    ignore-check.kube-linter.io/dangling-service: "Deployment created separately"
 spec:
-  type: NodePort  # Use NodePort for Minikube local access
+  type: NodePort # Use NodePort for Minikube local access
   selector:
     app: ml-platform-api
   ports:

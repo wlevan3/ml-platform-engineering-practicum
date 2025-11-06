@@ -217,7 +217,7 @@ __marimo__/
 *.tfvars
 .terraform/
 .external_modules/
-.terraform.lock.hcl
+# .terraform.lock.hcl - Commit for provider version consistency
 crash.log
 override.tf
 override.tf.json

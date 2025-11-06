@@ -287,7 +287,7 @@ No providers.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_eks"></a> [eks](#module\_eks) | git::<https://github.com/terraform-aws-modules/terraform-aws-eks.git> | v21.8.0 |
+| <a name="module_eks"></a> [eks](#module\_eks) | git::<https://github.com/terraform-aws-modules/terraform-aws-eks.git> | v20.31.6 |
 
 ## Resources
 
