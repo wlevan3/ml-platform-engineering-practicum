@@ -510,7 +510,7 @@ pytest tests/
 # To run manually:
 # black --check .
 # ruff check .
-# mypy app/
+# mypy services/api/
 
 # Kubernetes
 kubectl apply --dry-run=client -f manifests/

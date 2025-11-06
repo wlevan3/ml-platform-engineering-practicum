@@ -177,7 +177,7 @@ git commit -m "Your message"
 
 ```bash
 # Review type errors
-mypy app/
+mypy services/api/
 
 # Fix type hints in flagged files
 # Then re-commit
@@ -285,7 +285,7 @@ uvicorn services.api.main:app --reload --port 8001
 pwd  # Should show .../ml-platform-engineering-practicum
 
 # Check directory structure
-ls -la  # Should see app/ directory
+ls -la  # Should see services/ directory
 ```
 
 **3. Model File Missing**:
@@ -578,7 +578,7 @@ docker build -t ml-platform-api:latest .
 
 ```bash
 # Review specific issue
-bandit -r app/
+bandit -r services/api/
 
 # Fix code (e.g., avoid shell=True, use parameterized queries)
 # If false positive, add comment with justification:
@@ -629,7 +629,7 @@ python train_model.py
 
 # Option 2: Update expected hash in code
 # (Only if you trust the model file)
-# Calculate new hash and update in app/model.py
+# Calculate new hash and update in services/api/model.py
 ```
 
 **Prevention**: Never manually edit model files. Always retrain using `train_model.py`.
@@ -653,7 +653,7 @@ pytest -v
 # Check code quality locally
 black --check .
 ruff check .
-mypy app/
+mypy services/api/
 
 # View CI logs in GitHub Actions tab for specific error details
 ```

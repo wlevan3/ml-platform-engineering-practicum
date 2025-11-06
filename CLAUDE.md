@@ -53,7 +53,7 @@ pytest -v --cov=app --cov-report=term-missing             # Tests with coverage
 # Code quality (YOU MUST run before pushing)
 black .                   # Format code
 ruff check . --fix        # Lint and auto-fix
-mypy app/                 # Type checking
+mypy services/api/                 # Type checking
 pre-commit run --all-files  # Run all pre-commit hooks
 
 # Pre-commit setup
@@ -74,7 +74,7 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 **Project-specific patterns**:
 
-- **Model loading**: Singleton pattern in `app/model.py:get_model()`
+- **Model loading**: Singleton pattern in `services/api/model.py:get_model()`
 - **Model security**: .skops format + SHA-256 verification (see [PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md))
 - **FastAPI**: Lifespan events, dependency injection, HTTPException with status codes
 - **Testing**: 90% coverage target (SonarCloud gate: 80% minimum)
@@ -144,13 +144,13 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 ```text
 ml-platform-engineering-practicum/
-├── app/                    # FastAPI application
+├── services/api/           # FastAPI application
 │   ├── main.py            # API endpoints
 │   ├── model.py           # Model loading (singleton pattern)
-│   └── schemas.py         # Pydantic models
-├── services/api/models/    # Model artifacts (gitignored except metadata)
-│   ├── iris_classifier.skops   # Trained model (skops format)
-│   └── model_metadata.json     # Model metadata + hash
+│   ├── schemas.py         # Pydantic models
+│   └── models/            # Model artifacts (gitignored except metadata)
+│       ├── iris_classifier.skops   # Trained model (skops format)
+│       └── model_metadata.json     # Model metadata + hash
 ├── tests/                  # Test suite
 │   └── test_api.py        # FastAPI tests
 ├── docs/                   # Documentation

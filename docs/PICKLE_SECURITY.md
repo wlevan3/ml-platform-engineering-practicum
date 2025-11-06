@@ -45,7 +45,7 @@ joblib.load('malicious.joblib')  # ← Credentials stolen!
 
 ## Your Current Code Risk Assessment
 
-### Current Implementation (app/model.py:42)
+### Current Implementation (services/api/model.py:42)
 
 ```python
 self.model = joblib.load(self.model_path)  # services/api/models/iris_classifier.joblib
@@ -222,7 +222,7 @@ self.model = joblib.load(self.model_path)  # nosemgrep: unsafe-pickle-deserializ
 model_hash = hashlib.sha256(open(filepath, 'rb').read()).hexdigest()
 metadata["model_hash"] = model_hash
 
-# app/model.py
+# services/api/model.py
 if hashlib.sha256(open(path, 'rb').read()).hexdigest() != metadata["model_hash"]:
     raise SecurityError("Model hash mismatch!")
 ```

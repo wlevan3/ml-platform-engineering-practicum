@@ -7,7 +7,7 @@
 
 **Common Questions**:
 - "How do I run the API?" → `uvicorn services.api.main:app --reload`
-- "How do I run tests?" → `pytest` (with coverage: `pytest --cov=app`)
+- "How do I run tests?" → `pytest` (with coverage: `pytest --cov=services.api`)
 - "What Python version?" → Python 3.13 + uv package manager
 - "How do I commit code?" → Conventional commits: `<type>(<scope>): <subject>`
 - "What's the model format?" → .skops format (NOT .pkl/.joblib for security)

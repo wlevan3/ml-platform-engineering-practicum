@@ -92,7 +92,7 @@ pytest -k "test_health"
 # Code quality
 black .
 ruff check . --fix
-mypy app/
+mypy services/api/
 
 # Pre-commit
 pre-commit run --all-files

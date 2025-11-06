@@ -123,15 +123,15 @@ pytest -m "not slow"
 ```bash
 # Format code (Black)
 black .
-black app/ tests/
+black services/api/ tests/
 
 # Lint and auto-fix (Ruff)
 ruff check . --fix
-ruff check app/
+ruff check services/api/
 
 # Type checking (mypy)
-mypy app/
-mypy app/ --strict
+mypy services/api/
+mypy services/api/ --strict
 
 # Run all pre-commit hooks
 pre-commit run --all-files

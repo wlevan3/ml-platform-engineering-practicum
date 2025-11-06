@@ -117,7 +117,7 @@ This guide helps you decide when to use local Kubernetes (k3d/minikube) vs AWS E
 ./platform/scripts/deploy-local-k3d.sh
 
 # Develop and iterate (instant feedback)
-# 1. Edit app/main.py
+# 1. Edit services/api/main.py
 # 2. docker build -t ml-platform-api:v1.0.0 .
 # 3. k3d image import ml-platform-api:v1.0.0 -c ml-platform-dev
 # 4. kubectl rollout restart deployment/ml-platform-api -n ml-platform

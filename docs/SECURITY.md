@@ -39,7 +39,7 @@ Our model loading implements multiple security layers:
 - **Rejection**: Raises `ModelIntegrityError` if untrusted types detected
 
 ```python
-# From app/model.py
+# From services/api/model.py
 untrusted_types = sio.get_untrusted_types(file=self.model_path)
 if untrusted_types:
     raise ModelIntegrityError(f"Model contains untrusted types: {untrusted_types}")
@@ -53,11 +53,11 @@ self.model = sio.load(self.model_path, trusted=untrusted_types)
 
 - **Hash generation**: During training in `train_model.py`
 - **Hash storage**: In `model_metadata.json`
-- **Hash verification**: Before loading in `app/model.py`
+- **Hash verification**: Before loading in `services/api/model.py`
 - **Detection**: Identifies file corruption or tampering
 
 ```python
-# From app/model.py
+# From services/api/model.py
 expected_hash = self.metadata.get("model_hash")
 actual_hash = calculate_file_hash(self.model_path, algorithm="sha256")
 

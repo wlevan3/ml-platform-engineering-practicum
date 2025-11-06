@@ -372,7 +372,7 @@ See [docs/AWS_OIDC_SETUP.md](../../docs/AWS_OIDC_SETUP.md) for setup details.
 **EKS deploy workflow**: Ensure S3 backend exists:
 
 ```bash
-./scripts/bootstrap-eks-backend.sh dev
+./platform/scripts/bootstrap-eks-backend.sh dev
 ```
 
 ### OIDC Authentication Fails
