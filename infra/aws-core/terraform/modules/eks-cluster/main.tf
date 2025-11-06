@@ -30,9 +30,9 @@ module "eks" {
   enable_irsa = var.enable_irsa
 
   # Enforce use of AWS-managed KMS only (no customer-managed CMKs)
-  create_kms_key            = false
-  cluster_encryption_config = {}
-  attach_encryption_policy  = false
+  create_kms_key                   = false
+  cluster_encryption_config        = {}
+  attach_cluster_encryption_policy = false
 
   # Cluster addons (automatically managed)
   cluster_addons = var.cluster_addons
