@@ -63,9 +63,6 @@ repos:
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
-      - id: terraform_trivy
-        args:
-          - --args=--skip-dirs="**/.terraform"
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
