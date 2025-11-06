@@ -4,7 +4,7 @@
 
 terraform {
   backend "s3" {
-    bucket         = "ml-platform-terraform-state"
+    bucket         = "ml-platform-terraform-state-984479408136"
     key            = "dev/terraform.tfstate"
     region         = "us-west-2"
     encrypt        = true
