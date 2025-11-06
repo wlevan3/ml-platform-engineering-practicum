@@ -42,7 +42,10 @@ REVIEWS=$(gh api repos/"$OWNER"/"$REPO"/pulls/"$PR_NUMBER"/reviews \
         submitted_at: .submitted_at,
         commit_id: .commit_id,
         html_url: .html_url
-    }' 2>/dev/null || echo "[]")
+    }') || {
+	echo "Error fetching PR reviews. Verify authentication (gh auth status) and that PR #$PR_NUMBER exists." >&2
+	exit 1
+}
 
 REVIEW_COUNT=$(echo "$REVIEWS" | jq -s 'length')
 
@@ -62,7 +65,10 @@ REVIEW_COMMENTS=$(gh api repos/"$OWNER"/"$REPO"/pulls/"$PR_NUMBER"/comments \
         commit_id: .commit_id,
         created_at: .created_at,
         html_url: .html_url
-    }' 2>/dev/null || echo "[]")
+    }') || {
+	echo "Error fetching PR inline comments. Verify authentication (gh auth status) and that PR #$PR_NUMBER exists." >&2
+	exit 1
+}
 
 INLINE_COUNT=$(echo "$REVIEW_COMMENTS" | jq -s 'length')
 
@@ -79,7 +85,10 @@ PR_COMMENTS=$(gh api repos/"$OWNER"/"$REPO"/issues/"$PR_NUMBER"/comments \
         body: .body,
         created_at: .created_at,
         html_url: .html_url
-    }' 2>/dev/null || echo "[]")
+    }') || {
+	echo "Error fetching PR discussion comments. Verify authentication (gh auth status) and that PR #$PR_NUMBER exists." >&2
+	exit 1
+}
 
 DISCUSSION_COUNT=$(echo "$PR_COMMENTS" | jq -s 'length')
 

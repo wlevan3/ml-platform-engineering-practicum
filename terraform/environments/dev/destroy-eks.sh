@@ -27,6 +27,9 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
+# AWS region
+AWS_REGION="${AWS_REGION:-us-west-2}"
+
 echo -e "${YELLOW}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║  EKS Infrastructure Destruction (Security Services Kept)  ║${NC}"
 echo -e "${YELLOW}╚════════════════════════════════════════════════════════════╝${NC}"
@@ -42,14 +45,14 @@ echo ""
 
 # Confirm cluster exists
 echo -e "${YELLOW}→ Checking for EKS cluster...${NC}"
-CLUSTER_NAME=$(aws eks list-clusters --region us-west-2 --query 'clusters[0]' --output text 2>/dev/null || echo "")
+CLUSTER_NAME=$(aws eks list-clusters --region "$AWS_REGION" --query 'clusters[0]' --output text 2>/dev/null || echo "")
 
 if [ "$CLUSTER_NAME" == "None" ] || [ -z "$CLUSTER_NAME" ]; then
 	echo -e "${GREEN}✓ No EKS cluster found. Already destroyed?${NC}"
 	echo ""
 	echo -e "${GREEN}Current state:${NC}"
 	echo "  - EKS cluster: Not found"
-	echo "  - CloudTrail: $(aws cloudtrail list-trails --region us-west-2 --query 'Trails[0].Name' --output text 2>/dev/null || echo 'Not found')"
+	echo "  - CloudTrail: $(aws cloudtrail list-trails --region "$AWS_REGION" --query 'Trails[0].Name' --output text 2>/dev/null || echo 'Not found')"
 	ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 	echo "  - Budgets: $(aws budgets describe-budgets --account-id "$ACCOUNT_ID" --query 'Budgets[0].BudgetName' --output text 2>/dev/null || echo 'Not found')"
 	echo ""

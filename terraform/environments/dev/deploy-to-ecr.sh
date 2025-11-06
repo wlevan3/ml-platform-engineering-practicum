@@ -42,14 +42,14 @@ echo ""
 
 # Authenticate Docker to ECR
 echo -e "${YELLOW}→ Authenticating Docker to ECR...${NC}"
-aws ecr get-login-password --region "${AWS_REGION}" | \
+aws ecr get-login-password --region "${AWS_REGION}" |
 	docker login --username AWS --password-stdin "${ECR_REPO}"
 echo ""
 
 # Build Docker image
 echo -e "${YELLOW}→ Building Docker image: ml-platform-api:${IMAGE_TAG}${NC}"
-cd ../../../  # Go to project root
-docker build -t "ml-platform-api:${IMAGE_TAG}" .
+PROJECT_ROOT="$(cd "$(dirname "$0")/../../../" && pwd)"
+docker build -t "ml-platform-api:${IMAGE_TAG}" -f "$PROJECT_ROOT/Dockerfile" "$PROJECT_ROOT"
 echo ""
 
 # Tag for ECR
