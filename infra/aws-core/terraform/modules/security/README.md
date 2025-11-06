@@ -341,8 +341,8 @@ For issues or questions:
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | = 6.19.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.13.5 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.19.0 |
 
 ## Providers
 
@@ -358,22 +358,22 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [aws_cloudwatch_event_rule.guardduty_findings](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/cloudwatch_event_rule) | resource |
-| [aws_cloudwatch_event_rule.security_hub_findings](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/cloudwatch_event_rule) | resource |
-| [aws_cloudwatch_event_target.guardduty_to_sns](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/cloudwatch_event_target) | resource |
-| [aws_cloudwatch_event_target.security_hub_to_sns](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/cloudwatch_event_target) | resource |
-| [aws_guardduty_detector.main](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/guardduty_detector) | resource |
-| [aws_guardduty_detector_feature.ebs_malware_protection](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/guardduty_detector_feature) | resource |
-| [aws_guardduty_detector_feature.kubernetes_audit_logs](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/guardduty_detector_feature) | resource |
-| [aws_guardduty_detector_feature.s3_data_events](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/guardduty_detector_feature) | resource |
-| [aws_inspector2_enabler.main](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/inspector2_enabler) | resource |
-| [aws_securityhub_account.main](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/securityhub_account) | resource |
-| [aws_securityhub_standards_subscription.cis](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/securityhub_standards_subscription) | resource |
-| [aws_securityhub_standards_subscription.foundational](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/securityhub_standards_subscription) | resource |
-| [aws_sns_topic.security_alerts](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/sns_topic) | resource |
-| [aws_sns_topic_policy.security_alerts](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/sns_topic_policy) | resource |
-| [aws_sns_topic_subscription.security_alerts_email](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/resources/sns_topic_subscription) | resource |
-| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/6.19.0/docs/data-sources/caller_identity) | data source |
+| [aws_cloudwatch_event_rule.guardduty_findings](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
+| [aws_cloudwatch_event_rule.security_hub_findings](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_rule) | resource |
+| [aws_cloudwatch_event_target.guardduty_to_sns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
+| [aws_cloudwatch_event_target.security_hub_to_sns](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_event_target) | resource |
+| [aws_guardduty_detector.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector) | resource |
+| [aws_guardduty_detector_feature.ebs_malware_protection](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature) | resource |
+| [aws_guardduty_detector_feature.kubernetes_audit_logs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature) | resource |
+| [aws_guardduty_detector_feature.s3_data_events](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/guardduty_detector_feature) | resource |
+| [aws_inspector2_enabler.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/inspector2_enabler) | resource |
+| [aws_securityhub_account.main](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/securityhub_account) | resource |
+| [aws_securityhub_standards_subscription.cis](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/securityhub_standards_subscription) | resource |
+| [aws_securityhub_standards_subscription.foundational](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/securityhub_standards_subscription) | resource |
+| [aws_sns_topic.security_alerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic) | resource |
+| [aws_sns_topic_policy.security_alerts](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_policy) | resource |
+| [aws_sns_topic_subscription.security_alerts_email](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sns_topic_subscription) | resource |
+| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
 
 ## Inputs
 

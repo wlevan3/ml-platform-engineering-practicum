@@ -2,12 +2,12 @@
 # Uses AWS OIDC authentication from GitHub Actions (see docs/AWS_OIDC_SETUP.md)
 
 terraform {
-  required_version = ">= 1.6.0"
+  required_version = ">= 1.13.5"
 
   required_providers {
     aws = {
       source  = "hashicorp/aws"
-      version = "= 6.19.0"
+      version = ">= 6.19.0"
     }
 
     # Kubernetes and Helm providers removed - see comment below for explanation

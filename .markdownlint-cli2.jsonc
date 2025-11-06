@@ -1,0 +1,7 @@
+{
+  "config": {
+    "MD033": false,  // Allow inline HTML (terraform_docs generates tables with HTML)
+    "MD024": false   // Allow duplicate headings (terraform_docs generates multiple "Inputs"/"Outputs" sections)
+  },
+  "ignores": []
+}

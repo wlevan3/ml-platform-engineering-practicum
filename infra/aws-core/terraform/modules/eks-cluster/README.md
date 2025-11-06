@@ -276,8 +276,8 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.6.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | = 6.19.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.13.5 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 6.19.0 |
 
 ## Providers
 
@@ -287,7 +287,7 @@ No providers.
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_eks"></a> [eks](#module\_eks) | git::<https://github.com/terraform-aws-modules/terraform-aws-eks.git> | v20.31.6 |
+| <a name="module_eks"></a> [eks](#module\_eks) | git::https://github.com/terraform-aws-modules/terraform-aws-eks.git | v20.31.0 |
 
 ## Resources
 
