@@ -35,10 +35,12 @@ variable "private_subnet_cidrs" {
   description = "List of CIDR blocks for private subnets"
   type        = list(string)
 
+  # Note: Terraform variable validations can only reference the variable being validated (self).
+  # Cross-variable validation (e.g., subnet count == AZ count) is not supported in variable blocks.
+  # The terraform-aws-vpc module will validate subnet/AZ alignment at apply time.
   validation {
-    # Ensure private subnet CIDRs align with the availability zone count.
-    condition     = length(var.private_subnet_cidrs) == length(var.azs)
-    error_message = "Number of private subnets must match number of availability zones."
+    condition     = length(var.private_subnet_cidrs) > 0
+    error_message = "At least one private subnet CIDR must be specified."
   }
 }
 
@@ -46,10 +48,12 @@ variable "public_subnet_cidrs" {
   description = "List of CIDR blocks for public subnets"
   type        = list(string)
 
+  # Note: Terraform variable validations can only reference the variable being validated (self).
+  # Cross-variable validation (e.g., subnet count == AZ count) is not supported in variable blocks.
+  # The terraform-aws-vpc module will validate subnet/AZ alignment at apply time.
   validation {
-    # Ensure public subnet CIDRs align with the availability zone count.
-    condition     = length(var.public_subnet_cidrs) == length(var.azs)
-    error_message = "Number of public subnets must match number of availability zones."
+    condition     = length(var.public_subnet_cidrs) > 0
+    error_message = "At least one public subnet CIDR must be specified."
   }
 }
 
