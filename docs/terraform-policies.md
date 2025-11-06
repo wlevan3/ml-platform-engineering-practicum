@@ -11,7 +11,9 @@
 
 ### What it does
 
-Every guardrail denies Terraform plans that introduce `aws_kms_key` resources (except when the change list is a pure delete). This enforces the platform decision to rely exclusively on AWS-managed encryption.
+Every guardrail denies Terraform plans that introduce `aws_kms_key` resources (except when the
+change list is a pure delete). This enforces the platform decision to rely exclusively on
+AWS-managed encryption.
 
 ### Run it locally
 

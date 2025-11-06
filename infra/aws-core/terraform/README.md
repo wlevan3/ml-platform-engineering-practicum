@@ -153,12 +153,17 @@ ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.34.x
 
 #### Customer-Managed KMS Keys Are Prohibited
 
-- The shared EKS module wrapper hardcodes `create_kms_key = false`, `encryption_config = null`, and disables encryption policy attachment so Terraform never provisions CMKs for the control plane.
-- A custom Checkov policy (`checkov_policies/CKV_CUSTOM_AWS_001.yaml`) fails the security scan if any Terraform code declares an `aws_kms_key` resource.
+- The shared EKS module wrapper hardcodes `create_kms_key = false`, `encryption_config = null`,
+  and disables encryption policy attachment so Terraform never provisions CMKs for the control
+  plane.
+- A custom Checkov policy (`checkov_policies/CKV_CUSTOM_AWS_001.yaml`) fails the security scan if
+  any Terraform code declares an `aws_kms_key` resource.
 - Plan-time policies run in CI:
   - OPA: `infra/policies/opa/kms.rego`
-  - Sentinel: `infra/policies/sentinel/kms.sentinel` (mock configured via `infra/policies/sentinel/dev.hcl`)
-- The helper script `platform/scripts/assert-no-cmk.sh` fails the build when a human-readable Terraform plan output declares an `aws_kms_key` resource. Run it locally with:
+  - Sentinel: `infra/policies/sentinel/kms.sentinel` (mock configured via
+    `infra/policies/sentinel/dev.hcl`)
+- The helper script `platform/scripts/assert-no-cmk.sh` fails the build when a human-readable
+  Terraform plan output declares an `aws_kms_key` resource. Run it locally with:
 
   ```bash
   terraform -chdir=infra/aws-core/terraform/environments/dev plan -out plan.tfplan -no-color

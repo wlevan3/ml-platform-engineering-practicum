@@ -299,7 +299,7 @@ data/
 datasets/
 
 # Terraform plan artifacts generated for policy checks
-infra/aws-core/environments/*/plan.json
+infra/aws-core/terraform/environments/*/plan.json
 infra/policies/sentinel/mocks/*-plan.sentinel
 
 # Git worktrees
