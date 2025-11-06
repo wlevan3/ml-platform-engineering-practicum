@@ -297,6 +297,10 @@ models/
 data/
 datasets/
 
+# Terraform plan artifacts generated for policy checks
+terraform/environments/*/plan.json
+policy/sentinel/mocks/*-plan.sentinel
+
 # Git worktrees
 worktrees/
 

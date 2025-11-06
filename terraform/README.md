@@ -149,6 +149,19 @@ ip-10-0-2-456.us-west-2.compute.internal    Ready    <none>   5m    v1.34.x
 - **Endpoint Access**: Public + Private
 - **OIDC Provider**: Enabled (for IAM roles for service accounts)
 - **Addons**: CoreDNS, kube-proxy, VPC-CNI, EBS CSI Driver
+- **KMS Encryption**: Uses AWS-managed keys only (customer-managed CMKs are disabled)
+
+#### Customer-Managed KMS Keys Are Prohibited
+
+- The shared EKS module wrapper hardcodes `create_kms_key = false` and `cluster_encryption_config = {}` so Terraform never provisions CMKs for the control plane.
+- A custom Checkov policy (`checkov_policies/CKV_CUSTOM_NO_CMK.yaml`) fails the security scan if any Terraform code declares an `aws_kms_key` resource.
+- The helper script `scripts/assert-no-cmk.sh` fails the build when a Terraform plan output contains `aws_kms_key` references:
+
+  ```bash
+  terraform -chdir=terraform/environments/dev plan -no-color | scripts/assert-no-cmk.sh
+  ```
+
+- Do **not** remove these guardrails without a documented exception approved by the platform engineering team.
 
 ### EKS Node Group
 

@@ -59,16 +59,6 @@ output "security_alerts_topic_name" {
   value       = (var.enable_security_hub || var.enable_guardduty) ? try(aws_sns_topic.security_alerts[0].name, null) : null
 }
 
-output "kms_key_id" {
-  description = "ID of the KMS key used for SNS topic encryption"
-  value       = (var.enable_security_hub || var.enable_guardduty) ? try(aws_kms_key.sns[0].id, null) : null
-}
-
-output "kms_key_arn" {
-  description = "ARN of the KMS key used for SNS topic encryption"
-  value       = (var.enable_security_hub || var.enable_guardduty) ? try(aws_kms_key.sns[0].arn, null) : null
-}
-
 # EventBridge Outputs
 output "eventbridge_rules" {
   description = "Map of EventBridge rule names and ARNs"
