@@ -26,7 +26,6 @@ jobs:
         with:
           globs: "**/*.md"
           config: ".markdownlint.json"
-        continue-on-error: true
 
   terraform-validate:
     name: Terraform Validation
@@ -58,7 +57,6 @@ jobs:
       - name: Terraform Format Check
         if: steps.check_terraform.outputs.exists == 'true'
         run: terraform fmt -check -recursive infra/aws-core/terraform/
-        continue-on-error: true
 
       - name: Terraform Init (backend=false)
         if: steps.check_terraform.outputs.exists == 'true'
@@ -195,7 +193,6 @@ jobs:
           cd infra/aws-core/terraform
           tflint --init
           tflint --recursive
-        continue-on-error: true
 
   terraform-security-scan:
     name: Terraform Security Scanning
@@ -234,7 +231,6 @@ jobs:
         with:
           sarif_file: results.sarif
           category: tfsec-scan
-        continue-on-error: true
 
       - name: Run Checkov
         if: steps.check_terraform.outputs.exists == 'true'
@@ -253,7 +249,6 @@ jobs:
         with:
           sarif_file: checkov-results.sarif
           category: checkov-scan
-        continue-on-error: true
 
   kubernetes-validate:
     name: Kubernetes Validation
@@ -284,7 +279,6 @@ jobs:
         if: steps.check_k8s.outputs.exists == 'true'
         run: |
           find clusters/dev/bootstrap/k8s-manifests \( -name '*.yaml' -o -name '*.yml' \) -print0 | xargs -0 kubeval --strict
-        continue-on-error: true
 
       - name: Lint Kubernetes manifests
         if: steps.check_k8s.outputs.exists == 'true'
@@ -292,7 +286,6 @@ jobs:
         with:
           directory: clusters/dev/bootstrap/k8s-manifests/
           config: .kube-linter.yaml
-        continue-on-error: true
 
   kubernetes-security-scan:
     name: Kubernetes Security Scanning (Trivy)
@@ -324,7 +317,6 @@ jobs:
           format: "sarif"
           output: "trivy-k8s-results.sarif"
           severity: "CRITICAL,HIGH,MEDIUM"
-        continue-on-error: true # TODO: Change to false in Phase 2 once all findings are remediated
 
       - name: Upload Trivy results to GitHub Security
         if: steps.check_k8s.outputs.exists == 'true' && always()
@@ -332,7 +324,6 @@ jobs:
         with:
           sarif_file: trivy-k8s-results.sarif
           category: trivy-k8s-scan
-        continue-on-error: true
 
   python-lint:
     name: Python Linting
@@ -354,11 +345,9 @@ jobs:
 
       - name: Run Black (formatting check)
         run: black --check .
-        continue-on-error: true
 
       - name: Run Ruff (linting)
         run: ruff check .
-        continue-on-error: true
 
   python-test:
     name: Python Tests with Coverage
@@ -412,21 +401,18 @@ jobs:
         with:
           name: trivy-fs-sarif
           path: sarif-reports/trivy-fs/
-        continue-on-error: true
 
       - name: Download Semgrep SARIF
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: semgrep-sarif
           path: sarif-reports/semgrep/
-        continue-on-error: true
 
       - name: Download Trivy Docker SARIF
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: trivy-docker-sarif
           path: sarif-reports/trivy-docker/
-        continue-on-error: true
 
       - name: List SARIF files
         run: |
@@ -474,7 +460,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
           sarif_file: "trivy-results.sarif"
-        continue-on-error: true
 
       - name: Upload Trivy SARIF as artifact for SonarCloud
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
