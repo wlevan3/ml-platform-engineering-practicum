@@ -73,8 +73,8 @@ terraform destroy
 
 **Cons**:
 
-- ❌ NAT Gateway costs $1.08/day even when idle
-- ❌ Higher monthly cost ($48 vs. $0.60)
+- ❌ VPC + NAT Gateway costs $1.60/day even when idle ($48/month vs. $0.60)
+- ❌ Higher monthly cost compared to full destruction
 
 ---
 

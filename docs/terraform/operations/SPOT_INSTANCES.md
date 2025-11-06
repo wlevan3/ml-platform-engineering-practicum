@@ -124,9 +124,10 @@ aws ec2 describe-instances \
   --output table
 
 # Check spot pricing history
+# Linux: date -u -d '1 hour ago' | macOS: date -u -v-1H
 aws ec2 describe-spot-price-history \
   --instance-types t3.medium t3a.medium t2.medium \
-  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \
+  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S 2>/dev/null || date -u -v-1H +%Y-%m-%dT%H:%M:%S) \
   --product-descriptions "Linux/UNIX" \
   --region us-west-2 \
   --output table

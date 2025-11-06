@@ -76,7 +76,8 @@ aws guardduty list-detectors
 # "DetectorIds": ["abc123..."]
 
 # Check S3 bucket for CloudTrail logs (may take 15 minutes for first logs)
-aws s3 ls s3://ml-platform-engineering-practicum-cloudtrail-logs-984479408136/
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+aws s3 ls s3://ml-platform-engineering-practicum-cloudtrail-logs-${ACCOUNT_ID}/
 ```
 
 ## Cost Impact
@@ -198,6 +199,6 @@ terraform destroy -target=module.security
 ## References
 
 - Full module documentation: `terraform/modules/security/README.md`
-- CloudTrail logs location: `s3://ml-platform-engineering-practicum-cloudtrail-logs-984479408136/`
+- CloudTrail logs location: `s3://ml-platform-engineering-practicum-cloudtrail-logs-<YOUR_ACCOUNT_ID>/`
 - GuardDuty console: <https://console.aws.amazon.com/guardduty/>
 - Budgets console: <https://console.aws.amazon.com/billing/home#/budgets>
