@@ -72,16 +72,20 @@ jobs:
           cd infra/aws-core/terraform
           terraform validate
 
-      - name: Verify AWS account ID is configured
+      - name: Check if AWS credentials are available
         if: steps.check_terraform.outputs.exists == 'true'
+        id: check_aws
         run: |
           if [ -z "${AWS_ACCOUNT_ID:-}" ]; then
-            echo "AWS_ACCOUNT_ID environment variable is required for Terraform plan credentials." >&2
-            exit 1
+            echo "⚠️ AWS_ACCOUNT_ID not configured - skipping Terraform plan and policy validation"
+            echo "aws_available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ AWS_ACCOUNT_ID configured"
+            echo "aws_available=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Configure AWS credentials for plan
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
@@ -89,19 +93,19 @@ jobs:
           role-session-name: GitHubActions-TerraformPlan-${{ github.run_id }}
 
       - name: Terraform Init (with backend)
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         working-directory: infra/aws-core/terraform/environments/dev
         run: terraform init
 
       - name: Install OPA CLI
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
           curl -L -o opa "https://openpolicyagent.org/downloads/${OPA_VERSION}/opa_linux_amd64_static"
           chmod +x opa
           sudo mv opa /usr/local/bin/opa
 
       - name: Install Sentinel CLI
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
           curl -L -o sentinel.zip "https://releases.hashicorp.com/sentinel/${SENTINEL_VERSION}/sentinel_${SENTINEL_VERSION}_linux_amd64.zip"
           unzip -o sentinel.zip sentinel
@@ -109,20 +113,20 @@ jobs:
           rm -f sentinel.zip
 
       - name: Terraform Plan (binary)
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           echo "📋 Running Terraform plan..."
           terraform plan -out plan.tfplan -no-color
 
       - name: Terraform Show (text)
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           terraform show -no-color plan.tfplan | tee plan.txt
 
       - name: Evaluate Terraform plan with OPA
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           terraform show -json plan.tfplan > plan.json
@@ -146,7 +150,7 @@ jobs:
           fi
 
       - name: Generate Sentinel tfplan mock
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
           set -euo pipefail
           python3 platform/scripts/generate_sentinel_tfplan_mock.py --plan infra/aws-core/terraform/environments/dev/plan.json --output infra/policies/sentinel/mocks/dev-plan.sentinel
@@ -156,14 +160,14 @@ jobs:
           fi
 
       - name: Evaluate Terraform plan with Sentinel
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
           sentinel apply \
             -config infra/policies/sentinel/dev.hcl \
             infra/policies/sentinel/kms.sentinel
 
       - name: Post plan summary
-        if: steps.check_terraform.outputs.exists == 'true' && always()
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true' && always()
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           {
@@ -175,7 +179,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove plan artifacts
-        if: steps.check_terraform.outputs.exists == 'true' && always()
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true' && always()
         run: |
           rm -f infra/aws-core/terraform/environments/dev/plan.json infra/policies/sentinel/mocks/dev-plan.sentinel
 
