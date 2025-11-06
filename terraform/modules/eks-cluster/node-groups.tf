@@ -3,7 +3,7 @@
 locals {
   eks_managed_node_groups = {
     main = {
-      name = "${var.cluster_name}-node-group"
+      name = "${var.cluster_name}-ng" # Shortened to fit AWS IAM role name_prefix limit (38 chars)
 
       # Spot instances configuration for cost savings (70% discount)
       capacity_type = var.use_spot_instances ? "SPOT" : "ON_DEMAND"
