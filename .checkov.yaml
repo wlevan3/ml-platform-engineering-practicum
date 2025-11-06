@@ -1,0 +1,3 @@
+directory: terraform/modules/networking
+framework: terraform
+quiet: true

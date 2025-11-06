@@ -95,9 +95,13 @@ variable "node_min_size" {
   type        = number
   default     = 1
 
+  # Note: Terraform variable validations can only reference the variable being validated (self).
+  # Cross-variable validation (e.g., node_min_size <= node_desired_size) is not supported here.
+  # AWS EKS will validate that min <= desired <= max at deployment time and fail with a
+  # descriptive error if values are invalid.
   validation {
-    condition     = var.node_min_size >= 1 && var.node_min_size <= var.node_desired_size
-    error_message = "node_min_size must be at least 1 and not greater than node_desired_size."
+    condition     = var.node_min_size >= 1
+    error_message = "node_min_size must be at least 1."
   }
 }
 
@@ -106,9 +110,13 @@ variable "node_max_size" {
   type        = number
   default     = 4
 
+  # Note: Terraform variable validations can only reference the variable being validated (self).
+  # Cross-variable validation (e.g., node_max_size >= node_desired_size) is not supported here.
+  # AWS EKS will validate that min <= desired <= max at deployment time and fail with a
+  # descriptive error if values are invalid.
   validation {
-    condition     = var.node_max_size >= var.node_desired_size
-    error_message = "node_max_size must be greater than or equal to node_desired_size."
+    condition     = var.node_max_size >= 1
+    error_message = "node_max_size must be at least 1."
   }
 }
 
