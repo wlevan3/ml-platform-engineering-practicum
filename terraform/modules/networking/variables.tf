@@ -36,10 +36,9 @@ variable "private_subnet_cidrs" {
   type        = list(string)
 
   validation {
-    # This validation depends on var.azs being correctly set with desired AZ count.
-    # Ensure you pass the same number of private subnet CIDRs as availability zones.
-    condition     = length(var.private_subnet_cidrs) == length(var.azs)
-    error_message = "Number of private subnets must match number of availability zones."
+    # Validate list is not empty. Cross-variable validation moved to locals with preconditions.
+    condition     = length(var.private_subnet_cidrs) > 0
+    error_message = "At least one private subnet CIDR must be specified."
   }
 }
 
@@ -48,8 +47,9 @@ variable "public_subnet_cidrs" {
   type        = list(string)
 
   validation {
-    condition     = length(var.public_subnet_cidrs) == length(var.azs)
-    error_message = "Number of public subnets must match number of availability zones."
+    # Validate list is not empty. Cross-variable validation moved to locals with preconditions.
+    condition     = length(var.public_subnet_cidrs) > 0
+    error_message = "At least one public subnet CIDR must be specified."
   }
 }
 

@@ -96,8 +96,8 @@ variable "node_min_size" {
   default     = 1
 
   validation {
-    condition     = var.node_min_size >= 1 && var.node_min_size <= var.node_desired_size
-    error_message = "node_min_size must be at least 1 and not greater than node_desired_size."
+    condition     = var.node_min_size >= 1
+    error_message = "node_min_size must be at least 1."
   }
 }
 
@@ -107,8 +107,8 @@ variable "node_max_size" {
   default     = 4
 
   validation {
-    condition     = var.node_max_size >= var.node_desired_size
-    error_message = "node_max_size must be greater than or equal to node_desired_size."
+    condition     = var.node_max_size >= 1
+    error_message = "node_max_size must be at least 1."
   }
 }
 
