@@ -3,13 +3,13 @@
 
 module "eks" {
   #tfsec:ignore:aws-eks-encrypt-secrets EKS uses AWS-owned KMS keys; org policy forbids CMKs.
-  # Using v20.31.0 (commit c63a579) - last stable v20 before v21 API changes
-  # v21.x has count expression issues with Terraform 1.13+
-  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=c63a57908d7b4d51895d3f8502d60daae758b761"
+  # Using v21.8.0 (commit 32599e5) - latest stable v21 with AWS provider v6.x support
+  # v21.x required for AWS provider >= 6.15 (v20.x only supports provider v5.x)
+  source = "git::https://github.com/terraform-aws-modules/terraform-aws-eks.git?ref=32599e5dfc369596dfdb28cea120d469c92145c1"
 
-  cluster_name              = var.cluster_name
-  cluster_version           = var.cluster_version
-  cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  name               = var.cluster_name
+  kubernetes_version = var.cluster_version
+  enabled_log_types  = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   # Networking
   vpc_id                   = var.vpc_id
@@ -22,26 +22,26 @@ module "eks" {
   # cluster_endpoint_public_access=false and use VPN/bastion access.
   #trivy:ignore:avd-aws-0040 Public access intentionally configurable for CI/CD
   #trivy:ignore:avd-aws-0041 Public CIDR intentionally configurable for CI/CD
-  cluster_endpoint_public_access       = var.cluster_endpoint_public_access
-  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
-  cluster_endpoint_private_access      = var.cluster_endpoint_private_access
+  endpoint_public_access       = var.cluster_endpoint_public_access
+  endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
+  endpoint_private_access      = var.cluster_endpoint_private_access
 
   # OIDC provider for service account IAM roles
   enable_irsa = var.enable_irsa
 
   # Enforce use of AWS-managed KMS only (no customer-managed CMKs)
-  create_kms_key                   = false
-  cluster_encryption_config        = {}
-  attach_cluster_encryption_policy = false
+  create_kms_key           = false
+  encryption_config        = {}
+  attach_encryption_policy = false
 
   # Cluster addons (automatically managed)
-  cluster_addons = var.cluster_addons
+  addons = var.cluster_addons
 
   # Managed node groups (defined in node-groups.tf)
   eks_managed_node_groups = local.eks_managed_node_groups
 
   # Cluster security group rules (defined in security-groups.tf)
-  cluster_security_group_additional_rules = local.cluster_security_group_additional_rules
+  security_group_additional_rules = local.cluster_security_group_additional_rules
 
   # Node security group rules (defined in security-groups.tf)
   # Note: Upstream module creates egress_all rule for nodes (AVD-AWS-0104)
