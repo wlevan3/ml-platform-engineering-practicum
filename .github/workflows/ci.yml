@@ -28,6 +28,9 @@ jobs:
   terraform-validate:
     name: Terraform Validation
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # Required for AWS OIDC authentication
+      contents: read
 
     steps:
       - name: Checkout code
@@ -54,7 +57,7 @@ jobs:
         run: terraform fmt -check -recursive terraform/
         continue-on-error: true
 
-      - name: Terraform Init
+      - name: Terraform Init (backend=false)
         if: steps.check_terraform.outputs.exists == 'true'
         run: |
           cd terraform
@@ -65,6 +68,38 @@ jobs:
         run: |
           cd terraform
           terraform validate
+
+      - name: Configure AWS credentials for plan
+        if: steps.check_terraform.outputs.exists == 'true'
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        with:
+          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          aws-region: us-west-2
+          role-session-name: GitHubActions-TerraformPlan-${{ github.run_id }}
+
+      - name: Terraform Init (with backend)
+        if: steps.check_terraform.outputs.exists == 'true'
+        working-directory: terraform/environments/dev
+        run: terraform init
+
+      - name: Terraform Plan
+        if: steps.check_terraform.outputs.exists == 'true'
+        working-directory: terraform/environments/dev
+        run: |
+          echo "📋 Running Terraform plan..."
+          terraform plan -no-color | tee plan.txt
+
+      - name: Post plan summary
+        if: steps.check_terraform.outputs.exists == 'true' && always()
+        working-directory: terraform/environments/dev
+        run: |
+          {
+            echo "## Terraform Plan Summary"
+            echo ""
+            echo '```'
+            grep -A 10 "Plan:" plan.txt || echo "No changes detected"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: TFLint
         if: steps.check_terraform.outputs.exists == 'true'
