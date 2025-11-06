@@ -3,6 +3,9 @@
 locals {
   eks_managed_node_groups = {
     main = {
+      # Required by v21.x module - controls whether to create this node group
+      create = true
+
       name = "${var.cluster_name}-ng" # Shortened to fit AWS IAM role name_prefix limit (38 chars)
 
       # Spot instances configuration for cost savings (70% discount)

@@ -2,6 +2,8 @@
 
 Guidance for Claude Code working with this ML platform learning project.
 
+Always use first-principles thinking.
+
 ## Quick Navigation
 
 | Question | Answer | Details |
