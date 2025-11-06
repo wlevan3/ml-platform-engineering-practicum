@@ -10,6 +10,14 @@
 
 set -e
 
+# Verify required tools are available
+for tool in terraform docker aws; do
+	if ! command -v "$tool" &>/dev/null; then
+		echo "✗ Required tool not found: $tool"
+		exit 1
+	fi
+done
+
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
