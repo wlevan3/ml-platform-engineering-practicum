@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document details container image signing using **Cosign** for the ml-platform-engineering-practicum project. Image signing establishes cryptographic proof of image provenance and integrity, protecting against supply chain attacks and unauthorized modifications.
+This document details container image signing using **Cosign** for the ml-platform-engineering-practicum
+project. Image signing establishes cryptographic proof of image provenance and integrity, protecting
+against supply chain attacks and unauthorized modifications.
 
 ## Why Image Signing Matters
 
@@ -104,7 +106,8 @@ permissions:
       ml-platform-api:${{ github.sha }}
 ```
 
-**Key flags:** `--upload=false` (offline) | `--output-signature` (file) | `--certificate-identity-regexp` (validate workflow) | `--certificate-oidc-issuer` (validate GitHub)
+**Key flags:** `--upload=false` (offline) | `--output-signature` (file) |
+`--certificate-identity-regexp` (validate workflow) | `--certificate-oidc-issuer` (validate GitHub)
 
 ## Local Testing
 

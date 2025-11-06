@@ -90,7 +90,8 @@ docker run --rm -v $(pwd):/host aquasec/kube-bench:latest
 
 ### Deployment Security Context ✅
 
-The `ml-platform-api` deployment in `clusters/dev/bootstrap/k8s-manifests/deployment.yaml` implements defense-in-depth security controls:
+The `ml-platform-api` deployment in `clusters/dev/bootstrap/k8s-manifests/deployment.yaml` implements
+defense-in-depth security controls:
 
 **Security Strengths**:
 

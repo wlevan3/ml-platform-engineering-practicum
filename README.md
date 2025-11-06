@@ -202,7 +202,8 @@ Each top-level area owns a distinct concern:
 
 ## 📝 Learning Philosophy
 
-This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection** issue template to capture insights, challenges, trade-offs, and resources.
+This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection**
+issue template to capture insights, challenges, trade-offs, and resources.
 
 **View learnings:** [Project Board Learning view](https://github.com/users/wlevan3/projects)
 

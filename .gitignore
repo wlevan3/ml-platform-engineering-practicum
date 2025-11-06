@@ -308,3 +308,7 @@ worktrees/
 # Personal project management docs
 docs/backlog/
 /.claude/
+
+# Temporary work session notes
+SAVEPOINT.md
+MONOREPO_NOTES.md
