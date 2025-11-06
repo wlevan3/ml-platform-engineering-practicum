@@ -681,7 +681,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.13.5
 
       # -----------------------------------------------------------------------
       # Step 6: Terraform Init (initialize backend and providers)
@@ -1056,7 +1056,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: 1.6.0
+          terraform_version: 1.13.5
 
       # -----------------------------------------------------------------------
       # Step 4: Terraform Init

@@ -53,7 +53,7 @@ jobs:
         if: steps.check_terraform.outputs.exists == 'true'
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.13.5
 
       - name: Terraform Format Check
         if: steps.check_terraform.outputs.exists == 'true'
