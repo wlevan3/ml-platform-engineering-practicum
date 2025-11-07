@@ -221,10 +221,10 @@ kubectl logs -f <pod-name>  # follow
 ## AWS Common Commands
 
 ```bash
-# EKS
-aws eks list-clusters
-aws eks describe-cluster --name <cluster-name>
-aws eks update-kubeconfig --name <cluster-name>
+# EKS - Cluster Management
+aws eks list-clusters --region us-west-2
+aws eks describe-cluster --name ml-platform-dev --region us-west-2
+aws eks update-kubeconfig --name ml-platform-dev --region us-west-2
 
 # S3
 aws s3 ls
@@ -233,6 +233,67 @@ aws s3 sync ./local s3://bucket-name
 
 # RDS
 aws rds describe-db-instances
+```
+
+### EKS Cluster Access Verification
+
+After deploying EKS infrastructure, verify cluster access:
+
+```bash
+# 1. Update kubeconfig to point to EKS cluster
+aws eks update-kubeconfig --name ml-platform-dev --region us-west-2
+
+# Expected output:
+# Added new context arn:aws:eks:us-west-2:ACCOUNT_ID:cluster/ml-platform-dev to /Users/username/.kube/config
+
+# 2. Verify current context points to EKS (not minikube)
+kubectl config current-context
+
+# Expected: arn:aws:eks:us-west-2:ACCOUNT_ID:cluster/ml-platform-dev
+
+# 3. Verify cluster access - list nodes
+kubectl get nodes
+
+# Expected: Shows EKS worker nodes (t3.medium spot instances)
+# Example output:
+# NAME                                          STATUS   ROLES    AGE   VERSION
+# ip-10-0-1-123.us-west-2.compute.internal     Ready    <none>   5m    v1.34.x
+# ip-10-0-2-124.us-west-2.compute.internal     Ready    <none>   5m    v1.34.x
+
+# 4. Verify namespaces exist
+kubectl get namespaces
+
+# Expected: Should see 'ml-platform' namespace (created by Terraform)
+# NAME           STATUS   AGE
+# default        Active   10m
+# kube-system    Active   10m
+# ml-platform    Active   8m
+
+# 5. Verify ml-platform namespace resources
+kubectl get all -n ml-platform
+
+# Expected: May be empty initially (no deployments yet)
+# or show pods/services if deployed via workflow
+
+# 6. Test RBAC permissions
+kubectl auth can-i list pods -n ml-platform
+
+# Expected: yes (IAM role has necessary permissions)
+
+# 7. Verify cluster info
+kubectl cluster-info
+
+# Expected: Shows EKS cluster endpoint URL
+
+# 8. Check node details (capacity, instance type)
+kubectl describe nodes | grep -E "Name:|InstanceType:|allocatable" | head -20
+```
+
+**Troubleshooting**:
+
+- If `kubectl` still points to minikube: Check `kubectl config get-contexts` and switch context
+- If access denied: Verify AWS credentials with `aws sts get-caller-identity`
+- If no nodes: Check EKS console or run `aws eks describe-nodegroup --cluster-name ml-platform-dev --nodegroup-name <name> --region us-west-2`
 ```
 
 ## GitHub Actions Workflows
