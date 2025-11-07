@@ -64,7 +64,14 @@ jobs:
 
       - name: Check trailing whitespace
         run: |
-          if grep -r '[[:space:]]$' --exclude-dir=.git --exclude-dir=.venv --exclude-dir=__pycache__ --exclude='*.pyc' .; then
+          if grep -r '[[:space:]]$' \
+            --exclude-dir=.git \
+            --exclude-dir=.venv \
+            --exclude-dir=__pycache__ \
+            --exclude-dir=.external_modules \
+            --exclude-dir=.pytest_cache \
+            --exclude='*.pyc' \
+            .; then
             echo "❌ Files with trailing whitespace found"
             exit 1
           fi
@@ -78,7 +85,7 @@ jobs:
               echo "❌ Missing newline at EOF: $file"
               status=1
             fi
-          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -print0)
+          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -print0)
           if [ $status -eq 0 ]; then
             echo "✅ All files end with newline"
           fi
@@ -86,7 +93,7 @@ jobs:
 
       - name: Check for large files
         run: |
-          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.pytest_cache/*")
+          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*")
           if [ -n "$large_files" ]; then
             echo "❌ Large files (>1MB) detected:"
             echo "$large_files"
@@ -104,7 +111,12 @@ jobs:
 
       - name: Check for private keys
         run: |
-          if grep -r "BEGIN.*PRIVATE KEY" --exclude-dir=.git --exclude-dir=.venv .; then
+          if grep -r "BEGIN.*PRIVATE KEY" \
+            --exclude-dir=.git \
+            --exclude-dir=.venv \
+            --exclude-dir=.external_modules \
+            --exclude-dir=.pytest_cache \
+            .; then
             echo "❌ Private key detected"
             exit 1
           fi
@@ -150,36 +162,59 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
-      - name: Check if terraform directory exists
-        id: check_terraform
+      - name: Find Terraform modules with .tf files
+        id: find_modules
         run: |
-          if [ -d "infra/aws-core/terraform" ]; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+          if [ ! -d "infra/aws-core/terraform" ]; then
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
             echo "⚠️ Skipping Terraform docs check - infra/aws-core/terraform/ directory does not exist yet"
+            exit 0
+          fi
+
+          # Find directories with .tf files and README.md (exclude .terraform directories)
+          modules=$(find infra/aws-core/terraform/modules -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u | grep -v "^$" || echo "")
+
+          if [ -z "$modules" ]; then
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ No Terraform modules with .tf files found"
+          else
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            echo "Found modules:"
+            echo "$modules"
           fi
 
       - name: Install terraform-docs
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.find_modules.outputs.has_modules == 'true'
         run: |
           curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz
           tar -xzf terraform-docs.tar.gz
           sudo mv terraform-docs /usr/local/bin/
           terraform-docs --version
 
-      - name: Check Terraform documentation
-        if: steps.check_terraform.outputs.exists == 'true'
+      - name: Check Terraform module documentation
+        if: steps.find_modules.outputs.has_modules == 'true'
         run: |
-          # Generate docs and check if README.md would change
-          cd infra/aws-core/terraform
-          terraform-docs markdown table --output-file README.md --output-mode inject .
-          if ! git diff --exit-code README.md; then
-            echo "❌ Terraform documentation is out of sync"
-            echo "Run: terraform-docs markdown table --output-file README.md --output-mode inject infra/aws-core/terraform/"
+          status=0
+          # Check each module directory with .tf files
+          for module_dir in $(find infra/aws-core/terraform/modules -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u); do
+            if [ -f "$module_dir/README.md" ]; then
+              echo "Checking $module_dir"
+              cd "$module_dir"
+              terraform-docs markdown table --output-file README.md --output-mode inject .
+              if ! git diff --exit-code README.md; then
+                echo "❌ Terraform documentation is out of sync in $module_dir"
+                status=1
+              fi
+              cd - > /dev/null
+            fi
+          done
+
+          if [ $status -eq 0 ]; then
+            echo "✅ All Terraform documentation is up to date"
+          else
+            echo "❌ Run terraform-docs to update documentation"
             exit 1
           fi
-          echo "✅ Terraform documentation is up to date"
 
   terraform-validate:
     name: Terraform Validation
