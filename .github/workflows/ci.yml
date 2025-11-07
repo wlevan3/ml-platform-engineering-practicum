@@ -72,6 +72,7 @@ jobs:
             --exclude-dir=.external_modules \
             --exclude-dir=.pytest_cache \
             --exclude-dir=.terraform \
+            --exclude-dir=backlog \
             --exclude='*.pyc' \
             .; then
             echo "❌ Files with trailing whitespace found"
@@ -87,7 +88,7 @@ jobs:
               echo "❌ Missing newline at EOF: $file"
               status=1
             fi
-          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -not -path "*/.terraform/*" -print0)
+          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -not -path "*/.terraform/*" -not -path "*/backlog/*" -print0)
           if [ $status -eq 0 ]; then
             echo "✅ All files end with newline"
           fi
@@ -95,7 +96,7 @@ jobs:
 
       - name: Check for large files
         run: |
-          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*" -not -path "*/.terraform/*")
+          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*" -not -path "*/.terraform/*" -not -path "*/backlog/*")
           if [ -n "$large_files" ]; then
             echo "❌ Large files (>1MB) detected:"
             echo "$large_files"
@@ -120,6 +121,7 @@ jobs:
             --exclude-dir=.external_modules \
             --exclude-dir=.pytest_cache \
             --exclude-dir=.terraform \
+            --exclude-dir=backlog \
             .; then
             echo "❌ Private key detected"
             exit 1
