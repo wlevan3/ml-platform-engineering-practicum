@@ -3,12 +3,14 @@
 > End-to-end ML platform implementation: EKS-based pipelines, model registry, CI/CD, feature store, and
 > observability — with reflections on platform design.
 
+<!-- markdownlint-disable MD013 -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI Pipeline](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml/badge.svg)](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+<!-- markdownlint-enable MD013 -->
 
 ## 🏆 Code Quality
 
