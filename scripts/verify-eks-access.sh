@@ -20,6 +20,9 @@ CLUSTER_NAME="ml-platform-dev"
 REGION="us-west-2"
 NAMESPACE="ml-platform"
 
+# Track warnings
+WARNING_COUNT=0
+
 echo "======================================================================"
 echo "EKS Cluster Access Verification"
 echo "======================================================================"
@@ -35,6 +38,7 @@ print_status() {
     echo -e "${RED}✗${NC} $message"
   else
     echo -e "${YELLOW}⚠${NC} $message"
+    WARNING_COUNT=$((WARNING_COUNT + 1))
   fi
 }
 
@@ -123,7 +127,12 @@ echo ""
 
 # Summary
 echo "======================================================================"
-echo -e "${GREEN}✓ All verification checks passed!${NC}"
+if [ "$WARNING_COUNT" -eq 0 ]; then
+  echo -e "${GREEN}✓ All verification checks passed!${NC}"
+else
+  echo -e "${YELLOW}⚠ Verification completed with $WARNING_COUNT warning(s)${NC}"
+  echo "Warnings are acceptable for initial cluster setup (e.g., missing namespace resources)"
+fi
 echo "======================================================================"
 echo ""
 echo "kubectl is now configured to access EKS cluster: $CLUSTER_NAME"
