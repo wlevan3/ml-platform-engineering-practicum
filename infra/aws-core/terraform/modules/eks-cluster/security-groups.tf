@@ -34,13 +34,59 @@ locals {
     }
   }
 
-  # Node security group egress rules (default deny except VPC CIDR)
+  # Node security group egress rules (least privilege - CIS Benchmark 5.4)
+  # Scope egress to specific protocols instead of allowing all traffic (-1)
   node_security_group_egress_rules = var.vpc_cidr == null ? {} : {
-    egress_within_vpc = {
-      description = "Allow node egress within VPC CIDR"
-      protocol    = "-1"
-      from_port   = 0
-      to_port     = 0
+    egress_https = {
+      description = "HTTPS to VPC endpoints, ECR, and internal services"
+      protocol    = "tcp"
+      from_port   = 443
+      to_port     = 443
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_dns_tcp = {
+      description = "DNS resolution (TCP)"
+      protocol    = "tcp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_dns_udp = {
+      description = "DNS resolution (UDP)"
+      protocol    = "udp"
+      from_port   = 53
+      to_port     = 53
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_ntp = {
+      description = "NTP time synchronization"
+      protocol    = "udp"
+      from_port   = 123
+      to_port     = 123
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_kubelet = {
+      description = "Kubelet API for node communication"
+      protocol    = "tcp"
+      from_port   = 10250
+      to_port     = 10250
+      type        = "egress"
+      cidr_blocks = [var.vpc_cidr]
+    }
+
+    egress_node_ports = {
+      description = "NodePort services range"
+      protocol    = "tcp"
+      from_port   = 30000
+      to_port     = 32767
       type        = "egress"
       cidr_blocks = [var.vpc_cidr]
     }

@@ -74,18 +74,18 @@ repos:
           - --hook-config=--add-to-existing-file=true
           - --hook-config=--create-file-if-not-exist=true
 
-  # IaC security scanning (Dockerfile, Kubernetes, Terraform, etc.)
+  # IaC security scanning (Dockerfile, Kubernetes, Terraform, secrets)
   - repo: https://github.com/bridgecrewio/checkov
     rev: 3.2.489
     hooks:
       - id: checkov
         args:
           [
-            --quiet,
             --framework,
             dockerfile,
             kubernetes,
             terraform,
+            secrets,
             --config-file,
             .checkov.yaml,
           ]

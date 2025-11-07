@@ -2,9 +2,37 @@ directory:
   - terraform
 framework:
   - terraform
-quiet: true
+  - dockerfile
+  - kubernetes
+  - secrets
+
+# Aggressive scanning configuration
+quiet: false # Show all output for visibility
 download-external-modules: true
 external-checks-dir:
   - checkov_policies
+
+# Security level
+compact: false # Detailed output
+hard-fail-on:
+  - HIGH
+  - CRITICAL
+
+# Latest security checks
+enable-secret-scan-all-files: true # Scan all files for secrets
+
+# Policy enforcement
+use-enforcement-rules: true
+
+# Suppress specific checks only when explicitly documented
+# skip-check: []
+
+# Custom checks
 check:
   - CKV_CUSTOM_AWS_001
+# Paranoid mode: fail on any finding
+# soft-fail: false # Uncomment to make all findings fail the build
+
+# Update checks from Bridgecrew platform (requires API key)
+# prisma-api-url: https://api.prismacloud.io
+# bc-api-key: ${BRIDGECREW_API_KEY}
