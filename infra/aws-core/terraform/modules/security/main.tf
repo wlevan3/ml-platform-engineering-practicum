@@ -18,9 +18,7 @@ data "aws_caller_identity" "current" {}
 # Local variables for common values
 locals {
   # Resource naming
-  security_prefix = "${var.cluster_name}-security"
-  sns_topic_name  = "${var.cluster_name}-security-alerts"
-  kms_key_alias   = "alias/${var.cluster_name}-sns"
+  sns_topic_name = "${var.cluster_name}-security-alerts"
 
   # Alert configuration
   alert_severities = ["HIGH", "CRITICAL"]

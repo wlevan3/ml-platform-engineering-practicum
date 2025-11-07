@@ -165,31 +165,6 @@ variable "tags" {
 # Security Module Variables
 # ===================================================================
 
-variable "project_name" {
-  description = "Project name for resource naming and tagging"
-  type        = string
-  default     = "ml-platform-engineering-practicum"
-}
-
-variable "region" {
-  description = "AWS region (alias for aws_region for module compatibility)"
-  type        = string
-  default     = "us-west-2"
-}
-
-# Budget Configuration (FREE - first 2 budgets)
-variable "budget_amount" {
-  description = "Monthly budget limit in USD"
-  type        = string
-  default     = "5.00"
-}
-
-variable "budget_alert_email" {
-  description = "Email address for budget alerts (REQUIRED - replace with your email)"
-  type        = string
-  default     = "" # REPLACE WITH YOUR EMAIL: "your-email@example.com"
-}
-
 # GuardDuty Configuration (30-day FREE trial, then ~$10-30/month)
 variable "enable_guardduty" {
   description = "Enable GuardDuty threat detection (30-day free trial, then ~$10-30/month)"
@@ -250,13 +225,4 @@ variable "use_spot_instances" {
   # Kubernetes will automatically reschedule pods to other nodes
   # For dev/test workloads, this is acceptable and saves significant cost
   # Savings: On-demand t3.medium ($0.0416/hour) → Spot (~$0.0125/hour)
-}
-
-variable "spot_max_price" {
-  description = "Maximum price for spot instances (USD/hour). Leave empty for on-demand price as max."
-  type        = string
-  default     = "" # Empty = no limit (use on-demand price as ceiling)
-
-  # Recommendation: Leave empty to accept spot price up to on-demand
-  # Setting a limit can cause unavailability if spot price exceeds limit
 }

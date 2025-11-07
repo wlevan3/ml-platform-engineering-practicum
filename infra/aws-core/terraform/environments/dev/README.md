@@ -31,8 +31,6 @@ No resources.
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS region for infrastructure deployment | `string` | `"us-west-2"` | no |
 | <a name="input_azs"></a> [azs](#input\_azs) | Availability zones for the VPC | `list(string)` | <pre>[<br/>  "us-west-2a",<br/>  "us-west-2b",<br/>  "us-west-2c"<br/>]</pre> | no |
-| <a name="input_budget_alert_email"></a> [budget\_alert\_email](#input\_budget\_alert\_email) | Email address for budget alerts (REQUIRED - replace with your email) | `string` | `""` | no |
-| <a name="input_budget_amount"></a> [budget\_amount](#input\_budget\_amount) | Monthly budget limit in USD | `string` | `"5.00"` | no |
 | <a name="input_cluster_name"></a> [cluster\_name](#input\_cluster\_name) | Name of the EKS cluster | `string` | `"ml-platform-dev"` | no |
 | <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for EKS cluster | `string` | `"1.34"` | no |
 | <a name="input_ecr_image_tag_mutability"></a> [ecr\_image\_tag\_mutability](#input\_ecr\_image\_tag\_mutability) | Image tag mutability setting (MUTABLE or IMMUTABLE) | `string` | `"IMMUTABLE"` | no |
@@ -50,12 +48,9 @@ No resources.
 | <a name="input_node_max_size"></a> [node\_max\_size](#input\_node\_max\_size) | Maximum number of worker nodes | `number` | `4` | no |
 | <a name="input_node_min_size"></a> [node\_min\_size](#input\_node\_min\_size) | Minimum number of worker nodes | `number` | `1` | no |
 | <a name="input_private_subnet_cidrs"></a> [private\_subnet\_cidrs](#input\_private\_subnet\_cidrs) | CIDR blocks for private subnets (for worker nodes) | `list(string)` | <pre>[<br/>  "10.0.1.0/24",<br/>  "10.0.2.0/24",<br/>  "10.0.3.0/24"<br/>]</pre> | no |
-| <a name="input_project_name"></a> [project\_name](#input\_project\_name) | Project name for resource naming and tagging | `string` | `"ml-platform-engineering-practicum"` | no |
 | <a name="input_public_subnet_cidrs"></a> [public\_subnet\_cidrs](#input\_public\_subnet\_cidrs) | CIDR blocks for public subnets (for load balancers) | `list(string)` | <pre>[<br/>  "10.0.101.0/24",<br/>  "10.0.102.0/24",<br/>  "10.0.103.0/24"<br/>]</pre> | no |
-| <a name="input_region"></a> [region](#input\_region) | AWS region (alias for aws\_region for module compatibility) | `string` | `"us-west-2"` | no |
 | <a name="input_security_alert_email"></a> [security\_alert\_email](#input\_security\_alert\_email) | Email address for HIGH/CRITICAL security findings (REQUIRED when Security Hub enabled) | `string` | `""` | no |
 | <a name="input_single_nat_gateway"></a> [single\_nat\_gateway](#input\_single\_nat\_gateway) | Use single NAT gateway instead of one per AZ (cost optimization for dev) | `bool` | `true` | no |
-| <a name="input_spot_max_price"></a> [spot\_max\_price](#input\_spot\_max\_price) | Maximum price for spot instances (USD/hour). Leave empty for on-demand price as max. | `string` | `""` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to all resources | `map(string)` | `{}` | no |
 | <a name="input_use_spot_instances"></a> [use\_spot\_instances](#input\_use\_spot\_instances) | Use Spot instances instead of On-Demand for EKS nodes (70% cost savings, but interruptible) | `bool` | `true` | no |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR block for VPC | `string` | `"10.0.0.0/16"` | no |
