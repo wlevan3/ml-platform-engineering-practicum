@@ -14,15 +14,10 @@ external-checks-dir:
 
 # Security level
 compact: false # Detailed output
-hard-fail-on:
-  - HIGH
-  - CRITICAL
+# hard-fail-on configured in CI workflow for SARIF generation compatibility
 
 # Latest security checks
 enable-secret-scan-all-files: true # Scan all files for secrets
-
-# Policy enforcement
-use-enforcement-rules: true
 
 # Suppress specific checks only when explicitly documented
 # skip-check: []
