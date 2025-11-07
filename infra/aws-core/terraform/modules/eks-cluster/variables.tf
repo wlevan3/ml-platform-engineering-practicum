@@ -183,13 +183,13 @@ variable "node_disk_size" {
 }
 
 variable "node_ami_type" {
-  description = "AMI type for worker nodes (AL2_x86_64, AL2_x86_64_GPU, AL2_ARM_64, BOTTLEROCKET_*)"
+  description = "AMI type for worker nodes (AL2023_x86_64_STANDARD, AL2023_ARM_64_STANDARD, AL2023_*_NVIDIA, BOTTLEROCKET_*)"
   type        = string
-  default     = "AL2_x86_64"
+  default     = "AL2023_ARM_64_STANDARD"
 
   validation {
-    condition     = can(regex("^(AL2_x86_64|AL2_x86_64_GPU|AL2_ARM_64|BOTTLEROCKET_ARM_64|BOTTLEROCKET_x86_64|BOTTLEROCKET_ARM_64_NVIDIA|BOTTLEROCKET_x86_64_NVIDIA)$", var.node_ami_type))
-    error_message = "AMI type must be a valid EKS AMI type."
+    condition     = can(regex("^(AL2023_x86_64_STANDARD|AL2023_ARM_64_STANDARD|AL2023_x86_64_NVIDIA|AL2023_ARM_64_NVIDIA|AL2023_x86_64_NEURON|BOTTLEROCKET_ARM_64|BOTTLEROCKET_x86_64|BOTTLEROCKET_ARM_64_NVIDIA|BOTTLEROCKET_x86_64_NVIDIA)$", var.node_ami_type))
+    error_message = "AMI type must be a valid EKS AMI type (AL2023 or Bottlerocket only - AL2 deprecated for EKS 1.33+)."
   }
 }
 

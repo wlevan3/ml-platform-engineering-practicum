@@ -305,7 +305,7 @@ No resources.
 | <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for the EKS cluster | `string` | `"1.34"` | no |
 | <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
 | <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
-| <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2\_x86\_64, AL2\_x86\_64\_GPU, AL2\_ARM\_64, BOTTLEROCKET\_*) | `string` | `"AL2_x86_64"` | no |
+| <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_ARM_64_STANDARD"` | no |
 | <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
 | <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `50` | no |
 | <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | Map of additional IAM policies to attach to worker node IAM role (e.g., for SSM, CloudWatch) | `map(string)` | <pre>{<br/>  "AmazonSSMManagedInstanceCore": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"<br/>}</pre> | no |
