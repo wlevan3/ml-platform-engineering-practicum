@@ -1,9 +1,6 @@
 # IAM role for EKS managed node groups
 # Created separately to avoid for_each with dynamic data sources
 
-data "aws_partition" "current" {}
-data "aws_caller_identity" "current" {}
-
 # IAM role for node groups
 resource "aws_iam_role" "node_group" {
   name_prefix = "${var.cluster_name}-ng-"
