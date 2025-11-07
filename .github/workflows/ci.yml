@@ -898,18 +898,22 @@ jobs:
         with:
           scan-type: "image"
           image-ref: "ml-platform-api:${{ github.sha }}"
+          format: "table"
+          severity: "CRITICAL,HIGH"
+          exit-code: 1 # Fail CI on vulnerabilities
+
+      # Note: Trivy SARIF upload to GitHub Security removed to prevent blocking merges when Docker build is skipped
+      # Trivy still runs and fails CI on vulnerabilities, but doesn't create code scanning alerts
+
+      - name: Generate Trivy SARIF for SonarCloud
+        if: always()
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
+        with:
+          scan-type: "image"
+          image-ref: "ml-platform-api:${{ github.sha }}"
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
-          # Note: exit-code removed to prevent false positives in Trivy v0.65.0 from blocking CI
-          # GitHub Security auto-resolves false positives. Real vulnerabilities still visible in Security tab.
-
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-          category: "trivy-docker-scan"
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
