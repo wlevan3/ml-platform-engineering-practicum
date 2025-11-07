@@ -25,6 +25,32 @@ management.
 **Note**: Kubernetes provider is intentionally NOT required. Kubernetes resources (ResourceQuotas, LimitRanges) are
 managed via YAML manifests in `clusters/dev/bootstrap/k8s-manifests/manifests/` as part of the GitOps migration strategy.
 
+## Migration Guide
+
+### Breaking Change: `node_iam_role_additional_policies` Type Change
+
+**Version**: PR #119 (commit 849f3f9)
+
+The `node_iam_role_additional_policies` variable type changed from `map(string)` to `list(string)` to resolve a Terraform `for_each` error with dynamic data sources.
+
+**Migration Required:**
+
+```hcl
+# OLD (v1.0.0) - Will cause syntax error
+node_iam_role_additional_policies = {
+  MyCustomPolicy = "arn:aws:iam::aws:policy/MyCustomPolicy"
+  AnotherPolicy  = "arn:aws:iam::123456789012:policy/CustomPolicy"
+}
+
+# NEW (v1.1.0+) - Use list syntax
+node_iam_role_additional_policies = [
+  "arn:aws:iam::aws:policy/MyCustomPolicy",
+  "arn:aws:iam::123456789012:policy/CustomPolicy"
+]
+```
+
+**Note on SSM Access**: Previously, `AmazonSSMManagedInstanceCore` was included in the default value. This is now controlled by the separate `enable_ssm_access` variable (defaults to `true`), so SSM access is still enabled by default. To disable SSM access, set `enable_ssm_access = false`.
+
 ## Usage
 
 ### Basic Example (On-Demand Instances)
@@ -82,10 +108,10 @@ module "eks_cluster" {
     NodeGroup   = "ml-workloads"
   }
 
-  # IAM policies for node access
-  node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
+  # Additional IAM policies for node access (SSM enabled by default via enable_ssm_access)
+  node_iam_role_additional_policies = [
+    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  ]
 
   tags = {
     Environment = "dev"
@@ -164,7 +190,8 @@ module "eks_cluster" {
 | node_max_size | Maximum number of worker nodes | `number` | `4` | no |
 | node_disk_size | Disk size in GB for worker nodes | `number` | `50` | no |
 | node_ami_type | AMI type for worker nodes | `string` | `"AL2_x86_64"` | no |
-| node_iam_role_additional_policies | Additional IAM policies for nodes | `map(string)` | See variables.tf | no |
+| enable_ssm_access | Enable AWS Systems Manager for node debugging | `bool` | `true` | no |
+| node_iam_role_additional_policies | Additional IAM policies for nodes | `list(string)` | `[]` | no |
 | node_labels | Kubernetes labels for nodes | `map(string)` | `{}` | no |
 | node_taints | Kubernetes taints for nodes | `list(object)` | `[]` | no |
 | tags | Tags to apply to all resources | `map(string)` | `{}` | no |
@@ -281,7 +308,9 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 
 ## Providers
 
-No providers.
+| Name | Version |
+|------|---------|
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.20.0 |
 
 ## Modules
 
@@ -291,7 +320,14 @@ No providers.
 
 ## Resources
 
-No resources.
+| Name | Type |
+|------|------|
+| [aws_iam_role.node_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.node_group_AmazonEC2ContainerRegistryReadOnly](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.node_group_AmazonEKSWorkerNodePolicy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.node_group_AmazonEKS_CNI_Policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.node_group_AmazonSSMManagedInstanceCore](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_role_policy_attachment.node_group_additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 
 ## Inputs
 
@@ -305,10 +341,11 @@ No resources.
 | <a name="input_cluster_version"></a> [cluster\_version](#input\_cluster\_version) | Kubernetes version for the EKS cluster | `string` | `"1.34"` | no |
 | <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
 | <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
+| <a name="input_enable_ssm_access"></a> [enable\_ssm\_access](#input\_enable\_ssm\_access) | Enable AWS Systems Manager access for node debugging | `bool` | `true` | no |
 | <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_ARM_64_STANDARD"` | no |
 | <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
 | <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `50` | no |
-| <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | Map of additional IAM policies to attach to worker node IAM role (e.g., for SSM, CloudWatch) | `map(string)` | <pre>{<br/>  "AmazonSSMManagedInstanceCore": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"<br/>}</pre> | no |
+| <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | List of additional IAM policy ARNs to attach to worker node IAM role (e.g., custom CloudWatch policies) | `list(string)` | `[]` | no |
 | <a name="input_node_instance_type"></a> [node\_instance\_type](#input\_node\_instance\_type) | Instance type for on-demand worker nodes (used when use\_spot\_instances=false) | `string` | `"t3.medium"` | no |
 | <a name="input_node_labels"></a> [node\_labels](#input\_node\_labels) | Kubernetes labels to apply to worker nodes (for pod scheduling) | `map(string)` | `{}` | no |
 | <a name="input_node_max_size"></a> [node\_max\_size](#input\_node\_max\_size) | Maximum number of worker nodes | `number` | `4` | no |

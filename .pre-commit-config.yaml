@@ -63,6 +63,9 @@ repos:
     hooks:
       - id: terraform_fmt
       - id: terraform_validate
+      - id: terraform_tflint
+        args:
+          - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
       # terraform_trivy disabled - runs in CI with better filtering
       # Our code: 0 misconfigurations. Failures only in external modules.
       - id: terraform_docs
