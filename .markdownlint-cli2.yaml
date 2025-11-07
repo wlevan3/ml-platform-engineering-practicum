@@ -1,0 +1,5 @@
+# markdownlint-cli2 configuration
+# Handles terraform-docs auto-generated content gracefully
+
+# Disable MD034 (bare URLs) - terraform-docs generates bare URLs in module tables
+MD034: false

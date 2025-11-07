@@ -240,7 +240,7 @@ This module is part of the ml-platform-engineering-practicum project (learning p
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_vpc"></a> [vpc](#module\_vpc) | git::<https://github.com/terraform-aws-modules/terraform-aws-vpc.git> | v6.5.0 |
+| <a name="module_vpc"></a> [vpc](#module\_vpc) | git::https://github.com/terraform-aws-modules/terraform-aws-vpc.git | v6.5.0 |
 
 ## Resources
 
