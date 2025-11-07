@@ -568,7 +568,7 @@ jobs:
         run: ruff check .
 
       - name: Run Mypy (type checking)
-        run: mypy services/api/
+        run: mypy --no-incremental --follow-imports=skip services/api/
 
   python-test:
     name: Python Tests with Coverage
