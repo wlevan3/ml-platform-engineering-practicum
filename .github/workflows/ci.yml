@@ -524,7 +524,7 @@ jobs:
           python-version: "3.13"
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@c009f9f1f4f284f923020e37c5d3b9b422f4f01d # v3.2.1
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
           terraform_version: "1.13.5"
 
