@@ -129,7 +129,7 @@ variable "use_spot_instances" {
 variable "spot_instance_types" {
   description = "List of instance types for spot instances (multiple types increase fulfillment success rate)"
   type        = list(string)
-  default     = ["t4g.medium", "t4g.small", "t4g.large"] # ARM-based instances for AL2023_ARM_64_STANDARD
+  default     = ["t3.medium", "t3a.medium", "t2.medium"] # x86_64 instances for AL2023_x86_64_STANDARD
 }
 
 variable "node_instance_type" {
@@ -185,7 +185,7 @@ variable "node_disk_size" {
 variable "node_ami_type" {
   description = "AMI type for worker nodes (AL2023_x86_64_STANDARD, AL2023_ARM_64_STANDARD, AL2023_*_NVIDIA, BOTTLEROCKET_*)"
   type        = string
-  default     = "AL2023_ARM_64_STANDARD"
+  default     = "AL2023_x86_64_STANDARD"
 
   validation {
     condition     = can(regex("^(AL2023_x86_64_STANDARD|AL2023_ARM_64_STANDARD|AL2023_x86_64_NVIDIA|AL2023_ARM_64_NVIDIA|AL2023_x86_64_NEURON|BOTTLEROCKET_ARM_64|BOTTLEROCKET_x86_64|BOTTLEROCKET_ARM_64_NVIDIA|BOTTLEROCKET_x86_64_NVIDIA)$", var.node_ami_type))
