@@ -68,8 +68,6 @@ module "eks_cluster" {
   node_max_size      = var.node_max_size
 
   tags = local.tags
-
-  depends_on = [module.networking]
 }
 
 # ===================================================================
