@@ -1,6 +1,6 @@
-import rego.v1
-
 package terraform.kms
+
+import rego.v1
 
 # Deny Terraform plans that introduce customer-managed KMS keys.
 deny contains msg if {
