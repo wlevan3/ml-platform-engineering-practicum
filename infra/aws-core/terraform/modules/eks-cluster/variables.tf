@@ -66,13 +66,13 @@ variable "control_plane_subnet_ids" {
 variable "cluster_endpoint_public_access" {
   description = "Enable public API server endpoint. Required for CI/CD access (e.g., GitHub Actions). Production environments should set to false and use VPN/bastion."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
-  description = "List of CIDR blocks that can access the public API server endpoint. Defaults to open (0.0.0.0/0). Production should restrict to specific IPs."
+  description = "List of CIDR blocks that can access the public API server endpoint. Must be explicitly configured if public access is enabled."
   type        = list(string)
-  default     = ["0.0.0.0/0"]
+  default     = []
 
   validation {
     condition = alltrue([

@@ -470,10 +470,23 @@ jobs:
         with:
           directory: infra/aws-core/terraform/
           framework: terraform
-          soft_fail: false
-          hard_fail_on: HIGH,CRITICAL
+          soft_fail: true # Allow SARIF generation even with findings
           output_format: sarif
           output_file_path: ./checkov-results.sarif
+        continue-on-error: true # Generate SARIF before failing
+
+      - name: Fail on Checkov HIGH/CRITICAL findings
+        if: always() && steps.check_terraform.outputs.exists == 'true'
+        run: |
+          if [ -f ./checkov-results.sarif ]; then
+            # Extract HIGH/CRITICAL findings count from SARIF
+            # SARIF levels: error=HIGH/CRITICAL, warning=MEDIUM, note=LOW
+            HIGH_CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")] | length' ./checkov-results.sarif)
+            if [ "$HIGH_CRITICAL" -gt 0 ]; then
+              echo "❌ Found $HIGH_CRITICAL HIGH/CRITICAL findings"
+              exit 1
+            fi
+          fi
 
       - name: Upload Checkov SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
