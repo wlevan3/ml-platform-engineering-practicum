@@ -129,25 +129,61 @@ jobs:
         if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
+          set -euo pipefail
+
+          # Generate JSON plan for OPA
           terraform show -json plan.tfplan > plan.json
-          opa eval \
+
+          # Run OPA evaluation with error handling
+          if ! opa eval \
             --format json \
             --data "$GITHUB_WORKSPACE/infra/policies/opa" \
             --input plan.json \
-            "data.terraform.kms.deny" > opa_result.json
-          DENY_COUNT=$(jq '[.result[]?.expressions[]?.value[]?] | length' opa_result.json)
-          if [ "$DENY_COUNT" -gt 0 ]; then
-            {
-              echo "## OPA Policy Violations"
-              echo ""
-              echo '```'
-              jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "OPA policy violations detected:"
-            jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
+            "data.terraform.kms.deny" > opa_result.json; then
+            echo "❌ OPA evaluation failed"
             exit 1
           fi
+
+          # Validate OPA result file exists and is valid JSON
+          if [ ! -f opa_result.json ]; then
+            echo "❌ OPA result file not found"
+            exit 1
+          fi
+
+          # Extract deny count with robust null handling and default value
+          # Handle both empty arrays and missing fields gracefully
+          DENY_COUNT=$(jq -r '
+            if .result and (.result | length > 0) then
+              [.result[]?.expressions[]?.value[]? | select(. != null and . != "")] | length
+            else
+              0
+            end
+          ' opa_result.json)
+
+          # Validate DENY_COUNT is a valid number
+          if ! [[ "$DENY_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid OPA result format. DENY_COUNT='$DENY_COUNT'"
+            echo "OPA result content:"
+            cat opa_result.json
+            exit 1
+          fi
+
+          echo "📊 OPA evaluation complete: $DENY_COUNT policy violation(s)"
+
+          if [ "$DENY_COUNT" -gt 0 ]; then
+            {
+              echo "## ❌ OPA Policy Violations"
+              echo ""
+              echo '```'
+              jq -r '.result[]?.expressions[]?.value[]? | select(. != null and . != "")' opa_result.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ OPA policy violations detected:"
+            jq -r '.result[]?.expressions[]?.value[]? | select(. != null and . != "")' opa_result.json
+            exit 1
+          fi
+
+          echo "✅ No OPA policy violations detected"
 
       - name: Generate Sentinel tfplan mock
         if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
