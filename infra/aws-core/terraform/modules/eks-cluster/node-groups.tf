@@ -36,8 +36,9 @@ locals {
         max_unavailable_percentage = var.use_spot_instances ? 50 : 33
       }
 
-      # IAM role additional policies
-      iam_role_additional_policies = var.node_iam_role_additional_policies
+      # Use pre-created IAM role to avoid for_each with dynamic data sources
+      create_iam_role = false
+      iam_role_arn    = aws_iam_role.node_group.arn
 
       # Node labels for pod scheduling
       labels = merge(

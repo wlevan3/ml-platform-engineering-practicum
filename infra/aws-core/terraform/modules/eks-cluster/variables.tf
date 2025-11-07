@@ -193,12 +193,16 @@ variable "node_ami_type" {
   }
 }
 
+variable "enable_ssm_access" {
+  description = "Enable AWS Systems Manager access for node debugging"
+  type        = bool
+  default     = true
+}
+
 variable "node_iam_role_additional_policies" {
-  description = "Map of additional IAM policies to attach to worker node IAM role (e.g., for SSM, CloudWatch)"
-  type        = map(string)
-  default = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
+  description = "List of additional IAM policy ARNs to attach to worker node IAM role (e.g., custom CloudWatch policies)"
+  type        = list(string)
+  default     = []
 }
 
 variable "node_labels" {
