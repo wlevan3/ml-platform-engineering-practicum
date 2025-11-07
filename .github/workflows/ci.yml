@@ -559,7 +559,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip==25.3
-          pip install black==25.9.0 ruff==0.14.3 pytest==8.3.4 mypy==1.18.2 pydantic joblib-stubs==1.5.2.0.20250831
+          pip install black==25.9.0 ruff==0.14.3 pytest==8.3.4 mypy==1.18.2 pydantic==2.10.5 joblib-stubs==1.5.2.0.20250831 fastapi==0.120.4 scikit-learn==1.6.1 numpy==2.2.2 skops>=0.13.0 httpx==0.28.1
 
       - name: Run Black (formatting check)
         run: black --check .
@@ -569,7 +569,6 @@ jobs:
 
       - name: Run Mypy (type checking)
         run: mypy --no-incremental --follow-imports=silent services/api/
-        continue-on-error: true # TODO: Fix mypy discovering files outside services/api in CI
 
   python-test:
     name: Python Tests with Coverage
