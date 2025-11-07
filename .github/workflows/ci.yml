@@ -999,7 +999,8 @@ jobs:
   sbom-generation:
     name: SBOM Generation (Syft)
     runs-on: ubuntu-latest
-    needs: [docker-build-scan] # Run after Docker image is built and scanned
+    needs: [docker-build-scan, check-docker-changes]
+    if: needs.check-docker-changes.outputs.needs_build == 'true'
     permissions:
       contents: read
 
