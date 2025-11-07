@@ -110,7 +110,7 @@ Action: Review finding in AWS Security Hub console
 
    ```bash
    # Get console URL from Terraform outputs
-   cd terraform/environments/dev
+   cd infra/aws-core/terraform/environments/dev
    terraform output security_hub_console_url
 
    # Or directly:
@@ -209,12 +209,12 @@ aws s3api put-public-access-block \
 
    ```bash
    # Update Terraform configurations
-   cd terraform/environments/dev
+   cd infra/aws-core/terraform/environments/dev
    terraform plan
    terraform apply
 
    # Update Kubernetes resources
-   kubectl apply -f k8s/
+   kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
    ```
 
 2. **Verify remediation:**
@@ -239,7 +239,7 @@ aws s3api put-public-access-block \
 | S3.1 Public Access Enabled | HIGH | Block public access | See command below |
 | CVE Package Vulnerability | HIGH | Update package/container image | `yum update PACKAGE` or rebuild Docker image |
 | Network Exposure Port 0.0.0.0/0 | MEDIUM/HIGH | Restrict to specific IP range | `aws ec2 revoke/authorize-security-group-ingress` |
-| IAM Password Policy Missing | MEDIUM | Configure via Console or Terraform | Update terraform/environments/dev/main.tf |
+| IAM Password Policy Missing | MEDIUM | Configure via Console or Terraform | Update infra/aws-core/terraform/environments/dev/main.tf |
 | CloudTrail Not Enabled | MEDIUM | Enable via Terraform | `terraform apply -var="enable_cloudtrail=true"` |
 
 **S3.1 Public Access Enabled Remediation Command:**
@@ -255,7 +255,7 @@ aws s3api put-public-access-block --bucket NAME \
 ### Remediation via Terraform
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform plan
 terraform apply
 # Wait 12-24 hours for Security Hub compliance refresh
@@ -304,7 +304,7 @@ Escalate to senior security personnel if:
 
 ```bash
 # Get URLs from Terraform outputs
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 terraform output security_hub_console_url
 terraform output guardduty_console_url
@@ -335,7 +335,7 @@ aws cloudtrail lookup-events --lookup-attributes AttributeKey=EventName,Attribut
 ### Terraform Operations
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Enable Security Hub (if not already enabled)
 terraform apply -var="enable_security_hub=true" -var="security_alert_email=your-email@example.com"

@@ -6,6 +6,8 @@ on:
   pull_request_review:
     types: [submitted]
 
+permissions: {} # Restrict default permissions, grant specific permissions per job
+
 jobs:
   resolve-outdated:
     runs-on: ubuntu-latest
@@ -15,7 +17,7 @@ jobs:
 
     steps:
       - name: Resolve outdated Copilot comments
-        uses: Ardiannn08/resolve-outdated-comment@a8a6455f6a1719adead680c18ec0865745990a08  # v1.1
+        uses: Ardiannn08/resolve-outdated-comment@a8a6455f6a1719adead680c18ec0865745990a08 # v1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filter-user: "Copilot"

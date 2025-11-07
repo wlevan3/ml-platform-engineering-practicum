@@ -2,9 +2,11 @@
 
 ## Overview
 
-This document explains OpenID Connect (OIDC) authentication between GitHub Actions and AWS. OIDC allows GitHub Actions workflows to securely authenticate to AWS without storing long-lived AWS credentials.
+This document explains OpenID Connect (OIDC) authentication between GitHub Actions and AWS. OIDC allows
+GitHub Actions workflows to securely authenticate to AWS without storing long-lived AWS credentials.
 
-**Benefits over Access Keys:** No long-lived creds ✅ | Auto rotation ✅ | Reduced risk ✅ | Fine-grained access ✅ | IAM best practices ✅
+**Benefits over Access Keys:** No long-lived creds ✅ | Auto rotation ✅ | Reduced risk ✅ |
+Fine-grained access ✅ | IAM best practices ✅
 
 ---
 
@@ -116,7 +118,7 @@ gh run watch                       # Monitor
 |-------|-------|----------|
 | `Not authorized to perform sts:AssumeRoleWithWebIdentity` | Trust policy mismatch | `aws iam get-role --query 'Role.AssumeRolePolicyDocument.Statement[0].Condition'` |
 | `Missing permissions: id-token: write` | No OIDC permission | Add `permissions: id-token: write` to workflow |
-| `Unable to assume role - invalid token` | OIDC validation failed | Verify `aud`=sts.amazonaws.com | Check OIDC provider exists |
+| `Unable to assume role - invalid token` | OIDC validation failed | Verify `aud`=sts.amazonaws.com and check OIDC provider exists |
 | `Access Denied` on AWS APIs | Insufficient role perms | `aws iam list-attached-role-policies --role-name <role>` |
 
 ---
@@ -190,7 +192,8 @@ permissions:
     aws-region: us-west-2
 ```
 
-**Steps:** Create OIDC provider ✅ | Create IAM role ✅ | Test OIDC ✅ | Update workflows ⏭️ | Remove secrets ⏭️ | Deactivate keys ⏭️
+**Steps:** Create OIDC provider ✅ | Create IAM role ✅ | Test OIDC ✅ | Update workflows ⏭️ |
+Remove secrets ⏭️ | Deactivate keys ⏭️
 
 ---
 

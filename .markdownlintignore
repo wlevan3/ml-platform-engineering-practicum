@@ -1,0 +1,4 @@
+# Ignore terraform-docs auto-generated README files
+# These contain HTML tables that violate MD033 (no-inline-html)
+infra/aws-core/terraform/environments/*/README.md
+infra/aws-core/terraform/modules/*/README.md

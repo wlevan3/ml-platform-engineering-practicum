@@ -510,7 +510,7 @@ pytest tests/
 # To run manually:
 # black --check .
 # ruff check .
-# mypy app/
+# mypy services/api/
 
 # Kubernetes
 kubectl apply --dry-run=client -f manifests/
@@ -598,15 +598,12 @@ ml-platform-engineering-practicum/
 ├── .github/              # GitHub configuration
 │   ├── workflows/        # CI/CD workflows
 │   └── ISSUE_TEMPLATE/   # Issue templates
-├── terraform/            # Infrastructure as Code
-│   ├── eks/             # EKS cluster configuration
-│   ├── networking/      # VPC, subnets, etc.
-│   └── modules/         # Reusable Terraform modules
-├── k8s/                 # Kubernetes manifests
-│   ├── model-registry/  # MLflow/registry deployments
-│   ├── feature-store/   # Feature store components
-│   └── observability/   # Monitoring stack
-├── scripts/             # Automation scripts
+├── infra/               # Infrastructure & policy code
+│   ├── aws-core/        # Foundational Terraform for AWS/EKS/VPC
+│   └── policies/        # Sentinel/OPA/Checkov policies
+├── clusters/            # GitOps manifests (app-of-apps entrypoints)
+├── services/            # Application source (e.g., FastAPI service)
+├── platform/            # Shared tooling, scripts, and automation
 ├── docs/                # Additional documentation
 └── tests/               # Test files
 

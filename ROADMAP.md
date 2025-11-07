@@ -137,4 +137,4 @@ Each phase should be measured against:
 
 ---
 
-*Last Updated: 2025-01-04*
+**Last Updated:** 2025-01-04

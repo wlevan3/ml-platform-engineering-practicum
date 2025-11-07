@@ -2,11 +2,13 @@
 
 Guidance for Claude Code working with this ML platform learning project.
 
+Always use first-principles thinking.
+
 ## Quick Navigation
 
 | Question | Answer | Details |
 |----------|--------|---------|
-| How do I run the API? | `uvicorn app.main:app --reload` | [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server) |
+| How do I run the API? | `uvicorn services.api.main:app --reload` | [QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md#api-server) |
 | Run tests? | `pytest` | [CONTRIBUTING.md](CONTRIBUTING.md#testing-requirements) |
 | Python version? | Python 3.13 + uv | [README.md](README.md#local-development-setup) |
 | Commit format? | Conventional: `<type>(<scope>): <subject>` | [CONTRIBUTING.md](CONTRIBUTING.md#commit-guidelines) |
@@ -45,7 +47,7 @@ just complete tasks—understand them deeply.
 
 ```bash
 # Development
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000  # Run API server
+uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000  # Run API server
 python train_model.py                                      # Train model
 pytest                                                     # Run tests
 pytest -v --cov=app --cov-report=term-missing             # Tests with coverage
@@ -53,7 +55,7 @@ pytest -v --cov=app --cov-report=term-missing             # Tests with coverage
 # Code quality (YOU MUST run before pushing)
 black .                   # Format code
 ruff check . --fix        # Lint and auto-fix
-mypy app/                 # Type checking
+mypy services/api/                 # Type checking
 pre-commit run --all-files  # Run all pre-commit hooks
 
 # Pre-commit setup
@@ -74,7 +76,7 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 **Project-specific patterns**:
 
-- **Model loading**: Singleton pattern in `app/model.py:get_model()`
+- **Model loading**: Singleton pattern in `services/api/model.py:get_model()`
 - **Model security**: .skops format + SHA-256 verification (see [PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md))
 - **FastAPI**: Lifespan events, dependency injection, HTTPException with status codes
 - **Testing**: 90% coverage target (SonarCloud gate: 80% minimum)
@@ -144,13 +146,13 @@ syft ml-platform-api:latest -o spdx-json --file sbom-docker-spdx.json
 
 ```text
 ml-platform-engineering-practicum/
-├── app/                    # FastAPI application
+├── services/api/           # FastAPI application
 │   ├── main.py            # API endpoints
 │   ├── model.py           # Model loading (singleton pattern)
-│   └── schemas.py         # Pydantic models
-├── models/                 # Model artifacts (gitignored except metadata)
-│   ├── iris_classifier.skops   # Trained model (skops format)
-│   └── model_metadata.json     # Model metadata + hash
+│   ├── schemas.py         # Pydantic models
+│   └── models/            # Model artifacts (gitignored except metadata)
+│       ├── iris_classifier.skops   # Trained model (skops format)
+│       └── model_metadata.json     # Model metadata + hash
 ├── tests/                  # Test suite
 │   └── test_api.py        # FastAPI tests
 ├── docs/                   # Documentation
@@ -204,7 +206,7 @@ Jobs are **conditional** based on file existence. Skipped jobs show in summary.
 - `.git/` - Git metadata
 - `__pycache__/` - Python bytecode
 - `.pytest_cache/` - Test cache
-- `models/` - Binary ML artifacts (.skops files)
+- `services/api/models/` - Binary ML artifacts (.skops files)
 - `node_modules/` - If present (not currently in project)
 
 ## Quick Troubleshooting
@@ -214,7 +216,7 @@ Jobs are **conditional** based on file existence. Skipped jobs show in summary.
 - `ModuleNotFoundError` → Activate venv: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
 - Pre-commit fails → Install hooks: `pre-commit install`, then retry commit
 - Tests fail → Check Python version: `python --version` (must be 3.13+)
-- Model loading fails → Verify .skops file exists: `ls -lh models/iris_classifier.skops`
+- Model loading fails → Verify .skops file exists: `ls -lh services/api/models/iris_classifier.skops`
 
 **Detailed troubleshooting**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) (comprehensive guide for common issues)
 

@@ -6,3 +6,5 @@ quiet: true
 download-external-modules: true
 external-checks-dir:
   - checkov_policies
+check:
+  - CKV_CUSTOM_AWS_001

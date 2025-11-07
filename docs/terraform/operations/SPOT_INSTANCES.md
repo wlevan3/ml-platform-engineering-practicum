@@ -25,7 +25,7 @@ when it needs the capacity back.
 
 ### Terraform Variables
 
-The spot instances feature is controlled by variables in `terraform/environments/dev/variables.tf`:
+The spot instances feature is controlled by variables in `infra/aws-core/terraform/environments/dev/variables.tf`:
 
 ```hcl
 variable "use_spot_instances" {
@@ -43,7 +43,7 @@ variable "spot_max_price" {
 
 ### EKS Node Group
 
-The node group configuration in `terraform/environments/dev/main.tf` uses:
+The node group configuration in `infra/aws-core/terraform/environments/dev/main.tf` uses:
 
 1. **Multiple instance types** for better spot availability:
    - `t3.medium` - Primary (Intel)
@@ -56,7 +56,7 @@ The node group configuration in `terraform/environments/dev/main.tf` uses:
 
 ### Kubernetes Deployment
 
-The deployment in `k8s/deployment.yaml` includes:
+The deployment in `clusters/dev/bootstrap/k8s-manifests/deployment.yaml` includes:
 
 1. **Pod anti-affinity** - Spreads pods across nodes to avoid single point of failure
 2. **Multiple replicas** (2) - Ensures at least one pod survives spot interruption
@@ -149,13 +149,13 @@ For production-grade spot instance handling, deploy the AWS Node Termination Han
 The handler is **optional** for dev environments but **recommended** for production:
 
 ```bash
-# Deploy via Helm (already configured in terraform/environments/dev/main.tf)
+# Deploy via Helm (already configured in infra/aws-core/terraform/environments/dev/main.tf)
 # Uncomment the aws_node_termination_handler module to enable
 
 terraform apply
 ```
 
-Configuration is in `terraform/environments/dev/spot_termination_handler.tf` (to be created).
+Configuration is in `infra/aws-core/terraform/environments/dev/spot_termination_handler.tf` (to be created).
 
 ## Disabling Spot Instances
 
@@ -164,7 +164,7 @@ If you encounter issues or want to switch back to on-demand:
 ### Option 1: Terraform Variable
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Edit terraform.tfvars
 echo 'use_spot_instances = false' >> terraform.tfvars
@@ -285,7 +285,7 @@ kubectl get deployment ml-platform-api -n ml-platform -o yaml | grep -A5 replica
 kubectl get pods -n ml-platform -o wide
 ```
 
-**Fix**: Ensure at least 2 replicas and pod anti-affinity configured (already done in `k8s/deployment.yaml`).
+**Fix**: Ensure at least 2 replicas and pod anti-affinity configured (already done in `clusters/dev/bootstrap/k8s-manifests/deployment.yaml`).
 
 ## References
 

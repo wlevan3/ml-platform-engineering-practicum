@@ -14,7 +14,7 @@ Complete end-to-end deployment guide for the ML Platform Engineering Practicum.
 
 ```bash
 # 1. Deploy infrastructure
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform apply
 
 # 2. Configure kubectl
@@ -24,10 +24,10 @@ aws eks update-kubeconfig --name ml-platform-dev --region us-west-2
 ./deploy-to-ecr.sh  # (script to be created)
 
 # 4. Deploy to Kubernetes
-kubectl apply -f ../../../k8s/namespace.yaml
-kubectl apply -f ../../../k8s/deployment.yaml
-kubectl apply -f ../../../k8s/service.yaml
-kubectl apply -f ../../../k8s/ingress.yaml
+kubectl apply -f ../../../clusters/dev/bootstrap/k8s-manifests/namespace.yaml
+kubectl apply -f ../../../clusters/dev/bootstrap/k8s-manifests/deployment.yaml
+kubectl apply -f ../../../clusters/dev/bootstrap/k8s-manifests/service.yaml
+kubectl apply -f ../../../clusters/dev/bootstrap/k8s-manifests/ingress.yaml
 
 # 5. Wait for ALB to provision (2-3 minutes)
 kubectl get ingress -n ml-platform -w
@@ -44,7 +44,7 @@ curl http://${ALB_DNS}/health/ready
 ### Step 1: Deploy AWS Infrastructure (15-20 minutes)
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Initialize Terraform (first time only)
 terraform init
@@ -174,13 +174,13 @@ ECR_IMAGE=$(terraform output -raw ecr_repository_url):v1.0.0
 # After:  image: 984479408136.dkr.ecr.us-west-2.amazonaws.com/ml-platform-api:v1.0.0
 
 # Option A: Manual edit
-vim k8s/deployment.yaml
+vim clusters/dev/bootstrap/k8s-manifests/deployment.yaml
 
 # Option B: Automated with sed (macOS)
-sed -i '' "s|image: ml-platform-api:v1.0.0|image: ${ECR_IMAGE}|g" k8s/deployment.yaml
+sed -i '' "s|image: ml-platform-api:v1.0.0|image: ${ECR_IMAGE}|g" clusters/dev/bootstrap/k8s-manifests/deployment.yaml
 
 # Option B: Automated with sed (Linux)
-sed -i "s|image: ml-platform-api:v1.0.0|image: ${ECR_IMAGE}|g" k8s/deployment.yaml
+sed -i "s|image: ml-platform-api:v1.0.0|image: ${ECR_IMAGE}|g" clusters/dev/bootstrap/k8s-manifests/deployment.yaml
 ```
 
 ---
@@ -189,19 +189,19 @@ sed -i "s|image: ml-platform-api:v1.0.0|image: ${ECR_IMAGE}|g" k8s/deployment.ya
 
 ```bash
 # Create namespace
-kubectl apply -f k8s/namespace.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/namespace.yaml
 # Output: namespace/ml-platform created
 
 # Deploy application
-kubectl apply -f k8s/deployment.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/deployment.yaml
 # Output: deployment.apps/ml-platform-api created
 
 # Create service
-kubectl apply -f k8s/service.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/service.yaml
 # Output: service/ml-platform-api created
 
 # Create ingress (triggers ALB creation)
-kubectl apply -f k8s/ingress.yaml
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/ingress.yaml
 # Output: ingress.networking.k8s.io/ml-platform-api created
 ```
 
@@ -299,7 +299,7 @@ aws elbv2 describe-load-balancers \
 When done testing, destroy infrastructure to avoid charges:
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Option 1: Destroy everything except CloudTrail/Budgets (RECOMMENDED)
 ./destroy-eks.sh
@@ -332,7 +332,7 @@ kubectl describe pod -n ml-platform -l app=ml-platform-api
 aws ecr describe-images --repository-name ml-platform-api
 
 # 2. Node IAM role lacks ECR permissions
-# Solution: Check terraform/environments/dev/main.tf - node IAM role should have AmazonEC2ContainerRegistryReadOnly policy
+# Solution: Check infra/aws-core/terraform/environments/dev/main.tf - node IAM role should have AmazonEC2ContainerRegistryReadOnly policy
 
 # 3. Wrong image URL in deployment.yaml
 kubectl get deployment ml-platform-api -n ml-platform -o jsonpath='{.spec.template.spec.containers[0].image}'
@@ -346,7 +346,7 @@ kubectl logs -n ml-platform -l app=ml-platform-api --previous
 
 # Common causes:
 # 1. Model file missing
-#    Solution: Ensure train_model.py was run and models/iris_classifier.skops exists before docker build
+#    Solution: Ensure train_model.py was run and services/api/models/iris_classifier.skops exists before docker build
 
 # 2. Python dependencies missing
 #    Solution: Rebuild Docker image with updated requirements.txt
@@ -424,7 +424,7 @@ ECR pushing, and optional Kubernetes deployment.
    **Option B - Local Script**:
 
    ```bash
-   ./scripts/bootstrap-eks-backend.sh dev
+   ./platform/scripts/bootstrap-eks-backend.sh dev
 
    # Expected output:
    # ✅ S3 bucket created: ml-platform-terraform-state
@@ -591,7 +591,7 @@ GitHub Actions for production-like workflows and auditability.
 
 ```bash
 # Run bootstrap script
-./scripts/bootstrap-eks-backend.sh dev
+./platform/scripts/bootstrap-eks-backend.sh dev
 ```
 
 #### "OIDC authentication failed"
@@ -654,7 +654,7 @@ To fully complete Phase 2 (EKS & Kubernetes), you still need:
 # Deploy everything
 terraform apply && \
 aws eks update-kubeconfig --name ml-platform-dev --region us-west-2 && \
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Get ALB URL
 kubectl get ingress -n ml-platform -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}'

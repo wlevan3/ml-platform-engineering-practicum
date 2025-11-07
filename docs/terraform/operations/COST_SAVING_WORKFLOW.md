@@ -46,7 +46,7 @@
 ### Initial Setup (One-Time)
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # 1. Deploy always-on resources (CloudTrail, Budgets)
 terraform init
@@ -67,7 +67,7 @@ aws cloudtrail get-trail-status --name ml-platform-engineering-practicum-trail
 #### Start of Session (Create Infrastructure)
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Deploy EKS cluster, VPC, ECR
 terraform apply
@@ -83,7 +83,7 @@ terraform apply
 aws eks update-kubeconfig --name ml-platform-dev --region us-west-2
 
 # Deploy your application
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Test, debug, experiment...
 ```
@@ -91,7 +91,7 @@ kubectl apply -f k8s/
 #### End of Session (Destroy Infrastructure)
 
 ```bash
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Option 1: Use helper script (Recommended - handles all targets correctly)
 ./destroy-eks-only.sh  # Destroys EKS cluster, keeps VPC for faster recreation
@@ -146,7 +146,7 @@ set -e
 
 echo "🔥 Destroying EKS infrastructure (keeping CloudTrail, Budgets)..."
 
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 
 # Destroy all resources except security module
 terraform destroy --auto-approve \
@@ -195,7 +195,7 @@ terraform apply              # 15-20 min
 # Cost so far: $0
 
 # 9:20 AM - Infrastructure ready
-kubectl apply -f k8s/        # 2 min
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/        # 2 min
 curl http://<ALB_URL>/health # Test
 # Cost so far: $0.09 (20 min × $0.26/hour)
 
@@ -321,7 +321,7 @@ aws eks list-clusters
 aws ec2 describe-instances --filters "Name=instance-state-name,Values=running"
 
 # Destroy immediately
-cd terraform/environments/dev
+cd infra/aws-core/terraform/environments/dev
 terraform destroy -target=module.eks -target=module.vpc --auto-approve
 
 # Check cost impact

@@ -1,0 +1,12 @@
+# Trivy configuration for Terraform scanning
+# Excludes external module examples and focuses on our wrapper modules
+
+# Skip scanning external module examples (not our code)
+skip-dirs:
+  - "**/.terraform/modules/**/examples"
+
+# Skip files in external module root (not our wrappers)
+skip-files:
+  - "**/.terraform/modules/eks/main.tf"
+  - "**/.terraform/modules/eks/node_groups.tf"
+  - "**/.terraform/modules/networking.vpc/main.tf"

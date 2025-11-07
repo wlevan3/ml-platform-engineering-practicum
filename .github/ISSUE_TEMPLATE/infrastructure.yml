@@ -74,8 +74,8 @@ body:
       description: Describe Terraform changes needed
       placeholder: |
         Files to modify:
-        - terraform/eks/main.tf
-        - terraform/eks/variables.tf
+        - infra/aws-core/terraform/environments/dev/main.tf
+        - infra/aws-core/terraform/modules/eks-cluster/variables.tf
       render: terraform
 
   - type: textarea

@@ -6,8 +6,13 @@ on:
   push:
     branches: [main]
 
+permissions: {} # Restrict default permissions, grant specific permissions per job
+
 env:
   DOCKER_IMAGE_ARTIFACT: docker-image-${{ github.sha }}
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  OPA_VERSION: v0.67.0
+  SENTINEL_VERSION: 0.40.0
 
 jobs:
   lint-and-validate:
@@ -16,140 +21,386 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Markdown linting
-        uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8  # v16
+        uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8 # v16
         with:
-          globs: '**/*.md'
-          config: '.markdownlint.json'
-        continue-on-error: true
+          globs: |
+            **/*.md
+            #infra/aws-core/terraform/**/*.md
+          config: ".markdownlint.json"
+
+  yaml-lint:
+    name: YAML Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3.1.1
+        with:
+          strict: true
+          config_file: .yamllint.yaml
+
+  actionlint:
+    name: GitHub Actions Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@4f8f9963ca57a41e5fd5b538dd79dbfbd3e0b38a # v1.54.0
+
+  file-checks:
+    name: File Hygiene Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Check trailing whitespace
+        run: |
+          if grep -r -I '[[:space:]]$' \
+            --exclude-dir=.git \
+            --exclude-dir=.venv \
+            --exclude-dir=.claude \
+            --exclude-dir=__pycache__ \
+            --exclude-dir=.external_modules \
+            --exclude-dir=.pytest_cache \
+            --exclude-dir=.terraform \
+            --exclude-dir=backlog \
+            --exclude='*.pyc' \
+            .; then
+            echo "❌ Files with trailing whitespace found"
+            exit 1
+          fi
+          echo "✅ No trailing whitespace"
+
+      - name: Check end of file newlines
+        run: |
+          status=0
+          while IFS= read -r -d '' file; do
+            if [ -n "$(tail -c 1 "$file")" ]; then
+              echo "❌ Missing newline at EOF: $file"
+              status=1
+            fi
+          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -not -path "*/.terraform/*" -not -path "*/backlog/*" -print0)
+          if [ $status -eq 0 ]; then
+            echo "✅ All files end with newline"
+          fi
+          exit $status
+
+      - name: Check for large files
+        run: |
+          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*" -not -path "*/.terraform/*" -not -path "*/backlog/*")
+          if [ -n "$large_files" ]; then
+            echo "❌ Large files (>1MB) detected:"
+            echo "$large_files"
+            exit 1
+          fi
+          echo "✅ No large files detected"
+
+      - name: Check for merge conflict markers
+        run: |
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- ':!.github/workflows/ci.yml'; then
+            echo "❌ Merge conflict markers found"
+            exit 1
+          fi
+          echo "✅ No merge conflict markers"
+
+      - name: Check for private keys
+        run: |
+          if grep -r "BEGIN.*PRIVATE KEY" \
+            --exclude-dir=.git \
+            --exclude-dir=.venv \
+            --exclude-dir=.claude \
+            --exclude-dir=.external_modules \
+            --exclude-dir=.pytest_cache \
+            --exclude-dir=.terraform \
+            --exclude-dir=backlog \
+            --exclude=ci.yml \
+            .; then
+            echo "❌ Private key detected"
+            exit 1
+          fi
+          echo "✅ No private keys detected"
+
+  dockerfile-lint:
+    name: Dockerfile Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+  python-security-lint:
+    name: Python Security Linting (Bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+
+      - name: Install Bandit
+        run: pip install bandit==1.8.6
+
+      - name: Run Bandit
+        run: bandit -ll -i -r . --exclude ./tests,./venv,./.venv
+
+  terraform-docs-check:
+    name: Terraform Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Find Terraform modules with .tf files
+        id: find_modules
+        run: |
+          if [ ! -d "infra/aws-core/terraform" ]; then
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping Terraform docs check - infra/aws-core/terraform/ directory does not exist yet"
+            exit 0
+          fi
+
+          # Find directories with .tf files and README.md (exclude .terraform directories)
+          modules=$(find infra/aws-core/terraform/modules -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u | grep -v "^$" || echo "")
+
+          if [ -z "$modules" ]; then
+            echo "has_modules=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ No Terraform modules with .tf files found"
+          else
+            echo "has_modules=true" >> "$GITHUB_OUTPUT"
+            echo "Found modules:"
+            echo "$modules"
+          fi
+
+      - name: Install terraform-docs
+        if: steps.find_modules.outputs.has_modules == 'true'
+        run: |
+          curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          sudo mv terraform-docs /usr/local/bin/
+          terraform-docs --version
+
+      - name: Check Terraform module documentation
+        if: steps.find_modules.outputs.has_modules == 'true'
+        run: |
+          status=0
+          # Check each module directory with .tf files
+          for module_dir in $(find infra/aws-core/terraform/modules -name "*.tf" -not -path "*/.terraform/*" -exec dirname {} \; | sort -u); do
+            if [ -f "$module_dir/README.md" ]; then
+              echo "Checking $module_dir"
+              cd "$module_dir"
+              terraform-docs markdown table --output-file README.md --output-mode inject .
+              if ! git diff --exit-code README.md; then
+                echo "❌ Terraform documentation is out of sync in $module_dir"
+                status=1
+              fi
+              cd - > /dev/null
+            fi
+          done
+
+          if [ $status -eq 0 ]; then
+            echo "✅ All Terraform documentation is up to date"
+          else
+            echo "❌ Run terraform-docs to update documentation"
+            exit 1
+          fi
 
   terraform-validate:
     name: Terraform Validation
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # Required for AWS OIDC authentication
+      id-token: write # Required for AWS OIDC authentication
       contents: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Check if terraform directory exists
         id: check_terraform
         run: |
-          if [ -d "terraform" ]; then
+          if [ -d "infra/aws-core/terraform" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Skipping Terraform validation - terraform/ directory does not exist yet"
+            echo "⚠️ Skipping Terraform validation - infra/aws-core/terraform/ directory does not exist yet"
           fi
 
       - name: Setup Terraform
         if: steps.check_terraform.outputs.exists == 'true'
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.13.5
 
       - name: Terraform Format Check
         if: steps.check_terraform.outputs.exists == 'true'
-        run: terraform fmt -check -recursive terraform/
-        continue-on-error: true
+        run: terraform fmt -check -recursive infra/aws-core/terraform/
 
       - name: Terraform Init (backend=false)
         if: steps.check_terraform.outputs.exists == 'true'
         run: |
-          cd terraform
+          cd infra/aws-core/terraform
           terraform init -backend=false
 
       - name: Terraform Validate
         if: steps.check_terraform.outputs.exists == 'true'
         run: |
-          cd terraform
+          cd infra/aws-core/terraform
           terraform validate
 
-      - name: Configure AWS credentials for plan
+      - name: Check if AWS credentials are available
         if: steps.check_terraform.outputs.exists == 'true'
-        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.2
+        id: check_aws
+        run: |
+          if [ -z "${AWS_ACCOUNT_ID:-}" ]; then
+            echo "⚠️ AWS_ACCOUNT_ID not configured - skipping Terraform plan and policy validation"
+            echo "aws_available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "✅ AWS_ACCOUNT_ID configured"
+            echo "aws_available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Configure AWS credentials for plan
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GitHubActions-TerraformPlan-${{ github.run_id }}
 
       - name: Terraform Init (with backend)
-        if: steps.check_terraform.outputs.exists == 'true'
-        working-directory: terraform/environments/dev
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        working-directory: infra/aws-core/terraform/environments/dev
         run: terraform init
 
       - name: Install OPA CLI
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
-          OPA_VERSION=v0.67.0
           curl -L -o opa "https://openpolicyagent.org/downloads/${OPA_VERSION}/opa_linux_amd64_static"
           chmod +x opa
           sudo mv opa /usr/local/bin/opa
 
       - name: Install Sentinel CLI
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
-          SENTINEL_VERSION=0.40.0
           curl -L -o sentinel.zip "https://releases.hashicorp.com/sentinel/${SENTINEL_VERSION}/sentinel_${SENTINEL_VERSION}_linux_amd64.zip"
           unzip -o sentinel.zip sentinel
           sudo mv sentinel /usr/local/bin/sentinel
           rm -f sentinel.zip
 
       - name: Terraform Plan (binary)
-        if: steps.check_terraform.outputs.exists == 'true'
-        working-directory: terraform/environments/dev
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        working-directory: infra/aws-core/terraform/environments/dev
         run: |
           echo "📋 Running Terraform plan..."
           terraform plan -out plan.tfplan -no-color
 
       - name: Terraform Show (text)
-        if: steps.check_terraform.outputs.exists == 'true'
-        working-directory: terraform/environments/dev
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        working-directory: infra/aws-core/terraform/environments/dev
         run: |
           terraform show -no-color plan.tfplan | tee plan.txt
 
       - name: Evaluate Terraform plan with OPA
-        if: steps.check_terraform.outputs.exists == 'true'
-        working-directory: terraform/environments/dev
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        working-directory: infra/aws-core/terraform/environments/dev
         run: |
+          set -euo pipefail
+
+          # Generate JSON plan for OPA
           terraform show -json plan.tfplan > plan.json
-          opa eval \
+
+          # Run OPA evaluation with error handling
+          if ! opa eval \
             --format json \
-            --data "$GITHUB_WORKSPACE/policy/terraform" \
+            --data "$GITHUB_WORKSPACE/infra/policies/opa" \
             --input plan.json \
-            "data.terraform.kms.deny" > opa_result.json
-          DENY_COUNT=$(jq '[.result[]?.expressions[]?.value[]?] | length' opa_result.json)
-          if [ "$DENY_COUNT" -gt 0 ]; then
-            {
-              echo "## OPA Policy Violations"
-              echo ""
-              echo '```'
-              jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
-              echo '```'
-            } >> "$GITHUB_STEP_SUMMARY"
-            echo "OPA policy violations detected:"
-            jq -r '.result[]?.expressions[]?.value[]?' opa_result.json
+            "data.terraform.kms.deny" > opa_result.json; then
+            echo "❌ OPA evaluation failed"
             exit 1
           fi
 
+          # Validate OPA result file exists and is valid JSON
+          if [ ! -f opa_result.json ]; then
+            echo "❌ OPA result file not found"
+            exit 1
+          fi
+
+          # Extract deny count with robust null handling and default value
+          # Handle both empty arrays and missing fields gracefully
+          DENY_COUNT=$(jq -r '
+            if .result and (.result | length > 0) then
+              [.result[]?.expressions[]?.value[]? | select(. != null and . != "")] | length
+            else
+              0
+            end
+          ' opa_result.json)
+
+          # Validate DENY_COUNT is a valid number
+          if ! [[ "$DENY_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "❌ Invalid OPA result format. DENY_COUNT='$DENY_COUNT'"
+            echo "OPA result content:"
+            cat opa_result.json
+            exit 1
+          fi
+
+          echo "📊 OPA evaluation complete: $DENY_COUNT policy violation(s)"
+
+          if [ "$DENY_COUNT" -gt 0 ]; then
+            {
+              echo "## ❌ OPA Policy Violations"
+              echo ""
+              echo '```'
+              jq -r '.result[]?.expressions[]?.value[]? | select(. != null and . != "")' opa_result.json
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ OPA policy violations detected:"
+            jq -r '.result[]?.expressions[]?.value[]? | select(. != null and . != "")' opa_result.json
+            exit 1
+          fi
+
+          echo "✅ No OPA policy violations detected"
+
       - name: Generate Sentinel tfplan mock
-        if: steps.check_terraform.outputs.exists == 'true'
-        run: python3 scripts/generate_sentinel_tfplan_mock.py --plan terraform/environments/dev/plan.json --output policy/sentinel/mocks/dev-plan.sentinel
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
+        run: |
+          set -euo pipefail
+          python3 platform/scripts/generate_sentinel_tfplan_mock.py --plan infra/aws-core/terraform/environments/dev/plan.json --output infra/policies/sentinel/mocks/dev-plan.sentinel
+          if [ ! -f infra/policies/sentinel/mocks/dev-plan.sentinel ]; then
+            echo "Error: Failed to generate Sentinel mock" >&2
+            exit 1
+          fi
 
       - name: Evaluate Terraform plan with Sentinel
-        if: steps.check_terraform.outputs.exists == 'true'
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
         run: |
           sentinel apply \
-            -config policy/sentinel/dev.hcl \
-            policy/sentinel/kms.sentinel
+            -config infra/policies/sentinel/dev.hcl \
+            infra/policies/sentinel/kms.sentinel
 
       - name: Post plan summary
-        if: steps.check_terraform.outputs.exists == 'true' && always()
-        working-directory: terraform/environments/dev
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true' && always()
+        working-directory: infra/aws-core/terraform/environments/dev
         run: |
           {
             echo "## Terraform Plan Summary"
@@ -160,23 +411,22 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove plan artifacts
-        if: steps.check_terraform.outputs.exists == 'true' && always()
+        if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true' && always()
         run: |
-          rm -f terraform/environments/dev/plan.json policy/sentinel/mocks/dev-plan.sentinel
+          rm -f infra/aws-core/terraform/environments/dev/plan.json infra/policies/sentinel/mocks/dev-plan.sentinel
 
       - name: TFLint
         if: steps.check_terraform.outputs.exists == 'true'
-        uses: terraform-linters/setup-tflint@6e87008f9dd1fe3e34e66aca6c97b4a69f72a7f4  # v4.0.0
+        uses: terraform-linters/setup-tflint@6e87008f9dd1fe3e34e66aca6c97b4a69f72a7f4 # v4.0.0
         with:
           tflint_version: latest
 
       - name: Run TFLint
         if: steps.check_terraform.outputs.exists == 'true'
         run: |
-          cd terraform
+          cd infra/aws-core/terraform
           tflint --init
           tflint --recursive
-        continue-on-error: true
 
   terraform-security-scan:
     name: Terraform Security Scanning
@@ -187,54 +437,50 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Check if terraform directory exists
         id: check_terraform
         run: |
-          if [ -d "terraform" ]; then
+          if [ -d "infra/aws-core/terraform" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Skipping Terraform security scanning - terraform/ directory does not exist yet"
+            echo "⚠️ Skipping Terraform security scanning - infra/aws-core/terraform/ directory does not exist yet"
           fi
 
       - name: Run tfsec
         if: steps.check_terraform.outputs.exists == 'true'
-        uses: aquasecurity/tfsec-action@b466648d6e39e7c75324f25d83891162a721f2d6  # v1.0.3
+        uses: aquasecurity/tfsec-sarif-action@21ded20e8ca120cd9d3d6ab04ef746477542a608 # v0.1.4
         with:
-          working_directory: terraform
+          working_directory: infra/aws-core/terraform
           soft_fail: false
-          format: sarif
-          additional_args: --minimum-severity HIGH
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          tfsec_args: --minimum-severity HIGH
 
       - name: Upload tfsec SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
-          sarif_file: results.sarif
+          sarif_file: tfsec.sarif
           category: tfsec-scan
-        continue-on-error: true
 
       - name: Run Checkov
-        if: steps.check_terraform.outputs.exists == 'true'
-        uses: bridgecrewio/checkov-action@d146511ffb733a9a456c9ffc05cd462122037354  # v12.3069.0
+        if: always() && steps.check_terraform.outputs.exists == 'true'
+        uses: bridgecrewio/checkov-action@d146511ffb733a9a456c9ffc05cd462122037354 # v12.3069.0
         with:
-          directory: terraform/
+          directory: infra/aws-core/terraform/
           framework: terraform
           soft_fail: false
           hard_fail_on: HIGH,CRITICAL
           output_format: sarif
-          output_file_path: checkov-results.sarif
+          output_file_path: ./checkov-results.sarif
 
       - name: Upload Checkov SARIF to GitHub Security
         if: always() && steps.check_terraform.outputs.exists == 'true'
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
-          sarif_file: checkov-results.sarif
+          sarif_file: ./checkov-results.sarif
           category: checkov-scan
-        continue-on-error: true
 
   kubernetes-validate:
     name: Kubernetes Validation
@@ -242,38 +488,24 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Check if k8s directory exists
         id: check_k8s
         run: |
-          if [ -d "k8s" ]; then
+          if [ -d "clusters/dev/bootstrap/k8s-manifests" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Skipping Kubernetes validation - k8s/ directory does not exist yet"
+            echo "⚠️ Skipping Kubernetes validation - clusters/dev/bootstrap/k8s-manifests/ directory does not exist yet"
           fi
-
-      - name: Setup kubeval
-        if: steps.check_k8s.outputs.exists == 'true'
-        run: |
-          wget https://github.com/instrumenta/kubeval/releases/latest/download/kubeval-linux-amd64.tar.gz
-          tar xf kubeval-linux-amd64.tar.gz
-          sudo mv kubeval /usr/local/bin
-
-      - name: Validate Kubernetes manifests
-        if: steps.check_k8s.outputs.exists == 'true'
-        run: |
-          find k8s \( -name '*.yaml' -o -name '*.yml' \) -print0 | xargs -0 kubeval --strict
-        continue-on-error: true
 
       - name: Lint Kubernetes manifests
         if: steps.check_k8s.outputs.exists == 'true'
-        uses: stackrox/kube-linter-action@4586e0224d31e1aa7798b8cb2e3817c6a93ff2ec  # v1.0.7
+        uses: stackrox/kube-linter-action@4586e0224d31e1aa7798b8cb2e3817c6a93ff2ec # v1.0.7
         with:
-          directory: k8s/
+          directory: clusters/dev/bootstrap/k8s-manifests/
           config: .kube-linter.yaml
-        continue-on-error: true
 
   kubernetes-security-scan:
     name: Kubernetes Security Scanning (Trivy)
@@ -284,36 +516,34 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Check if k8s directory exists
         id: check_k8s
         run: |
-          if [ -d "k8s" ]; then
+          if [ -d "clusters/dev/bootstrap/k8s-manifests" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
-            echo "⚠️ Skipping Kubernetes manifest scanning - k8s/ directory does not exist yet"
+            echo "⚠️ Skipping Kubernetes manifest scanning - clusters/dev/bootstrap/k8s-manifests/ directory does not exist yet"
           fi
 
       - name: Run Trivy security scanner on Kubernetes manifests
         if: steps.check_k8s.outputs.exists == 'true'
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1 (Trivy v0.65.0)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
         with:
-          scan-type: 'config'
-          scan-ref: 'k8s/'
-          format: 'sarif'
-          output: 'trivy-k8s-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-        continue-on-error: true  # TODO: Change to false in Phase 2 once all findings are remediated
+          scan-type: "config"
+          scan-ref: "clusters/dev/bootstrap/k8s-manifests/"
+          format: "sarif"
+          output: "trivy-k8s-results.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM"
 
       - name: Upload Trivy results to GitHub Security
         if: steps.check_k8s.outputs.exists == 'true' && always()
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
           sarif_file: trivy-k8s-results.sarif
           category: trivy-k8s-scan
-        continue-on-error: true
 
   python-lint:
     name: Python Linting
@@ -321,25 +551,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip==25.3
-          pip install black==24.10.0 ruff==0.9.1 pytest==8.3.4
+          pip install black==25.9.0 ruff==0.14.3 pytest==8.3.4 mypy==1.18.2 pydantic==2.10.5 joblib-stubs==1.5.2.0.20250831 fastapi==0.120.4 scikit-learn==1.6.1 numpy==2.2.2 skops>=0.13.0 httpx==0.28.1
 
       - name: Run Black (formatting check)
         run: black --check .
-        continue-on-error: true
 
       - name: Run Ruff (linting)
         run: ruff check .
-        continue-on-error: true
+
+      - name: Run Mypy (type checking)
+        run: mypy --no-incremental --follow-imports=silent services/api/
 
   python-test:
     name: Python Tests with Coverage
@@ -347,12 +578,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Install dependencies
         run: |
@@ -366,7 +597,7 @@ jobs:
         run: pytest
 
       - name: Upload coverage report
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: coverage-report
           path: coverage.xml
@@ -379,35 +610,32 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
+          fetch-depth: 0 # Shallow clones should be disabled for better analysis relevancy
 
       - name: Download coverage report
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: coverage-report
 
       - name: Download Trivy filesystem SARIF
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: trivy-fs-sarif
           path: sarif-reports/trivy-fs/
-        continue-on-error: true
 
       - name: Download Semgrep SARIF
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: semgrep-sarif
           path: sarif-reports/semgrep/
-        continue-on-error: true
 
       - name: Download Trivy Docker SARIF
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: trivy-docker-sarif
           path: sarif-reports/trivy-docker/
-        continue-on-error: true
 
       - name: List SARIF files
         run: |
@@ -426,7 +654,7 @@ jobs:
           head -20 coverage.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602  # v6.0.0
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -440,25 +668,24 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # master
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # master
         with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "fs"
+          scan-ref: "."
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
-          sarif_file: 'trivy-results.sarif'
-        continue-on-error: true
+          sarif_file: "trivy-results.sarif"
 
       - name: Upload Trivy SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: trivy-fs-sarif
@@ -474,12 +701,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
         with:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -493,10 +720,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Run Semgrep
-        uses: semgrep/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d  # v1
+        uses: semgrep/semgrep-action@713efdd345f3035192eaa63f56867b88e63e4e5d # v1
         with:
           config: >-
             p/security-audit
@@ -506,55 +733,35 @@ jobs:
 
       - name: Upload Semgrep SARIF
         if: always()
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         with:
           sarif_file: semgrep.sarif
 
       - name: Upload Semgrep SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: semgrep-sarif
           path: semgrep.sarif
           retention-days: 5
 
-  pre-commit-checks:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
-
-      - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
-        with:
-          python-version: '3.13'
-
-      - name: Install pre-commit
-        run: pip install pre-commit==4.0.1
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files
-        continue-on-error: true
-
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
-    needs: [python-test]  # Only containerize tested code
+    needs: [python-test] # Only containerize tested code
     permissions:
       security-events: write
       contents: read
-      id-token: write  # Required for keyless signing with OIDC
+      id-token: write # Required for keyless signing with OIDC
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Install dependencies and train model
         run: |
@@ -563,7 +770,7 @@ jobs:
           python train_model.py
 
       - name: Cache Trivy vulnerability database
-        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ github.workspace }}/.cache/trivy
           key: trivy-db-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
@@ -599,25 +806,25 @@ jobs:
           echo "Image reference: localhost:5000/ml-platform-api:${{ github.sha }}"
 
       - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8  # v0.33.1 (Trivy v0.65.0)
+        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
         with:
-          scan-type: 'image'
-          image-ref: 'ml-platform-api:${{ github.sha }}'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
+          scan-type: "image"
+          image-ref: "ml-platform-api:${{ github.sha }}"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
           # Note: exit-code removed to prevent false positives in Trivy v0.65.0 from blocking CI
           # GitHub Security auto-resolves false positives. Real vulnerabilities still visible in Security tab.
 
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a  # v3.31.2
+        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
         if: always()
         with:
-          sarif_file: 'trivy-results.sarif'
-          category: 'trivy-docker-scan'
+          sarif_file: "trivy-results.sarif"
+          category: "trivy-docker-scan"
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()
         with:
           name: trivy-docker-sarif
@@ -641,9 +848,9 @@ jobs:
       # ============================================================================
 
       - name: Install Cosign
-        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da  # v3.7.0
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
         with:
-          cosign-release: 'v2.4.1'
+          cosign-release: "v2.4.1"
 
       - name: Sign container image (keyless - local registry mode)
         env:
@@ -695,27 +902,27 @@ jobs:
         run: docker save ml-platform-api:${{ github.sha }} -o /tmp/ml-platform-api.tar
 
       - name: Upload Docker image artifact
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp/ml-platform-api.tar
-          retention-days: 1  # Short-lived, just for CI pipeline
+          retention-days: 1 # Short-lived, just for CI pipeline
 
   sbom-generation:
     name: SBOM Generation (Syft)
     runs-on: ubuntu-latest
-    needs: [docker-build-scan]  # Run after Docker image is built and scanned
+    needs: [docker-build-scan] # Run after Docker image is built and scanned
     permissions:
       contents: read
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955  # v4.3.0
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5.6.0
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
-          python-version: '3.13'
+          python-version: "3.13"
 
       - name: Install dependencies and train model
         run: |
@@ -727,7 +934,7 @@ jobs:
       # This avoids rebuilding the image (saves 2-5 minutes per CI run)
       # Artifact name defined in workflow-level env for consistency
       - name: Download Docker image artifact
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: ${{ env.DOCKER_IMAGE_ARTIFACT }}
           path: /tmp
@@ -736,7 +943,7 @@ jobs:
         run: docker load -i /tmp/ml-platform-api.tar
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@8e94d75ddd33f69f691467e42275782e4bfefe84  # v0.20.9
+        uses: anchore/sbom-action/download-syft@8e94d75ddd33f69f691467e42275782e4bfefe84 # v0.20.9
         with:
           syft-version: v1.37.0
 
@@ -792,29 +999,50 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Docker SBOMs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-docker
           path: |
             sbom-docker-spdx.json
             sbom-docker-cyclonedx.json
-          retention-days: 90  # Keep SBOMs for 90 days (compliance)
+          retention-days: 90 # Keep SBOMs for 90 days (compliance)
 
       - name: Upload Python SBOMs
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom-python
           path: |
             sbom-python-spdx.json
             sbom-python-cyclonedx.json
-          retention-days: 90  # Keep SBOMs for 90 days (compliance)
+          retention-days: 90 # Keep SBOMs for 90 days (compliance)
 
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
     # Note: Some jobs (python-*, semgrep) have conditionals and may be skipped.
     # The 'if: always()' ensures this summary runs regardless, showing 'skipped' for those jobs.
-    needs: [lint-and-validate, terraform-validate, terraform-security-scan, kubernetes-validate, kubernetes-security-scan, python-lint, python-test, sonarcloud, security-scan, gitleaks-scan, semgrep-scan, pre-commit-checks, docker-build-scan, sbom-generation]
+    needs:
+      [
+        lint-and-validate,
+        yaml-lint,
+        actionlint,
+        file-checks,
+        dockerfile-lint,
+        python-security-lint,
+        terraform-docs-check,
+        terraform-validate,
+        terraform-security-scan,
+        kubernetes-validate,
+        kubernetes-security-scan,
+        python-lint,
+        python-test,
+        sonarcloud,
+        security-scan,
+        gitleaks-scan,
+        semgrep-scan,
+        docker-build-scan,
+        sbom-generation,
+      ]
     if: always()
 
     steps:
@@ -825,7 +1053,13 @@ jobs:
             echo ""
             echo "| Job | Status |"
             echo "|-----|--------|"
-            echo "| Lint and Validate | ${{ needs.lint-and-validate.result }} |"
+            echo "| Markdown Linting | ${{ needs.lint-and-validate.result }} |"
+            echo "| YAML Linting | ${{ needs.yaml-lint.result }} |"
+            echo "| GitHub Actions Linting | ${{ needs.actionlint.result }} |"
+            echo "| File Hygiene Checks | ${{ needs.file-checks.result }} |"
+            echo "| Dockerfile Linting | ${{ needs.dockerfile-lint.result }} |"
+            echo "| Python Security Linting (Bandit) | ${{ needs.python-security-lint.result }} |"
+            echo "| Terraform Documentation Check | ${{ needs.terraform-docs-check.result }} |"
             echo "| Terraform Validation | ${{ needs.terraform-validate.result }} |"
             echo "| Terraform Security Scanning (tfsec + Checkov) | ${{ needs.terraform-security-scan.result }} |"
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
@@ -838,5 +1072,4 @@ jobs:
             echo "| SBOM Generation (Syft) | ${{ needs.sbom-generation.result }} |"
             echo "| Secret Scanning (Gitleaks) | ${{ needs.gitleaks-scan.result }} |"
             echo "| Semgrep SAST | ${{ needs.semgrep-scan.result }} |"
-            echo "| Pre-commit Checks | ${{ needs.pre-commit-checks.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"

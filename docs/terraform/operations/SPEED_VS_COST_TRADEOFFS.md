@@ -209,7 +209,7 @@ Start `terraform apply` before you're ready to work:
 
 ```bash
 # Morning: Start apply remotely
-ssh my-dev-machine "cd terraform/environments/dev && terraform apply"
+ssh my-dev-machine "cd infra/aws-core/terraform/environments/dev && terraform apply"
 
 # 20 minutes later: Cluster ready when you sit down
 ```
@@ -225,7 +225,7 @@ For quick experiments, use **k3d** or **kind** instead of EKS:
 k3d cluster create test --agents 2
 
 # Deploy your app
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Test locally
 curl http://localhost:8080/health

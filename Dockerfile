@@ -46,8 +46,7 @@ ENV PATH="/opt/venv/bin:$PATH" \
     PYTHONUNBUFFERED=1
 
 # Copy application code and model artifacts
-COPY app/ ./app/
-COPY models/ ./models/
+COPY services/api/ ./services/api/
 
 # Create non-root user for security (UID > 10000)
 RUN useradd -m -u 10001 -s /bin/bash appuser && \
@@ -65,4 +64,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=5)" || exit 1
 
 # Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000"]

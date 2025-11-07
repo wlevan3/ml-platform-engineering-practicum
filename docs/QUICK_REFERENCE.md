@@ -89,10 +89,10 @@ ci/add-security-scan
 
 ```bash
 # Run development server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run with custom port
-uvicorn app.main:app --reload --port 3000
+uvicorn services.api.main:app --reload --port 3000
 ```
 
 ### Model Training
@@ -109,10 +109,10 @@ python train_model.py
 pytest
 
 # Run with verbose output and coverage
-pytest -v --cov=app --cov-report=term-missing
+pytest -v --cov=services.api --cov-report=term-missing
 
 # Run specific test file
-pytest tests/test_main.py
+pytest tests/test_api.py
 
 # Run with markers
 pytest -m "not slow"
@@ -123,15 +123,15 @@ pytest -m "not slow"
 ```bash
 # Format code (Black)
 black .
-black app/ tests/
+black services/api/ tests/
 
 # Lint and auto-fix (Ruff)
 ruff check . --fix
-ruff check app/
+ruff check services/api/
 
 # Type checking (mypy)
-mypy app/
-mypy app/ --strict
+mypy services/api/
+mypy services/api/ --strict
 
 # Run all pre-commit hooks
 pre-commit run --all-files
@@ -202,11 +202,11 @@ terraform destroy
 
 ```bash
 # Validate manifests
-kubectl apply --dry-run=client -f k8s/
-kubeval k8s/*.yaml
+kubectl apply --dry-run=client -f clusters/dev/bootstrap/k8s-manifests/
+kubeval clusters/dev/bootstrap/k8s-manifests/*.yaml
 
 # Apply
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Check status
 kubectl get pods
@@ -242,7 +242,7 @@ aws rds describe-db-instances
 ```bash
 # Bootstrap backend (one-time setup) - choose one:
 gh workflow run eks-deploy.yml -f action=bootstrap  # GitHub Actions
-./scripts/bootstrap-eks-backend.sh dev              # Local script
+./platform/scripts/bootstrap-eks-backend.sh dev              # Local script
 
 # Plan infrastructure changes (no apply)
 gh workflow run eks-deploy.yml -f action=plan-only

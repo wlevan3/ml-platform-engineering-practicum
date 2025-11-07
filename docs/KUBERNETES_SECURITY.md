@@ -18,7 +18,7 @@ assessment with kube-bench, Pod Security Standards enforcement, and RBAC validat
 
 **Scanning Scope**:
 
-- All YAML manifest files in `k8s/` directory
+- All YAML manifest files in `clusters/dev/bootstrap/k8s-manifests/` directory
 - Deployment, StatefulSet, DaemonSet, Pod configurations
 - Container security contexts, resource limits, probes
 
@@ -90,7 +90,8 @@ docker run --rm -v $(pwd):/host aquasec/kube-bench:latest
 
 ### Deployment Security Context ✅
 
-The `ml-platform-api` deployment in `k8s/deployment.yaml` implements defense-in-depth security controls:
+The `ml-platform-api` deployment in `clusters/dev/bootstrap/k8s-manifests/deployment.yaml` implements
+defense-in-depth security controls:
 
 **Security Strengths**:
 
@@ -182,7 +183,7 @@ The `ml-platform-api` deployment in `k8s/deployment.yaml` implements defense-in-
 
 ### Pod Security Standards (PSS) Enforcement ✅
 
-The `k8s/namespace.yaml` defines the `ml-platform` namespace with restricted PSS enforcement:
+The `clusters/dev/bootstrap/k8s-manifests/namespace.yaml` defines the `ml-platform` namespace with restricted PSS enforcement:
 
 ```yaml
 pod-security.kubernetes.io/enforce: restricted
@@ -251,16 +252,16 @@ When running Trivy locally on Kubernetes manifests:
 
 ```bash
 # Scan all manifests with config scan
-trivy config k8s/
+trivy config clusters/dev/bootstrap/k8s-manifests/
 
 # Scan with specific severity levels
-trivy config --severity CRITICAL,HIGH,MEDIUM k8s/
+trivy config --severity CRITICAL,HIGH,MEDIUM clusters/dev/bootstrap/k8s-manifests/
 
 # Output in table format (default)
-trivy config --format table k8s/
+trivy config --format table clusters/dev/bootstrap/k8s-manifests/
 
 # Output in JSON for parsing
-trivy config --format json k8s/ | jq
+trivy config --format json clusters/dev/bootstrap/k8s-manifests/ | jq
 ```
 
 **Expected Results**: Minimal CRITICAL/HIGH findings with proper security contexts configured
@@ -335,8 +336,8 @@ When Trivy or kube-bench find issues:
 
 1. **CRITICAL/HIGH severity**:
    - Fix immediately in manifest
-   - Update `k8s/*.yaml` with security improvements
-   - Test locally with `trivy config k8s/`
+   - Update `clusters/dev/bootstrap/k8s-manifests/*.yaml` with security improvements
+   - Test locally with `trivy config clusters/dev/bootstrap/k8s-manifests/`
    - Commit with detailed explanation
 
 2. **MEDIUM severity**:

@@ -5,8 +5,16 @@
     "code_blocks": false,
     "tables": false
   },
+  "MD024": {
+    "siblings_only": true
+  },
   "MD033": {
-    "allowed_elements": ["antml:thinking", "antml:function_calls", "antml:invoke", "antml:parameter"]
+    "allowed_elements": [
+      "antml:thinking",
+      "antml:function_calls",
+      "antml:invoke",
+      "antml:parameter"
+    ]
   },
   "MD041": false
 }

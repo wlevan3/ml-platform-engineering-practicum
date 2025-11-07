@@ -1,14 +1,15 @@
+<!-- markdownlint-disable MD013 -->
 # ML Platform Engineering Practicum
 
 > End-to-end ML platform implementation: EKS-based pipelines, model registry, CI/CD, feature store, and
 > observability — with reflections on platform design.
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI Pipeline](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml/badge.svg)](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+<!-- markdownlint-enable MD013 -->
 
 ## 🏆 Code Quality
 
@@ -87,7 +88,7 @@ pip install -r requirements.txt
 
 # Train model and run API
 python train_model.py
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Alternative:** Use `uv` package manager - see [CLAUDE.md](CLAUDE.md) for details.
@@ -116,7 +117,7 @@ minikube start --cpus=4 --memory=6144 --driver=docker
 # Build, load, and deploy
 docker build -t ml-platform-api:v1.0.0 .
 minikube image load ml-platform-api:v1.0.0
-kubectl apply -f k8s/
+kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
 
 # Test
 minikube service ml-platform-api --url  # Get service URL
@@ -124,6 +125,29 @@ curl <SERVICE_URL>/health/ready
 ```
 
 **All Kubernetes commands:** `docs/QUICK_REFERENCE.md` (deployment, validation, logs, troubleshooting)
+
+## 🧭 Monorepo Layout
+
+```text
+infra/
+├── aws-core/terraform/     # Foundational AWS infrastructure (VPC, EKS, ECR)
+└── policies/               # Policy-as-code (Sentinel, OPA/Rego, Checkov)
+clusters/
+└── dev/bootstrap/          # GitOps entrypoint, bootstrap manifests (app-of-apps ready)
+services/
+└── api/                    # FastAPI inference service and packaged model assets
+platform/
+└── scripts/                # Shared automation (bootstrap, local deploy, diagnostics)
+docs/                       # Design docs, runbooks, and how-tos
+tests/                      # Automated tests (unit/integration)
+```
+
+Each top-level area owns a distinct concern:
+
+- **infra/** – cloud resource definitions and guardrail policies
+- **clusters/** – desired Kubernetes state tracked via GitOps (Argo CD app-of-apps)
+- **services/** – product/application code, Dockerfiles, ML assets
+- **platform/** – reusable tooling shared across teams (CLI helpers, bootstrap scripts)
 
 ## 📚 Documentation
 
@@ -179,7 +203,8 @@ curl <SERVICE_URL>/health/ready
 
 ## 📝 Learning Philosophy
 
-This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection** issue template to capture insights, challenges, trade-offs, and resources.
+This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection**
+issue template to capture insights, challenges, trade-offs, and resources.
 
 **View learnings:** [Project Board Learning view](https://github.com/users/wlevan3/projects)
 

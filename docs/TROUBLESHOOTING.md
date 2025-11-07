@@ -177,7 +177,7 @@ git commit -m "Your message"
 
 ```bash
 # Review type errors
-mypy app/
+mypy services/api/
 
 # Fix type hints in flagged files
 # Then re-commit
@@ -262,7 +262,7 @@ pytest
 
 ### API Won't Start
 
-**Problem**: `uvicorn app.main:app --reload` fails
+**Problem**: `uvicorn services.api.main:app --reload` fails
 
 **Common Causes**:
 
@@ -274,7 +274,7 @@ pytest
 lsof -ti:8000 | xargs kill -9
 
 # Or use different port
-uvicorn app.main:app --reload --port 8001
+uvicorn services.api.main:app --reload --port 8001
 ```
 
 **2. Module Not Found**:
@@ -285,18 +285,18 @@ uvicorn app.main:app --reload --port 8001
 pwd  # Should show .../ml-platform-engineering-practicum
 
 # Check directory structure
-ls -la  # Should see app/ directory
+ls -la  # Should see services/ directory
 ```
 
 **3. Model File Missing**:
 
 ```bash
-# Error: FileNotFoundError: models/iris_classifier.skops
+# Error: FileNotFoundError: services/api/models/iris_classifier.skops
 # Train model first
 python train_model.py
 
 # Verify model exists
-ls -lh models/iris_classifier.skops
+ls -lh services/api/models/iris_classifier.skops
 ```
 
 ---
@@ -309,7 +309,7 @@ ls -lh models/iris_classifier.skops
 
 ```bash
 # Run with debug logging
-uvicorn app.main:app --reload --log-level debug
+uvicorn services.api.main:app --reload --log-level debug
 
 # Watch for error details in terminal
 ```
@@ -318,7 +318,7 @@ uvicorn app.main:app --reload --log-level debug
 
 ```bash
 # Verify model loads correctly
-python -c "from app.model import get_model; print(get_model())"
+python -c "from services.api.model import get_model; print(get_model())"
 
 # Should output: <class 'sklearn.ensemble._forest.RandomForestClassifier'>
 ```
@@ -362,7 +362,7 @@ docker build -t ml-platform-api:latest .
 ```bash
 # Error: COPY failed: file not found
 # Verify files exist
-ls -la requirements.txt models/iris_classifier.skops
+ls -la requirements.txt services/api/models/iris_classifier.skops
 
 # Check .dockerignore isn't excluding needed files
 cat .dockerignore
@@ -578,7 +578,7 @@ docker build -t ml-platform-api:latest .
 
 ```bash
 # Review specific issue
-bandit -r app/
+bandit -r services/api/
 
 # Fix code (e.g., avoid shell=True, use parameterized queries)
 # If false positive, add comment with justification:
@@ -591,7 +591,7 @@ bandit -r app/
 
 ### .skops File Not Found
 
-**Problem**: `FileNotFoundError: models/iris_classifier.skops`
+**Problem**: `FileNotFoundError: services/api/models/iris_classifier.skops`
 
 **Cause**: The model file hasn't been trained yet or was deleted.
 
@@ -602,12 +602,12 @@ bandit -r app/
 python train_model.py
 
 # Verify file exists
-ls -lh models/iris_classifier.skops
+ls -lh services/api/models/iris_classifier.skops
 
 # Check SHA-256 hash (if metadata exists)
 python -c "
 import hashlib
-with open('models/iris_classifier.skops', 'rb') as f:
+with open('services/api/models/iris_classifier.skops', 'rb') as f:
     hash = hashlib.sha256(f.read()).hexdigest()
 print(f'SHA-256: {hash}')
 "
@@ -629,7 +629,7 @@ python train_model.py
 
 # Option 2: Update expected hash in code
 # (Only if you trust the model file)
-# Calculate new hash and update in app/model.py
+# Calculate new hash and update in services/api/model.py
 ```
 
 **Prevention**: Never manually edit model files. Always retrain using `train_model.py`.
@@ -653,7 +653,7 @@ pytest -v
 # Check code quality locally
 black --check .
 ruff check .
-mypy app/
+mypy services/api/
 
 # View CI logs in GitHub Actions tab for specific error details
 ```
