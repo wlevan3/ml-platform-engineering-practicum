@@ -480,7 +480,8 @@ jobs:
         run: |
           if [ -f ./checkov-results.sarif ]; then
             # Extract HIGH/CRITICAL findings count from SARIF
-            HIGH_CRITICAL=$(jq '[.runs[].results[] | select(.level == "error" or .level == "warning")] | length' ./checkov-results.sarif)
+            # SARIF levels: error=HIGH/CRITICAL, warning=MEDIUM, note=LOW
+            HIGH_CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")] | length' ./checkov-results.sarif)
             if [ "$HIGH_CRITICAL" -gt 0 ]; then
               echo "❌ Found $HIGH_CRITICAL HIGH/CRITICAL findings"
               exit 1
