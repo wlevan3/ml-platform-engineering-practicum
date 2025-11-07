@@ -342,7 +342,7 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 | <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
 | <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
 | <a name="input_enable_ssm_access"></a> [enable\_ssm\_access](#input\_enable\_ssm\_access) | Enable AWS Systems Manager access for node debugging | `bool` | `true` | no |
-| <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_ARM_64_STANDARD"` | no |
+| <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_x86_64_STANDARD"` | no |
 | <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
 | <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `50` | no |
 | <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | List of additional IAM policy ARNs to attach to worker node IAM role (e.g., custom CloudWatch policies) | `list(string)` | `[]` | no |
@@ -351,7 +351,7 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 | <a name="input_node_max_size"></a> [node\_max\_size](#input\_node\_max\_size) | Maximum number of worker nodes | `number` | `4` | no |
 | <a name="input_node_min_size"></a> [node\_min\_size](#input\_node\_min\_size) | Minimum number of worker nodes | `number` | `1` | no |
 | <a name="input_node_taints"></a> [node\_taints](#input\_node\_taints) | Kubernetes taints to apply to worker nodes (for pod scheduling restrictions) | <pre>list(object({<br/>    key    = string<br/>    value  = optional(string)<br/>    effect = string<br/>  }))</pre> | `[]` | no |
-| <a name="input_spot_instance_types"></a> [spot\_instance\_types](#input\_spot\_instance\_types) | List of instance types for spot instances (multiple types increase fulfillment success rate) | `list(string)` | <pre>[<br/>  "t4g.medium",<br/>  "t4g.small",<br/>  "t4g.large"<br/>]</pre> | no |
+| <a name="input_spot_instance_types"></a> [spot\_instance\_types](#input\_spot\_instance\_types) | List of instance types for spot instances (multiple types increase fulfillment success rate) | `list(string)` | <pre>[<br/>  "t3.medium",<br/>  "t3a.medium",<br/>  "t2.medium"<br/>]</pre> | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | List of subnet IDs for EKS worker nodes (typically private subnets) | `list(string)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources | `map(string)` | `{}` | no |
 | <a name="input_use_spot_instances"></a> [use\_spot\_instances](#input\_use\_spot\_instances) | Use EC2 Spot instances for worker nodes (70% cost savings, but can be interrupted) | `bool` | `true` | no |
