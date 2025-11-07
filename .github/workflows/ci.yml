@@ -533,7 +533,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ github.workspace }}/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: trivy-db-${{ runner.os }}-v1
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
@@ -714,7 +714,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ github.workspace }}/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: trivy-db-${{ runner.os }}-v1
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
@@ -828,7 +828,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ github.workspace }}/.cache/trivy
-          key: trivy-db-${{ runner.os }}-${{ hashFiles('.github/workflows/ci.yml') }}
+          key: trivy-db-${{ runner.os }}-v1
           restore-keys: |
             trivy-db-${{ runner.os }}-
 
