@@ -25,6 +25,32 @@ management.
 **Note**: Kubernetes provider is intentionally NOT required. Kubernetes resources (ResourceQuotas, LimitRanges) are
 managed via YAML manifests in `clusters/dev/bootstrap/k8s-manifests/manifests/` as part of the GitOps migration strategy.
 
+## Migration Guide
+
+### Breaking Change: `node_iam_role_additional_policies` Type Change
+
+**Version**: PR #119 (commit 849f3f9)
+
+The `node_iam_role_additional_policies` variable type changed from `map(string)` to `list(string)` to resolve a Terraform `for_each` error with dynamic data sources.
+
+**Migration Required:**
+
+```hcl
+# OLD (v1.0.0) - Will cause syntax error
+node_iam_role_additional_policies = {
+  MyCustomPolicy = "arn:aws:iam::aws:policy/MyCustomPolicy"
+  AnotherPolicy  = "arn:aws:iam::123456789012:policy/CustomPolicy"
+}
+
+# NEW (v1.1.0+) - Use list syntax
+node_iam_role_additional_policies = [
+  "arn:aws:iam::aws:policy/MyCustomPolicy",
+  "arn:aws:iam::123456789012:policy/CustomPolicy"
+]
+```
+
+**Note on SSM Access**: Previously, `AmazonSSMManagedInstanceCore` was included in the default value. This is now controlled by the separate `enable_ssm_access` variable (defaults to `true`), so SSM access is still enabled by default. To disable SSM access, set `enable_ssm_access = false`.
+
 ## Usage
 
 ### Basic Example (On-Demand Instances)
@@ -82,10 +108,10 @@ module "eks_cluster" {
     NodeGroup   = "ml-workloads"
   }
 
-  # IAM policies for node access
-  node_iam_role_additional_policies = {
-    AmazonSSMManagedInstanceCore = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-  }
+  # Additional IAM policies for node access (SSM enabled by default via enable_ssm_access)
+  node_iam_role_additional_policies = [
+    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  ]
 
   tags = {
     Environment = "dev"
@@ -164,7 +190,8 @@ module "eks_cluster" {
 | node_max_size | Maximum number of worker nodes | `number` | `4` | no |
 | node_disk_size | Disk size in GB for worker nodes | `number` | `50` | no |
 | node_ami_type | AMI type for worker nodes | `string` | `"AL2_x86_64"` | no |
-| node_iam_role_additional_policies | Additional IAM policies for nodes | `map(string)` | See variables.tf | no |
+| enable_ssm_access | Enable AWS Systems Manager for node debugging | `bool` | `true` | no |
+| node_iam_role_additional_policies | Additional IAM policies for nodes | `list(string)` | `[]` | no |
 | node_labels | Kubernetes labels for nodes | `map(string)` | `{}` | no |
 | node_taints | Kubernetes taints for nodes | `list(object)` | `[]` | no |
 | tags | Tags to apply to all resources | `map(string)` | `{}` | no |
