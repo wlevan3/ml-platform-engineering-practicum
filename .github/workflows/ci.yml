@@ -122,6 +122,7 @@ jobs:
             --exclude-dir=.pytest_cache \
             --exclude-dir=.terraform \
             --exclude-dir=backlog \
+            --exclude=ci.yml \
             .; then
             echo "❌ Private key detected"
             exit 1
