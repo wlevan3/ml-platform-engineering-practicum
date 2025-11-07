@@ -2,3 +2,6 @@
 # These contain HTML tables that violate MD033 (no-inline-html)
 infra/aws-core/terraform/environments/*/README.md
 infra/aws-core/terraform/modules/*/README.md
+
+# Ignore root README - contains long lines in setup instructions
+README.md

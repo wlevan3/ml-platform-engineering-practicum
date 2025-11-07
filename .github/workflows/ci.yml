@@ -29,7 +29,6 @@ jobs:
           globs: |
             **/*.md
             #infra/aws-core/terraform/**/*.md
-          config: ".markdownlint.json"
 
   yaml-lint:
     name: YAML Linting
