@@ -893,20 +893,7 @@ jobs:
           echo "✅ Image pushed to local registry"
           echo "Image reference: localhost:5000/ml-platform-api:${{ github.sha }}"
 
-      - name: Scan Docker image with Trivy
-        uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
-        with:
-          scan-type: "image"
-          image-ref: "ml-platform-api:${{ github.sha }}"
-          format: "table"
-          severity: "CRITICAL,HIGH"
-          exit-code: 1 # Fail CI on vulnerabilities
-
-      # Note: Trivy SARIF upload to GitHub Security removed to prevent blocking merges when Docker build is skipped
-      # Trivy still runs and fails CI on vulnerabilities, but doesn't create code scanning alerts
-
-      - name: Generate Trivy SARIF for SonarCloud
-        if: always()
+      - name: Scan Docker image with Trivy (SARIF)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
         with:
           scan-type: "image"
@@ -914,6 +901,27 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
+        continue-on-error: true
+
+      # Note: Trivy SARIF upload to GitHub Security removed to prevent blocking merges when Docker build is skipped
+      # Trivy still fails CI on HIGH/CRITICAL findings via validation step below
+
+      - name: Fail on Trivy HIGH/CRITICAL findings
+        run: |
+          if [ -f ./trivy-results.sarif ]; then
+            # SARIF levels: error=HIGH/CRITICAL, warning=MEDIUM, note=LOW/INFO
+            HIGH_CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")] | length' ./trivy-results.sarif)
+            if [ "$HIGH_CRITICAL" -gt 0 ]; then
+              echo "❌ Found $HIGH_CRITICAL HIGH/CRITICAL vulnerability findings"
+              jq -r '.runs[].results[] | select(.level == "error") | "  - \(.ruleId): \(.message.text)"' ./trivy-results.sarif
+              exit 1
+            else
+              echo "✅ No HIGH/CRITICAL vulnerabilities found"
+            fi
+          else
+            echo "⚠️ Trivy SARIF file not found"
+            exit 1
+          fi
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
