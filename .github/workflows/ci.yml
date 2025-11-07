@@ -67,6 +67,7 @@ jobs:
           if grep -r -I '[[:space:]]$' \
             --exclude-dir=.git \
             --exclude-dir=.venv \
+            --exclude-dir=.claude \
             --exclude-dir=__pycache__ \
             --exclude-dir=.external_modules \
             --exclude-dir=.pytest_cache \
@@ -86,7 +87,7 @@ jobs:
               echo "❌ Missing newline at EOF: $file"
               status=1
             fi
-          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -not -path "*/.terraform/*" -print0)
+          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.external_modules/*" -not -path "./.pytest_cache/*" -not -path "*/.terraform/*" -print0)
           if [ $status -eq 0 ]; then
             echo "✅ All files end with newline"
           fi
@@ -94,7 +95,7 @@ jobs:
 
       - name: Check for large files
         run: |
-          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*" -not -path "*/.terraform/*")
+          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.claude/*" -not -path "./.pytest_cache/*" -not -path "./.external_modules/*" -not -path "*/.terraform/*")
           if [ -n "$large_files" ]; then
             echo "❌ Large files (>1MB) detected:"
             echo "$large_files"
@@ -115,6 +116,7 @@ jobs:
           if grep -r "BEGIN.*PRIVATE KEY" \
             --exclude-dir=.git \
             --exclude-dir=.venv \
+            --exclude-dir=.claude \
             --exclude-dir=.external_modules \
             --exclude-dir=.pytest_cache \
             --exclude-dir=.terraform \
@@ -554,7 +556,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip==25.3
-          pip install black==25.9.0 ruff==0.14.3 pytest==8.3.4 mypy==1.18.2 pydantic joblib-stubs==1.5.2.0.20250831
+          pip install black==25.9.0 ruff==0.14.3 pytest==8.3.4 mypy==1.18.2 pydantic joblib-stubs==1.5.2.0.20250831 types-pytest==8.3.4.20250108
 
       - name: Run Black (formatting check)
         run: black --check .
