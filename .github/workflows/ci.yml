@@ -806,10 +806,30 @@ jobs:
           path: semgrep.sarif
           retention-days: 5
 
+  check-docker-changes:
+    name: Check Docker Build Required
+    runs-on: ubuntu-latest
+    outputs:
+      needs_build: ${{ steps.filter.outputs.docker }}
+    steps:
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36 # v3.0.2
+        id: filter
+        with:
+          filters: |
+            docker:
+              - 'services/**'
+              - 'tests/**'
+              - 'requirements.txt'
+              - 'Dockerfile'
+              - 'train_model.py'
+              - '.dockerignore'
+
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
-    needs: [train-model, python-test] # Only containerize tested code with trained model
+    needs: [train-model, python-test, check-docker-changes]
+    if: needs.check-docker-changes.outputs.needs_build == 'true'
     permissions:
       security-events: write
       contents: read
@@ -873,7 +893,7 @@ jobs:
           echo "✅ Image pushed to local registry"
           echo "Image reference: localhost:5000/ml-platform-api:${{ github.sha }}"
 
-      - name: Scan Docker image with Trivy
+      - name: Scan Docker image with Trivy (SARIF)
         uses: aquasecurity/trivy-action@b6643a29fecd7f34b3597bc6acb0a98b03d33ff8 # v0.33.1 (Trivy v0.65.0)
         with:
           scan-type: "image"
@@ -881,15 +901,27 @@ jobs:
           format: "sarif"
           output: "trivy-results.sarif"
           severity: "CRITICAL,HIGH"
-          # Note: exit-code removed to prevent false positives in Trivy v0.65.0 from blocking CI
-          # GitHub Security auto-resolves false positives. Real vulnerabilities still visible in Security tab.
+        continue-on-error: true
 
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@5d5cd550d3e189c569da8f16ea8de2d821c9bf7a # v3.31.2
-        if: always()
-        with:
-          sarif_file: "trivy-results.sarif"
-          category: "trivy-docker-scan"
+      # Note: Trivy SARIF upload to GitHub Security removed to prevent blocking merges when Docker build is skipped
+      # Trivy still fails CI on HIGH/CRITICAL findings via validation step below
+
+      - name: Fail on Trivy HIGH/CRITICAL findings
+        run: |
+          if [ -f ./trivy-results.sarif ]; then
+            # SARIF levels: error=HIGH/CRITICAL, warning=MEDIUM, note=LOW/INFO
+            HIGH_CRITICAL=$(jq '[.runs[].results[] | select(.level == "error")] | length' ./trivy-results.sarif)
+            if [ "$HIGH_CRITICAL" -gt 0 ]; then
+              echo "❌ Found $HIGH_CRITICAL HIGH/CRITICAL vulnerability findings"
+              jq -r '.runs[].results[] | select(.level == "error") | "  - \(.ruleId): \(.message.text)"' ./trivy-results.sarif
+              exit 1
+            else
+              echo "✅ No HIGH/CRITICAL vulnerabilities found"
+            fi
+          else
+            echo "⚠️ Trivy SARIF file not found"
+            exit 1
+          fi
 
       - name: Upload Trivy Docker SARIF as artifact for SonarCloud
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -979,7 +1011,8 @@ jobs:
   sbom-generation:
     name: SBOM Generation (Syft)
     runs-on: ubuntu-latest
-    needs: [docker-build-scan] # Run after Docker image is built and scanned
+    needs: [docker-build-scan, check-docker-changes]
+    if: needs.check-docker-changes.outputs.needs_build == 'true'
     permissions:
       contents: read
 
