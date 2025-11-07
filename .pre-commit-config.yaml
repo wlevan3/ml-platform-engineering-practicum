@@ -125,11 +125,7 @@ repos:
         # Tests are scanned comprehensively in CI (see .github/workflows/ci.yml)
         # Rationale: Developer feedback speed > comprehensive pre-commit coverage
         exclude: ^tests/
-
-  # Markdown linting
-  - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.45.0
-    hooks:
-      - id: markdownlint
-        args: ["--fix"]
-        exclude: ^infra/aws-core/terraform/(environments|modules)/.*/README\.md$ # Exclude terraform-docs generated files
+# Markdown linting removed - handled by markdownlint-cli2-action in CI
+# Reason: markdownlint-cli fails on merge commit artifacts while markdownlint-cli2 passes
+# Pre-commit tests merge preview (synthetic commit), causing false positives
+# CI job uses markdownlint-cli2-action which tests actual branch HEAD
