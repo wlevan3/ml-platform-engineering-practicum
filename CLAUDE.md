@@ -223,3 +223,5 @@ Jobs are **conditional** based on file existence. Skipped jobs show in summary.
 ---
 
 **Last Updated**: 2025-11-05 (Enhanced with index layer for progressive disclosure)
+
+- Before `git add`, make sure all precommit checks pass.
