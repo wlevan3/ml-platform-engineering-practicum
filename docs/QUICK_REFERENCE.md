@@ -254,7 +254,7 @@ kubectl config current-context
 # 3. Verify cluster access - list nodes
 kubectl get nodes
 
-# Expected: Shows EKS worker nodes (t3.medium spot instances)
+# Expected: Shows EKS worker nodes (t4g ARM-based spot instances)
 # Example output:
 # NAME                                          STATUS   ROLES    AGE   VERSION
 # ip-10-0-1-123.us-west-2.compute.internal     Ready    <none>   5m    v1.34.x
@@ -295,9 +295,6 @@ kubectl describe nodes | grep -E "Name:|InstanceType:|allocatable" | head -20
 - If access denied: Verify AWS credentials with `aws sts get-caller-identity`
 - If no nodes: Check EKS console or run
   `aws eks describe-nodegroup --cluster-name ml-platform-dev --nodegroup-name <name> --region us-west-2`
-
-```text
-```
 
 ## GitHub Actions Workflows
 

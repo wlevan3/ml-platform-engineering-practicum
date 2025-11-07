@@ -50,7 +50,11 @@ echo ""
 
 # Test 2: Verify current context
 echo "Step 2: Verifying kubectl context..."
-CURRENT_CONTEXT=$(kubectl config current-context)
+if ! CURRENT_CONTEXT=$(kubectl config current-context 2>&1); then
+  print_status "FAIL" "kubectl not configured or context not set: $CURRENT_CONTEXT"
+  exit 1
+fi
+
 if echo "$CURRENT_CONTEXT" | grep -q "$CLUSTER_NAME"; then
   print_status "OK" "Context points to EKS cluster: $CURRENT_CONTEXT"
 else
@@ -114,7 +118,7 @@ echo ""
 # Test 8: Node details
 echo "Step 8: Node instance details..."
 echo "Instance Type and Capacity:"
-kubectl get nodes -o json | jq -r '.items[] | "\(.metadata.name): \(.metadata.labels."beta.kubernetes.io/instance-type") - CPU: \(.status.capacity.cpu), Memory: \(.status.capacity.memory)"'
+kubectl get nodes -o json | jq -r '.items[] | "\(.metadata.name): \(.metadata.labels."node.kubernetes.io/instance-type" // .metadata.labels."beta.kubernetes.io/instance-type" // "unknown") - CPU: \(.status.capacity.cpu), Memory: \(.status.capacity.memory)"'
 echo ""
 
 # Summary
