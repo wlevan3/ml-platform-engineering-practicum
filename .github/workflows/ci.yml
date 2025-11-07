@@ -619,23 +619,14 @@ jobs:
         with:
           name: coverage-report
 
-      - name: Download Trivy filesystem SARIF
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: trivy-fs-sarif
-          path: sarif-reports/trivy-fs/
+      # Note: Trivy SARIF downloads removed - vulnerabilities tracked in GitHub Code Scanning
+      # SonarCloud only imports Semgrep for SAST code quality findings
 
       - name: Download Semgrep SARIF
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: semgrep-sarif
           path: sarif-reports/semgrep/
-
-      - name: Download Trivy Docker SARIF
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: trivy-docker-sarif
-          path: sarif-reports/trivy-docker/
 
       - name: List SARIF files
         run: |
