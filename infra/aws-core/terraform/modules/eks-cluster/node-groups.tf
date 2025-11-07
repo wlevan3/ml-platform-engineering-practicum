@@ -19,17 +19,32 @@ locals {
       max_size     = var.node_max_size
       desired_size = var.node_desired_size
 
-      # Disk configuration
-      disk_size = var.node_disk_size
+      # Disk configuration handled via block_device_mappings below for encryption enforcement
 
-      # Enforce IMDSv2 for node metadata access
+      # Enforce IMDSv2 for node metadata access (CIS Benchmark 5.3)
       metadata_options = {
-        http_endpoint = "enabled"
-        http_tokens   = "required"
+        http_endpoint               = "enabled"
+        http_tokens                 = "required"
+        http_put_response_hop_limit = 1 # Prevent container escape to IMDS
+        instance_metadata_tags      = "enabled"
       }
 
       # AMI type
       ami_type = var.node_ami_type
+
+      # Enforce EBS encryption for node volumes (CIS Benchmark 2.2.1)
+      block_device_mappings = {
+        xvda = {
+          device_name = "/dev/xvda"
+          ebs = {
+            volume_size           = var.node_disk_size
+            volume_type           = "gp3"
+            encrypted             = true
+            kms_key_id            = null # AWS-managed key per org policy
+            delete_on_termination = true
+          }
+        }
+      }
 
       # Launch template configuration
       update_config = {

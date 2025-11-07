@@ -110,7 +110,7 @@ variable "tags" {
 }
 
 variable "flow_log_retention_in_days" {
-  description = "CloudWatch Logs retention period for VPC flow logs"
+  description = "CloudWatch Logs retention period for VPC flow logs (90 days meets PCI-DSS requirements)"
   type        = number
-  default     = 30
+  default     = 90
 }
