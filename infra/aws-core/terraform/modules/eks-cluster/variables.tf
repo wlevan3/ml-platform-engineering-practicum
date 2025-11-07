@@ -129,7 +129,7 @@ variable "use_spot_instances" {
 variable "spot_instance_types" {
   description = "List of instance types for spot instances (multiple types increase fulfillment success rate)"
   type        = list(string)
-  default     = ["t3.medium", "t3a.medium", "t2.medium"]
+  default     = ["t4g.medium", "t4g.small", "t4g.large"] # ARM-based instances for AL2023_ARM_64_STANDARD
 }
 
 variable "node_instance_type" {

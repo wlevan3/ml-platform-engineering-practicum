@@ -28,23 +28,23 @@ resource "aws_iam_role" "node_group" {
 }
 
 # Required EKS policies - using static ARNs to avoid for_each with dynamic data
-resource "aws_iam_role_policy_attachment" "node_group_AmazonEKSWorkerNodePolicy" {
+resource "aws_iam_role_policy_attachment" "node_group_amazon_eks_worker_node_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"
   role       = aws_iam_role.node_group.name
 }
 
-resource "aws_iam_role_policy_attachment" "node_group_AmazonEKS_CNI_Policy" {
+resource "aws_iam_role_policy_attachment" "node_group_amazon_eks_cni_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
   role       = aws_iam_role.node_group.name
 }
 
-resource "aws_iam_role_policy_attachment" "node_group_AmazonEC2ContainerRegistryReadOnly" {
+resource "aws_iam_role_policy_attachment" "node_group_amazon_ec2_container_registry_read_only" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
   role       = aws_iam_role.node_group.name
 }
 
 # SSM access for debugging (optional, controlled by variable)
-resource "aws_iam_role_policy_attachment" "node_group_AmazonSSMManagedInstanceCore" {
+resource "aws_iam_role_policy_attachment" "node_group_amazon_ssm_managed_instance_core" {
   count      = var.enable_ssm_access ? 1 : 0
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
   role       = aws_iam_role.node_group.name
