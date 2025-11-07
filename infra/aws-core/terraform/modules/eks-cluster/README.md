@@ -177,8 +177,8 @@ module "eks_cluster" {
 | vpc_id | VPC ID where the cluster will be deployed | `string` | n/a | yes |
 | subnet_ids | List of subnet IDs for worker nodes | `list(string)` | n/a | yes |
 | control_plane_subnet_ids | List of subnet IDs for control plane | `list(string)` | `[]` | no |
-| cluster_endpoint_public_access | Enable public API endpoint | `bool` | `true` | no |
-| cluster_endpoint_public_access_cidrs | CIDRs allowed to access public endpoint | `list(string)` | `["0.0.0.0/0"]` | no |
+| cluster_endpoint_public_access | Enable public API endpoint | `bool` | `false` | no |
+| cluster_endpoint_public_access_cidrs | CIDRs allowed to access public endpoint | `list(string)` | `[]` | no |
 | cluster_endpoint_private_access | Enable private API endpoint | `bool` | `true` | no |
 | enable_irsa | Enable IAM Roles for Service Accounts | `bool` | `true` | no |
 | cluster_addons | Map of cluster addons to install | `map(object)` | See variables.tf | no |

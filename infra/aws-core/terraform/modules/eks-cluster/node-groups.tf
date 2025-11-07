@@ -19,8 +19,7 @@ locals {
       max_size     = var.node_max_size
       desired_size = var.node_desired_size
 
-      # Disk configuration
-      disk_size = var.node_disk_size
+      # Disk configuration handled via block_device_mappings below for encryption enforcement
 
       # Enforce IMDSv2 for node metadata access (CIS Benchmark 5.3)
       metadata_options = {

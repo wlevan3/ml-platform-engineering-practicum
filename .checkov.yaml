@@ -15,9 +15,11 @@ external-checks-dir:
 # Security level
 compact: false # Detailed output
 # hard-fail-on configured in CI workflow for SARIF generation compatibility
+# Remediation approach: New violations block CI; legacy findings tracked in backlog
+# Suppressions require documented justification via skip-check with inline comments
 
 # Latest security checks
-enable-secret-scan-all-files: true # Scan all files for secrets
+enable-secret-scan-all-files: true # Comprehensive CI scanning (detect-secrets handles pre-commit)
 
 # Suppress specific checks only when explicitly documented
 # skip-check: []

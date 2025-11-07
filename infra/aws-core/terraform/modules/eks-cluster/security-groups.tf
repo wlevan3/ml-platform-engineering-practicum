@@ -36,14 +36,16 @@ locals {
 
   # Node security group egress rules (least privilege - CIS Benchmark 5.4)
   # Scope egress to specific protocols instead of allowing all traffic (-1)
+  # NOTE: HTTPS egress to 0.0.0.0/0 is required for ECR, EKS API, and external services
+  # To further restrict, deploy VPC endpoints for ECR/EKS and scope HTTPS to VPC CIDR
   node_security_group_egress_rules = var.vpc_cidr == null ? {} : {
     egress_https = {
-      description = "HTTPS to VPC endpoints, ECR, and internal services"
+      description = "HTTPS for ECR, EKS API, VPC endpoints, and external services"
       protocol    = "tcp"
       from_port   = 443
       to_port     = 443
       type        = "egress"
-      cidr_blocks = [var.vpc_cidr]
+      cidr_blocks = ["0.0.0.0/0"] # Required for ECR image pulls and EKS API
     }
 
     egress_dns_tcp = {
