@@ -219,10 +219,10 @@ variable "security_alert_email" {
 variable "use_spot_instances" {
   description = "Use Spot instances instead of On-Demand for EKS nodes (70% cost savings, but interruptible)"
   type        = bool
-  default     = true # Enabled by default for dev environment
+  default     = false # Disabled: Spot instances not eligible for AWS Free Tier
 
-  # Note: Spot instances can be interrupted with 2-minute notice
-  # Kubernetes will automatically reschedule pods to other nodes
-  # For dev/test workloads, this is acceptable and saves significant cost
+  # Note: AWS Free Tier does not support Spot instances (InvalidParameterCombination error)
+  # Free Tier eligibility: t2.micro/small/medium on-demand only (750 hours/month for 12 months)
+  # For cost optimization after free tier expires, enable Spot instances
   # Savings: On-demand t3.medium ($0.0416/hour) → Spot (~$0.0125/hour)
 }

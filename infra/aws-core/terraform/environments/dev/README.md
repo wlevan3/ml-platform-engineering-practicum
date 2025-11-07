@@ -52,7 +52,7 @@ No resources.
 | <a name="input_security_alert_email"></a> [security\_alert\_email](#input\_security\_alert\_email) | Email address for HIGH/CRITICAL security findings (REQUIRED when Security Hub enabled) | `string` | `""` | no |
 | <a name="input_single_nat_gateway"></a> [single\_nat\_gateway](#input\_single\_nat\_gateway) | Use single NAT gateway instead of one per AZ (cost optimization for dev) | `bool` | `true` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Additional tags to apply to all resources | `map(string)` | `{}` | no |
-| <a name="input_use_spot_instances"></a> [use\_spot\_instances](#input\_use\_spot\_instances) | Use Spot instances instead of On-Demand for EKS nodes (70% cost savings, but interruptible) | `bool` | `true` | no |
+| <a name="input_use_spot_instances"></a> [use\_spot\_instances](#input\_use\_spot\_instances) | Use Spot instances instead of On-Demand for EKS nodes (70% cost savings, but interruptible) | `bool` | `false` | no |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR block for VPC | `string` | `"10.0.0.0/16"` | no |
 
 ## Outputs
