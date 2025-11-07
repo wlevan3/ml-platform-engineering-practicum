@@ -29,6 +29,158 @@ jobs:
             #infra/aws-core/terraform/**/*.md
           config: ".markdownlint.json"
 
+  yaml-lint:
+    name: YAML Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run yamllint
+        uses: ibiqlik/action-yamllint@2576378a8e339169678f9939646ee3ee325e845c # v3.1.1
+        with:
+          strict: true
+          config_file: .yamllint.yaml
+
+  actionlint:
+    name: GitHub Actions Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run actionlint
+        uses: reviewdog/action-actionlint@4f8f9963ca57a41e5fd5b538dd79dbfbd3e0b38a # v1.54.0
+
+  file-checks:
+    name: File Hygiene Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Check trailing whitespace
+        run: |
+          if grep -r '[[:space:]]$' --exclude-dir=.git --exclude-dir=.venv --exclude-dir=__pycache__ --exclude='*.pyc' .; then
+            echo "❌ Files with trailing whitespace found"
+            exit 1
+          fi
+          echo "✅ No trailing whitespace"
+
+      - name: Check end of file newlines
+        run: |
+          status=0
+          while IFS= read -r -d '' file; do
+            if [ -n "$(tail -c 1 "$file")" ]; then
+              echo "❌ Missing newline at EOF: $file"
+              status=1
+            fi
+          done < <(find . -type f \( -name "*.py" -o -name "*.md" -o -name "*.yml" -o -name "*.yaml" -o -name "*.tf" \) -not -path "./.git/*" -not -path "./.venv/*" -print0)
+          if [ $status -eq 0 ]; then
+            echo "✅ All files end with newline"
+          fi
+          exit $status
+
+      - name: Check for large files
+        run: |
+          large_files=$(find . -type f -size +1000k -not -path "./.git/*" -not -path "./.venv/*" -not -path "./.pytest_cache/*")
+          if [ -n "$large_files" ]; then
+            echo "❌ Large files (>1MB) detected:"
+            echo "$large_files"
+            exit 1
+          fi
+          echo "✅ No large files detected"
+
+      - name: Check for merge conflict markers
+        run: |
+          if git grep -n -E '^(<<<<<<<|=======|>>>>>>>)' -- ':!.github/workflows/ci.yml'; then
+            echo "❌ Merge conflict markers found"
+            exit 1
+          fi
+          echo "✅ No merge conflict markers"
+
+      - name: Check for private keys
+        run: |
+          if grep -r "BEGIN.*PRIVATE KEY" --exclude-dir=.git --exclude-dir=.venv .; then
+            echo "❌ Private key detected"
+            exit 1
+          fi
+          echo "✅ No private keys detected"
+
+  dockerfile-lint:
+    name: Dockerfile Linting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Run hadolint
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+  python-security-lint:
+    name: Python Security Linting (Bandit)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.13"
+
+      - name: Install Bandit
+        run: pip install bandit==1.8.6
+
+      - name: Run Bandit
+        run: bandit -ll -i -r . --exclude ./tests,./venv,./.venv
+
+  terraform-docs-check:
+    name: Terraform Documentation Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+
+      - name: Check if terraform directory exists
+        id: check_terraform
+        run: |
+          if [ -d "infra/aws-core/terraform" ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Skipping Terraform docs check - infra/aws-core/terraform/ directory does not exist yet"
+          fi
+
+      - name: Install terraform-docs
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: |
+          curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz
+          tar -xzf terraform-docs.tar.gz
+          sudo mv terraform-docs /usr/local/bin/
+          terraform-docs --version
+
+      - name: Check Terraform documentation
+        if: steps.check_terraform.outputs.exists == 'true'
+        run: |
+          # Generate docs and check if README.md would change
+          cd infra/aws-core/terraform
+          terraform-docs markdown table --output-file README.md --output-mode inject .
+          if ! git diff --exit-code README.md; then
+            echo "❌ Terraform documentation is out of sync"
+            echo "Run: terraform-docs markdown table --output-file README.md --output-mode inject infra/aws-core/terraform/"
+            exit 1
+          fi
+          echo "✅ Terraform documentation is up to date"
+
   terraform-validate:
     name: Terraform Validation
     runs-on: ubuntu-latest
@@ -549,37 +701,6 @@ jobs:
           path: semgrep.sarif
           retention-days: 5
 
-  pre-commit-checks:
-    name: Pre-commit Checks
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-
-      - name: Setup Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
-        with:
-          python-version: "3.13"
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
-        with:
-          terraform_version: "1.13.5"
-
-      - name: Install terraform-docs
-        run: |
-          curl -sSLo ./terraform-docs.tar.gz https://terraform-docs.io/dl/v0.19.0/terraform-docs-v0.19.0-linux-amd64.tar.gz
-          tar -xzf terraform-docs.tar.gz
-          sudo mv terraform-docs /usr/local/bin/
-          terraform-docs --version
-
-      - name: Install pre-commit
-        run: pip install pre-commit==4.0.1
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files
-
   docker-build-scan:
     name: Docker Build & Security Scan
     runs-on: ubuntu-latest
@@ -859,6 +980,12 @@ jobs:
     needs:
       [
         lint-and-validate,
+        yaml-lint,
+        actionlint,
+        file-checks,
+        dockerfile-lint,
+        python-security-lint,
+        terraform-docs-check,
         terraform-validate,
         terraform-security-scan,
         kubernetes-validate,
@@ -869,7 +996,6 @@ jobs:
         security-scan,
         gitleaks-scan,
         semgrep-scan,
-        pre-commit-checks,
         docker-build-scan,
         sbom-generation,
       ]
@@ -883,7 +1009,13 @@ jobs:
             echo ""
             echo "| Job | Status |"
             echo "|-----|--------|"
-            echo "| Lint and Validate | ${{ needs.lint-and-validate.result }} |"
+            echo "| Markdown Linting | ${{ needs.lint-and-validate.result }} |"
+            echo "| YAML Linting | ${{ needs.yaml-lint.result }} |"
+            echo "| GitHub Actions Linting | ${{ needs.actionlint.result }} |"
+            echo "| File Hygiene Checks | ${{ needs.file-checks.result }} |"
+            echo "| Dockerfile Linting | ${{ needs.dockerfile-lint.result }} |"
+            echo "| Python Security Linting (Bandit) | ${{ needs.python-security-lint.result }} |"
+            echo "| Terraform Documentation Check | ${{ needs.terraform-docs-check.result }} |"
             echo "| Terraform Validation | ${{ needs.terraform-validate.result }} |"
             echo "| Terraform Security Scanning (tfsec + Checkov) | ${{ needs.terraform-security-scan.result }} |"
             echo "| Kubernetes Validation | ${{ needs.kubernetes-validate.result }} |"
@@ -896,5 +1028,4 @@ jobs:
             echo "| SBOM Generation (Syft) | ${{ needs.sbom-generation.result }} |"
             echo "| Secret Scanning (Gitleaks) | ${{ needs.gitleaks-scan.result }} |"
             echo "| Semgrep SAST | ${{ needs.semgrep-scan.result }} |"
-            echo "| Pre-commit Checks | ${{ needs.pre-commit-checks.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
