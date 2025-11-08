@@ -29,6 +29,7 @@ on:
     branches: [main]
     paths:
       - "infra/aws-core/terraform/**"
+  workflow_dispatch: # Allow manual workflow runs for testing
 
 # Prevent concurrent applies
 concurrency:
