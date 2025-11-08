@@ -5,6 +5,9 @@
 #
 # Reference: https://docs.aws.amazon.com/eks/latest/userguide/private-clusters.html
 
+# Data source for current region
+data "aws_region" "current" {}
+
 # Security group for VPC interface endpoints
 resource "aws_security_group" "vpc_endpoints" {
   name        = "${var.vpc_name}-vpc-endpoints-sg"
@@ -137,6 +140,3 @@ resource "aws_vpc_endpoint" "autoscaling" {
     }
   )
 }
-
-# Data source for current region
-data "aws_region" "current" {}
