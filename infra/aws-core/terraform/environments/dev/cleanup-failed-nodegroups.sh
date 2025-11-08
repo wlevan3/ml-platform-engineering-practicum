@@ -172,8 +172,9 @@ show_summary() {
 
     log_warning "Total EC2 instances to terminate: $total_instances"
 
-    # Calculate cost savings
-    local hourly_rate=0.0084
+    # Calculate cost savings (estimate - actual rate varies by instance type)
+    # Using average rate ~$0.01/hr as estimate (t3.micro: $0.0104, t4g.small: $0.0084)
+    local hourly_rate=0.01
     local daily_savings=$(echo "$total_instances * $hourly_rate * 24" | bc -l)
     local monthly_savings=$(echo "$daily_savings * 30" | bc -l)
 
@@ -310,10 +311,8 @@ cleanup_failed_nodegroups() {
         if wait_for_deletion "$nodegroup"; then
             deleted=$((deleted + 1))
         else
-            # Only increment failed if wait fails (not already counted in step 1)
-            if ! [[ $failed -gt 0 ]]; then
-                failed=$((failed + 1))
-            fi
+            # Increment failed counter for wait failures
+            failed=$((failed + 1))
         fi
     done
 
