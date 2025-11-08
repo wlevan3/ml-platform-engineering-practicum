@@ -1,0 +1,297 @@
+name: Nightly Resource Audit
+
+# =============================================================================
+# NIGHTLY RESOURCE AUDIT (Automatic Orphaned Resource Detection)
+# =============================================================================
+#
+# PURPOSE:
+#   Daily audit for orphaned AWS resources
+#   Catches cleanup bugs that slip through validation
+#   Alerts if resources found when cluster is deleted
+#
+# WHEN IT RUNS:
+#   - Every day at 1 AM UTC (configurable via cron)
+#   - Can be triggered manually (workflow_dispatch)
+#
+# WHAT IT DOES:
+#   1. Check if cluster is deleted
+#   2. If deleted, query AWS for orphaned resources with cluster tag
+#   3. If resources found, create GitHub issue for cleanup
+#   4. Estimate cost of orphaned resources
+#
+# ALERT CONDITIONS:
+#   - Cluster destroyed but resources remain
+#   - Unexpected costs (proxy for running resources)
+#
+# =============================================================================
+
+on:
+  schedule:
+    # Run at 1 AM UTC daily (13:00 JST, 8 PM previous day EST)
+    - cron: '0 1 * * *'
+
+  workflow_dispatch:
+    inputs:
+      send_alerts:
+        description: "Create issues if orphaned resources found"
+        type: boolean
+        default: true
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+  AWS_REGION: us-west-2
+  CLUSTER_NAME: ml-platform-dev
+
+jobs:
+  audit:
+    name: Audit for Orphaned Resources
+    runs-on: ubuntu-latest
+
+    outputs:
+      orphaned_found: ${{ steps.audit.outputs.orphaned_found }}
+      orphaned_resources: ${{ steps.audit.outputs.orphaned_resources }}
+      estimated_cost: ${{ steps.cost.outputs.estimated_cost }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: GHA-Audit-${{ github.run_id }}
+
+      - name: Check Cluster Status
+        id: cluster_status
+        run: |
+          echo "Checking cluster status..."
+
+          CLUSTER_EXISTS=$(aws eks describe-cluster \
+            --name "$CLUSTER_NAME" \
+            --region "$AWS_REGION" \
+            --query 'cluster.name' \
+            --output text 2>/dev/null && echo "true" || echo "false")
+
+          echo "cluster_exists=$CLUSTER_EXISTS" >> "$GITHUB_OUTPUT"
+
+          if [ "$CLUSTER_EXISTS" == "true" ]; then
+            echo "Cluster is running: $CLUSTER_NAME"
+          else
+            echo "Cluster is deleted: $CLUSTER_NAME"
+          fi
+
+      - name: Audit for Orphaned Resources (if cluster deleted)
+        id: audit
+        if: steps.cluster_status.outputs.cluster_exists == 'false'
+        run: |
+          echo "Cluster is deleted, checking for orphaned resources..."
+          echo ""
+
+          # Query using Resource Groups Tagging API
+          RESOURCES=$(aws resourcegroupstaggingapi get-resources \
+            --resource-type-filter \
+              "eks:cluster" \
+              "ec2:nat-gateway" \
+              "ec2:vpc-endpoint" \
+              "ec2:elastic-ip" \
+              "ec2:security-group" \
+              "ec2:instance" \
+            --tag-filter "Key=Cluster,Values=$CLUSTER_NAME" \
+            --region "$AWS_REGION" \
+            --query 'ResourceTagMappingList' \
+            --output json)
+
+          TOTAL_RESOURCES=$(echo "$RESOURCES" | jq 'length')
+
+          if [ "$TOTAL_RESOURCES" -eq 0 ]; then
+            echo "✅ No orphaned resources found"
+            echo "orphaned_found=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "❌ Found $TOTAL_RESOURCES orphaned resources:"
+
+            # Build resource list
+            RESOURCE_LIST=""
+            echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"' | while read -r arn; do
+              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6)
+              RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
+              echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
+              RESOURCE_LIST="${RESOURCE_LIST}  - $RESOURCE_TYPE: $RESOURCE_ID\n"
+            done
+
+            # Count by type
+            NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
+            VPCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("vpc-endpoint"))] | length')
+            EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
+            SG_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("security-group"))] | length')
+            INSTANCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("instance"))] | length')
+
+            {
+              echo "orphaned_found=true"
+              echo "orphaned_resources<<EOF"
+              echo "| Type | Count |"
+              echo "|------|-------|"
+              [ "$NAT_COUNT" -gt 0 ] && echo "| NAT Gateways | $NAT_COUNT |"
+              [ "$VPCE_COUNT" -gt 0 ] && echo "| VPC Endpoints | $VPCE_COUNT |"
+              [ "$EIP_COUNT" -gt 0 ] && echo "| Elastic IPs | $EIP_COUNT |"
+              [ "$SG_COUNT" -gt 0 ] && echo "| Security Groups | $SG_COUNT |"
+              [ "$INSTANCE_COUNT" -gt 0 ] && echo "| EC2 Instances | $INSTANCE_COUNT |"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Estimate Cost of Orphaned Resources
+        id: cost
+        if: steps.audit.outputs.orphaned_found == 'true'
+        run: |
+          echo "Estimating cost of orphaned resources..."
+
+          # Query resources again to count
+          RESOURCES=$(aws resourcegroupstaggingapi get-resources \
+            --resource-type-filter \
+              "ec2:nat-gateway" \
+              "ec2:elastic-ip" \
+              "ec2:instance" \
+            --tag-filter "Key=Cluster,Values=$CLUSTER_NAME" \
+            --region "$AWS_REGION" \
+            --query 'ResourceTagMappingList' \
+            --output json)
+
+          # Cost estimates (monthly)
+          # NAT Gateway: ~$32/month
+          # Elastic IP: ~$3.20/month (unused)
+          # EC2 t3.medium: ~$30/month
+
+          NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
+          EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
+          INSTANCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("instance"))] | length')
+
+          MONTHLY_COST=$(( (NAT_COUNT * 32) + (EIP_COUNT * 3) + (INSTANCE_COUNT * 30) ))
+          DAILY_COST=$(( MONTHLY_COST / 30 ))
+
+          echo "Estimated monthly cost: \$$MONTHLY_COST"
+          echo "Estimated daily cost: \$$DAILY_COST"
+
+          echo "estimated_cost=\$$MONTHLY_COST/month (\$$DAILY_COST/day)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Report
+        run: |
+          # shellcheck disable=SC2086
+          {
+            echo "# Nightly Resource Audit Report"
+            echo ""
+            echo "## Audit Details"
+            echo "| Item | Value |"
+            echo "|------|-------|"
+            echo "| Cluster | \`$CLUSTER_NAME\` |"
+            echo "| Region | \`$AWS_REGION\` |"
+            echo "| Cluster Status | $([[ '${{ steps.cluster_status.outputs.cluster_exists }}' == 'true' ]] && echo 'Running' || echo 'Deleted') |"
+            echo "| Audit Time | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |"
+            echo ""
+
+            if [ "${{ steps.cluster_status.outputs.cluster_exists }}" == "false" ]; then
+              echo "## Orphaned Resource Check"
+              if [ "${{ steps.audit.outputs.orphaned_found }}" == "true" ]; then
+                echo "❌ **ORPHANED RESOURCES FOUND**"
+                echo ""
+                echo "### Breakdown"
+                echo "${{ steps.audit.outputs.orphaned_resources }}"
+                echo ""
+                echo "### Estimated Cost"
+                echo "- Monthly: \`${{ steps.cost.outputs.estimated_cost }}\`"
+                echo ""
+                echo "### Action Required"
+                echo "1. Run cleanup: \`gh workflow run terraform-manual.yml -f action=destroy\`"
+                echo "2. Wait for completion"
+                echo "3. Verify cleanup in next audit cycle"
+              else
+                echo "✅ **NO ORPHANED RESOURCES**"
+                echo ""
+                echo "All resources properly cleaned up. Zero orphaned resources in AWS."
+              fi
+            else
+              echo "## Cluster Status"
+              echo "Cluster is still running. Skipping orphaned resource check."
+            fi
+          } >> $GITHUB_STEP_SUMMARY
+
+      - name: Create Issue if Resources Found
+        if: steps.audit.outputs.orphaned_found == 'true' && (github.event.inputs.send_alerts == 'true' || github.event_name == 'schedule')
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ Orphaned AWS Resources Detected',
+              body: `## Orphaned Resources Detected
+
+            Cluster: ${{ env.CLUSTER_NAME }} (deleted)
+
+            Resources Found:
+            ${{ steps.audit.outputs.orphaned_resources }}
+
+            Estimated Cost: ${{ steps.cost.outputs.estimated_cost }}
+
+            ### Action Required
+
+            These resources are running but orphaned (cluster deleted). They will continue to incur charges.
+
+            1. Automatic Cleanup
+               ```bash
+               gh workflow run terraform-manual.yml -f action=destroy
+               ```
+
+            2. Manual Cleanup
+               1. Go to AWS Console
+               2. Delete the resources listed above
+               3. Remove cluster tags to prevent future audits
+
+            ### Details
+
+            This audit detected orphaned resources using AWS Resource Groups Tagging API. These resources have the cluster tag but the cluster is deleted.
+
+            Common causes:
+            - terraform destroy didn't complete fully (cleanup bugs)
+            - Manual AWS changes not reflected in terraform state
+            - Resource deletion failed but state was updated
+
+            Related Issues:
+            - Cleanup Prevention Strategy: docs/CLEANUP_PREVENTION_STRATEGY.md
+            - Emergency Cleanup Bugs: docs/EMERGENCY_CLEANUP_BUGS.md
+
+            ---
+            _Automated by nightly-resource-audit.yml_`,
+              labels: ['infrastructure', 'cost-control', 'urgent', 'cleanup-required'],
+              assignees: []
+            });
+
+      - name: Success Summary
+        if: steps.cluster_status.outputs.cluster_exists == 'false' && steps.audit.outputs.orphaned_found == 'false'
+        run: |
+          # shellcheck disable=SC2086
+          {
+            echo "## ✅ Audit Passed"
+            echo ""
+            echo "- Cluster Status: Deleted"
+            echo "- Orphaned Resources: 0"
+            echo "- Action Required: None"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Warning Summary
+        if: steps.cluster_status.outputs.cluster_exists == 'true'
+        run: |
+          # shellcheck disable=SC2086
+          {
+            echo "## ℹ️ Audit Skipped"
+            echo ""
+            echo "Cluster is still running. Audit only checks for orphaned resources when cluster is deleted."
+            echo ""
+            echo "To clean up: \`gh workflow run terraform-manual.yml -f action=destroy\`"
+          } >> "$GITHUB_STEP_SUMMARY"
