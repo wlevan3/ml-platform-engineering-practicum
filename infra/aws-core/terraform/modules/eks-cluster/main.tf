@@ -18,9 +18,8 @@ module "eks" {
 
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
-  # Upstream module still expects the legacy name; map our renamed variable to it.
-  putin_khuylo      = var.force_module_creation
-  enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  putin_khuylo       = var.putin_khuylo
+  enabled_log_types  = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   # Networking
   vpc_id                   = var.vpc_id
