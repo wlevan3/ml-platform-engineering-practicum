@@ -9,6 +9,9 @@ plugin "aws" {
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
+# Exclude cache and build directories
+disabled_by_default = false
+
 rule "terraform_unused_declarations" {
   enabled = true
 }

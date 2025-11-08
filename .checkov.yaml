@@ -1,5 +1,16 @@
 directory:
   - terraform
+skip-path:
+  - .terraform # Terraform provider cache
+  - .venv # Python virtual environment
+  - __pycache__ # Python bytecode
+  - .pytest_cache # Test cache
+  - .mypy_cache # Type checker cache
+  - .ruff_cache # Linter cache
+  - node_modules # Node dependencies (if added)
+  - dist # Build artifacts
+  - build # Build artifacts
+  - .git # Git metadata
 framework:
   - terraform
   - dockerfile
