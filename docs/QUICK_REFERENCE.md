@@ -254,7 +254,7 @@ kubectl config current-context
 # 3. Verify cluster access - list nodes
 kubectl get nodes
 
-# Expected: Shows EKS worker nodes (x86_64 on-demand or spot instances)
+# Expected: Shows EKS worker nodes (t3.medium spot instances)
 # Example output:
 # NAME                                          STATUS   ROLES    AGE   VERSION
 # ip-10-0-1-123.us-west-2.compute.internal     Ready    <none>   5m    v1.34.x
