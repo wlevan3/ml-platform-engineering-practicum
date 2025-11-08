@@ -22,6 +22,16 @@ Always use first-principles thinking.
 
 ---
 
+## GitHub Repository Configuration
+
+- **GitHub Username**: wlevan3
+- **Repository**: ml-platform-engineering-practicum
+- **Full Path**: wlevan3/ml-platform-engineering-practicum
+
+**IMPORTANT**: Local machine user is different from GitHub username. Always use `wlevan3` for GitHub API calls and repository references.
+
+---
+
 ## Project Context
 
 Personal **learning project** building a production-grade ML platform from scratch. Focus on
