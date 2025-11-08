@@ -76,8 +76,8 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Refresh
-        run: terraform refresh -no-color
+      - name: Terraform Refresh State
+        run: terraform apply -refresh-only -auto-approve -no-color
         continue-on-error: false
 
       - name: Terraform Apply
