@@ -47,7 +47,7 @@ module "eks_cluster" {
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
 
-  force_module_creation = true
+  putin_khuylo = true
 
   # Networking from networking module
   vpc_id                   = module.networking.vpc_id
