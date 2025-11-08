@@ -106,10 +106,13 @@ esac
 echo "Checking for state integrity issues..."
 
 # Attempt a refresh to catch any state drift
-if ! terraform refresh -no-color 2>&1 | grep -q "error\|failed" || true; then
-    log_info "State refresh successful (no critical issues)"
+REFRESH_OUTPUT=$(terraform refresh -no-color 2>&1 || true)
+if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
+    log_warn "State refresh reported issues:"
+    echo "$REFRESH_OUTPUT"
+    exit 1
 else
-    log_warn "State refresh reported issues (may be non-critical)"
+    log_info "State refresh successful (no critical issues)"
 fi
 
 echo ""

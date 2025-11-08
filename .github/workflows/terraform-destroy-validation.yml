@@ -302,7 +302,6 @@ jobs:
       - name: Phase 8 - Generate Report
         if: always()
         run: |
-          # shellcheck disable=SC2309,SC2086
           PHASE6_OUTCOME="${{ steps.phase6.outcome }}"
           PHASE7_OUTCOME="${{ steps.phase7.outcome }}"
           NAT_COUNT=${{ steps.post_destroy.outputs.nat_gateway_count }}

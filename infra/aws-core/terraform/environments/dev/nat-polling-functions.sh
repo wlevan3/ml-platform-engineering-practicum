@@ -148,7 +148,7 @@ wait_for_nat_gateway_deletion() {
         sleep "$interval"
 
         # Calculate next interval: multiply by 1.5, cap at max
-        interval=$(awk "BEGIN {print int(min($interval * 1.5, $max_interval))}")
+        interval=$(awk "BEGIN {print int((($interval * 1.5) < $max_interval ? ($interval * 1.5) : $max_interval))}")
     done
 }
 
@@ -228,7 +228,7 @@ wait_for_eip_unassociated() {
         sleep "$interval"
 
         # Calculate next interval
-        interval=$(awk "BEGIN {print int(min($interval * 1.5, $max_interval))}")
+        interval=$(awk "BEGIN {print int((($interval * 1.5) < $max_interval ? ($interval * 1.5) : $max_interval))}")
     done
 }
 
