@@ -271,7 +271,7 @@ jobs:
       - name: Phase 8 - Generate Report
         if: always()
         run: |
-          # shellcheck disable=SC2309,SC2086
+          # shellcheck disable=SC2086
           {
             echo "# Destroy Validation Report"
             echo ""
