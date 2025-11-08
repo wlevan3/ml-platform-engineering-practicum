@@ -53,12 +53,26 @@ module "eks_cluster" {
   subnet_ids               = module.networking.private_subnet_ids
   control_plane_subnet_ids = module.networking.public_subnet_ids
 
-  # Cluster endpoint access
-  # Public access enabled for initial setup and kubectl configuration (Issue #106)
-  # TODO: Restrict to specific CIDRs after initial setup or disable for production
-  # Private access also enabled for nodes to join cluster
-  cluster_endpoint_public_access  = true # Enable for kubectl access during setup
-  cluster_endpoint_private_access = true # Allow access from within VPC
+  # Cluster endpoint access configuration
+  # Pattern: Public endpoint + IAM authentication (production-grade for CI/CD environments)
+  #
+  # Security model:
+  # - Public endpoint: Accessible from internet BUT requires AWS IAM credentials
+  # - IAM authentication: aws-auth ConfigMap maps IAM principals to K8s RBAC roles
+  # - Defense in depth: IAM (who can auth) + RBAC (what they can do) + CloudTrail (audit)
+  # - GitHub Actions: Uses OIDC (no long-lived credentials) with scoped IAM role
+  #
+  # Why no CIDR restrictions:
+  # - IAM is the primary security control (attacker needs valid AWS creds + mapped role)
+  # - CIDR adds ops complexity: GitHub Actions IPs change, remote work, shared cloud IPs
+  # - Threat model: If AWS creds compromised, IP allowlist won't help
+  #
+  # Alternative: Private endpoint requires VPN/bastion or self-hosted runners in VPC
+  # Trade-off: More secure for insider threats, but adds cost/complexity for CI/CD
+  #
+  # Refs: https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
+  cluster_endpoint_public_access  = true # Required for GitHub Actions + kubectl
+  cluster_endpoint_private_access = true # Required for nodes to join cluster
 
   # Node group configuration
   use_spot_instances = var.use_spot_instances

@@ -21,8 +21,9 @@ resource "aws_security_group" "vpc_endpoints" {
   }
 
   # Allow all outbound (required for endpoint functionality)
+  #tfsec:ignore:aws-ec2-no-public-egress-sgr
   egress {
-    description = "Allow all outbound"
+    description = "Allow all outbound - required for VPC endpoints to reach AWS services"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"

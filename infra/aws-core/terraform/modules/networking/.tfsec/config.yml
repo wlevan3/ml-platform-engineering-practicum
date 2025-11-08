@@ -1,0 +1,5 @@
+# tfsec configuration
+# Exclude vendor/downloaded modules from scanning
+exclude_paths:
+  - ".terraform/**"
+  - ".terraform.lock.hcl"
