@@ -76,7 +76,7 @@ variable "public_subnet_cidrs" {
 variable "node_instance_type" {
   description = "EC2 instance type for EKS worker nodes"
   type        = string
-  default     = "t3.medium" # 2 vCPU, 4 GB RAM - suitable for ML inference
+  default     = "t3.micro" # 2 vCPUs (burstable), 1 GB RAM - AWS Free Tier eligible
 }
 
 variable "node_desired_size" {
