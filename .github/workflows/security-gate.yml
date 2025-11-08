@@ -57,7 +57,15 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const alerts = JSON.parse(fs.readFileSync('/tmp/alerts.json', 'utf8'));
+
+            try {
+              // Check if alerts file exists
+              if (!fs.existsSync('/tmp/alerts.json')) {
+                core.info('No /tmp/alerts.json file found, skipping PR comment.');
+                return;
+              }
+
+              const alerts = JSON.parse(fs.readFileSync('/tmp/alerts.json', 'utf8'));
 
             // Build comment body
             let body = `## 🚨 Code Scanning Security Alerts\n\n`;
@@ -112,16 +120,21 @@ jobs:
               core.info('Created new PR comment');
             }
 
-      - name: Fail if code scanning alerts exist
-        if: steps.code_scanning.outputs.count > 0
-        run: exit 1
+            } catch (error) {
+              core.setFailed(`Failed to process code scanning alerts: ${error.message}`);
+              throw error;
+            }
 
       - name: Check for open Dependabot alerts
+        id: dependabot
         run: |
           echo "🔍 Checking for open Dependabot alerts..."
 
           ALERTS=$(gh api /repos/${{ github.repository }}/dependabot/alerts \
             --jq '[.[] | select(.state == "open")] | length')
+
+          # Save count for later steps
+          echo "count=${ALERTS}" >> "$GITHUB_OUTPUT"
 
           if [ "$ALERTS" -gt 0 ]; then
             echo ""
@@ -134,9 +147,16 @@ jobs:
               --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.security_advisory.summary) (\(.security_advisory.severity)) - \(.dependency.package.name)"'
             echo ""
             echo "❗ PRs cannot be merged until all Dependabot alerts are resolved or dismissed."
-            exit 1
           else
             echo "✅ No open Dependabot alerts"
           fi
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
+
+      - name: Fail if any security alerts exist
+        if: steps.code_scanning.outputs.count > 0 || steps.dependabot.outputs.count > 0
+        run: |
+          echo "❌ Workflow failed due to open security alerts"
+          echo "Code scanning alerts: ${{ steps.code_scanning.outputs.count }}"
+          echo "Dependabot alerts: ${{ steps.dependabot.outputs.count }}"
+          exit 1
