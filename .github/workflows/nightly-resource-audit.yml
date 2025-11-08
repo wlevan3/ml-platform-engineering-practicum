@@ -118,19 +118,30 @@ jobs:
 
             # Build resource list
             RESOURCE_LIST=""
-            echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"' | while read -r arn; do
+            mapfile -t RESOURCE_ARNS < <(echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"')
+            declare -A resource_counts=(
+              [nat-gateway]=0
+              [vpc-endpoint]=0
+              [elastic-ip]=0
+              [security-group]=0
+              [instance]=0
+            )
+            for arn in "${RESOURCE_ARNS[@]}"; do
               RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6)
               RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
               echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
               RESOURCE_LIST="${RESOURCE_LIST}  - $RESOURCE_TYPE: $RESOURCE_ID\n"
+              if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
+                resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
+              fi
             done
 
             # Count by type
-            NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
-            VPCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("vpc-endpoint"))] | length')
-            EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
-            SG_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("security-group"))] | length')
-            INSTANCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("instance"))] | length')
+            NAT_COUNT=${resource_counts[nat-gateway]:-0}
+            VPCE_COUNT=${resource_counts[vpc-endpoint]:-0}
+            EIP_COUNT=${resource_counts[elastic-ip]:-0}
+            SG_COUNT=${resource_counts[security-group]:-0}
+            INSTANCE_COUNT=${resource_counts[instance]:-0}
 
             {
               echo "orphaned_found=true"
@@ -219,7 +230,7 @@ jobs:
               echo "## Cluster Status"
               echo "Cluster is still running. Skipping orphaned resource check."
             fi
-          } >> $GITHUB_STEP_SUMMARY
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create Issue if Resources Found
         if: steps.audit.outputs.orphaned_found == 'true' && (github.event.inputs.send_alerts == 'true' || github.event_name == 'schedule')
