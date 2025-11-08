@@ -6,6 +6,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-terraform-${{ github.ref }}
+  cancel-in-progress: false # Wait for queued runs to prevent state lock conflicts
+
 permissions: {} # Restrict default permissions, grant specific permissions per job
 
 env:

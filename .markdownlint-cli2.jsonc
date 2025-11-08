@@ -4,6 +4,18 @@
     "MD024": false,
     "MD033": false,
     "MD034": false,
-    "MD041": false
-  }
+    "MD041": false,
+  },
+  "ignores": [
+    ".terraform/**",
+    ".venv/**",
+    "__pycache__/**",
+    ".pytest_cache/**",
+    ".mypy_cache/**",
+    ".ruff_cache/**",
+    "node_modules/**",
+    "dist/**",
+    "build/**",
+    ".git/**",
+  ],
 }

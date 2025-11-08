@@ -9,6 +9,9 @@ plugin "aws" {
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
 }
 
+# Note: TFLint automatically ignores .terraform/ directory by default
+# No explicit exclusion configuration needed
+
 rule "terraform_unused_declarations" {
   enabled = true
 }
