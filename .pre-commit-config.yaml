@@ -130,7 +130,9 @@ repos:
         # Tests are scanned comprehensively in CI (see .github/workflows/ci.yml)
         # Rationale: Developer feedback speed > comprehensive pre-commit coverage
         exclude: ^tests/
-# Markdown linting removed - handled by markdownlint-cli2-action in CI
-# Reason: markdownlint-cli fails on merge commit artifacts while markdownlint-cli2 passes
-# Pre-commit tests merge preview (synthetic commit), causing false positives
-# CI job uses markdownlint-cli2-action which tests actual branch HEAD
+
+  # Markdown linting with markdownlint-cli2
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.18.1
+    hooks:
+      - id: markdownlint-cli2

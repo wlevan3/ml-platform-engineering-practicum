@@ -380,6 +380,11 @@ on:
         type: boolean
         default: false
 
+# Prevent concurrent Terraform runs to avoid state lock conflicts
+concurrency:
+  group: eks-terraform-${{ github.event.inputs.environment || 'dev' }}
+  cancel-in-progress: false # Don't cancel - let queued runs wait for lock
+
 # Required permissions for OIDC authentication
 permissions:
   id-token: write # Required for AWS OIDC authentication

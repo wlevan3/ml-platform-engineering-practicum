@@ -54,11 +54,11 @@ module "eks_cluster" {
   control_plane_subnet_ids = module.networking.public_subnet_ids
 
   # Cluster endpoint access
-  # Private-only access recommended for production
-  # Access via AWS Systems Manager Session Manager (no bastion/VPN costs)
-  # See: docs/EKS_ACCESS.md for kubectl setup
-  cluster_endpoint_public_access  = false # Disable public access (use SSM Session Manager)
-  cluster_endpoint_private_access = true  # Allow access from within VPC
+  # Public access enabled for initial setup and kubectl configuration (Issue #106)
+  # TODO: Restrict to specific CIDRs after initial setup or disable for production
+  # Private access also enabled for nodes to join cluster
+  cluster_endpoint_public_access  = true # Enable for kubectl access during setup
+  cluster_endpoint_private_access = true # Allow access from within VPC
 
   # Node group configuration
   use_spot_instances = var.use_spot_instances

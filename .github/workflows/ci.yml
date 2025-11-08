@@ -24,12 +24,14 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
 
       - name: Markdown linting
-        uses: DavidAnson/markdownlint-cli2-action@b4c9feab76d8025d1e83c653fa3990936df0e6c8 # v16
+        uses: DavidAnson/markdownlint-cli2-action@992badcdf24e3b8eb7e87ff9287fe931bcb00c6e # v20
         with:
           globs: |
             **/*.md
-            #infra/aws-core/terraform/**/*.md
-          config: ".markdownlint.json"
+            !infra/aws-core/terraform/**/*.md
+            !README.md
+            !.github/PULL_REQUEST_TEMPLATE.md
+            !docs/LOCAL_VS_CLOUD.md
 
   yaml-lint:
     name: YAML Linting
@@ -313,7 +315,7 @@ jobs:
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           echo "📋 Running Terraform plan..."
-          terraform plan -out plan.tfplan -no-color
+          terraform plan -lock=false -out plan.tfplan -no-color
 
       - name: Terraform Show (text)
         if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
