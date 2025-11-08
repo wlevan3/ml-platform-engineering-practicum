@@ -316,7 +316,7 @@ jobs:
           ../../scripts/validate-terraform-state.sh destroy
           MAX_ATTEMPTS=3
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            if CLUSTER_NAME="$TEST_CLUSTER_NAME" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
+            if CLUSTER_NAME="${{ env.TEST_CLUSTER_NAME }}" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
               echo "AWS resource verification succeeded on attempt $attempt"
               success=0
               break
@@ -348,7 +348,7 @@ jobs:
             echo "## Test Details"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
+            echo "| Test Cluster Name | \`${{ env.TEST_CLUSTER_NAME }}\` |"
             echo "| Region | \`$AWS_REGION\` |"
             # Try to get Terraform version via JSON/jq, fallback to text parsing if jq or -json is unavailable
             TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"

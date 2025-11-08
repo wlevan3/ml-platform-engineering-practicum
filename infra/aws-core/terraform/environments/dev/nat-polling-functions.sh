@@ -127,7 +127,6 @@ wait_for_nat_gateway_deletion() {
         if (( interval > max_interval )); then
             interval=$max_interval
         fi
-    done
 }
 
 # wait_for_eip_unassociated
