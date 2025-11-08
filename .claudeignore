@@ -37,3 +37,7 @@ htmlcov/
 *.swp
 *.swo
 *~
+
+# direnv
+.envrc
+.direnv/

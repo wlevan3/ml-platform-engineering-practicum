@@ -138,6 +138,7 @@ celerybeat.pid
 # Environments
 .env
 .envrc
+.direnv/
 .venv
 env/
 venv/
@@ -284,6 +285,9 @@ temp/
 *.tmp
 *.bak
 *.backup
+
+# Script logs
+infra/aws-core/terraform/environments/*/logs/
 
 # ===========================
 # Project Specific
