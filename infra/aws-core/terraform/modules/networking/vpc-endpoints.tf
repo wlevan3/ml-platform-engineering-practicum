@@ -73,7 +73,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 
   # Explicit dependency: ensure VPC and security group exist before endpoint creation
   # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
-  depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
     var.tags,
