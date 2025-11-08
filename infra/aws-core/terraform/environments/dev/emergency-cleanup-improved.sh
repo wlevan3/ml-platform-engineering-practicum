@@ -12,6 +12,11 @@ REGION="us-west-2"
 CLUSTER_NAME="ml-platform-dev"
 DRY_RUN="${DRY_RUN:-false}"
 
+# AWS cost estimates (monthly, rounded for rough estimation)
+readonly NAT_GATEWAY_MONTHLY_COST=32  # AWS NAT Gateway: ~$0.045/hr × 730 hrs
+readonly EKS_CLUSTER_MONTHLY_COST=73  # AWS EKS cluster: $0.10/hr × 730 hrs
+readonly INSTANCE_MONTHLY_COST_ESTIMATE=1  # Rough average for cost estimation
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -54,13 +59,13 @@ show_summary() {
     echo "Resources to delete:"
     echo "  • Node Groups: $ng_count (ALL - failed and successful)"
     echo "  • EC2 Instances: $instance_count"
-    echo "  • NAT Gateways: $nat_count (~\$32/month each)"
+    echo "  • NAT Gateways: $nat_count (~\$$NAT_GATEWAY_MONTHLY_COST/month each)"
     echo "  • Elastic IPs: $eip_count"
     echo "  • Load Balancers: $lb_count"
-    echo "  • EKS Cluster: 1 (~\$73/month)"
+    echo "  • EKS Cluster: 1 (~\$$EKS_CLUSTER_MONTHLY_COST/month)"
     echo ""
 
-    local monthly_cost=$((nat_count * 32 + 73 + instance_count * 1))
+    local monthly_cost=$((nat_count * NAT_GATEWAY_MONTHLY_COST + EKS_CLUSTER_MONTHLY_COST + instance_count * INSTANCE_MONTHLY_COST_ESTIMATE))
     log_warn "Estimated monthly cost: ~\$$monthly_cost"
     echo ""
 }
