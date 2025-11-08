@@ -144,10 +144,9 @@ jobs:
               [instance]=0
             )
             for arn in "${RESOURCE_ARNS[@]}"; do
-              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6)
+              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6 | cut -d/ -f1)
               RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
               echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
-              RESOURCE_LIST="${RESOURCE_LIST}  - $RESOURCE_TYPE: $RESOURCE_ID\n"
               if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
                 resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
               fi

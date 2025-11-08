@@ -89,9 +89,6 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
 
-  # Explicit dependency: ensure VPC exists before endpoint creation
-  # Gateway endpoints don't require security groups
-  depends_on = [module.vpc]
 
   tags = merge(
     var.tags,
