@@ -71,6 +71,10 @@ jobs:
       - name: Terraform Validate
         run: terraform validate -no-color
 
+      - name: Terraform Refresh State
+        run: terraform apply -refresh-only -auto-approve -no-color
+        continue-on-error: false
+
       - name: Terraform Plan
         id: plan
         run: |
@@ -84,7 +88,7 @@ jobs:
           retention-days: 30
 
       - name: Comment plan on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const fs = require('fs');

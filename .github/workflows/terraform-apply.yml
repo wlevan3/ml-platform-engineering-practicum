@@ -28,17 +28,17 @@ on:
   push:
     branches: [main]
     paths:
-      - 'infra/aws-core/terraform/**'
+      - "infra/aws-core/terraform/**"
 
 # Prevent concurrent applies
 concurrency:
   group: terraform-apply-production
-  cancel-in-progress: false  # Don't cancel in-flight applies
+  cancel-in-progress: false # Don't cancel in-flight applies
 
 permissions:
-  id-token: write   # Required for AWS OIDC
-  contents: read    # Required to checkout
-  issues: write     # To comment on related issues
+  id-token: write # Required for AWS OIDC
+  contents: read # Required to checkout
+  issues: write # To comment on related issues
 
 env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
@@ -47,7 +47,7 @@ jobs:
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    environment: production  # "production" is the GitHub environment protection name (not the infra env)
+    environment: production # "production" is the GitHub environment protection name (not the infra env)
 
     defaults:
       run:
@@ -75,6 +75,10 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
+
+      - name: Terraform Refresh State
+        run: terraform apply -refresh-only -auto-approve -no-color
+        continue-on-error: false
 
       - name: Terraform Apply
         run: |
