@@ -195,10 +195,13 @@ jobs:
           MONTHLY_COST=$(( (NAT_COUNT * 32) + (EIP_COUNT * 3) + (INSTANCE_COUNT * 30) ))
           DAILY_COST=$(( MONTHLY_COST / 30 ))
 
-          echo "Estimated monthly cost (rough, $AWS_REGION pricing verified Jan 2025): \$$MONTHLY_COST"
-          echo "Estimated daily cost (rough): \$$DAILY_COST"
+          echo "Estimated monthly cost (rough, $AWS_REGION pricing verified Jan 2025): \"
+$MONTHLY_COST"
+          echo "Estimated daily cost (rough): \"
+$DAILY_COST"
 
-          echo "estimated_cost=\$$MONTHLY_COST/month (rough, verify region pricing)" >> "$GITHUB_OUTPUT"
+          echo "estimated_cost=\"
+$MONTHLY_COST/month (rough, verify region pricing)\"" >> "$GITHUB_OUTPUT"
 
       - name: Generate Report
         run: |
@@ -209,8 +212,12 @@ jobs:
             echo "## Audit Details"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Cluster | \`$CLUSTER_NAME\` |"
-            echo "| Region | \`$AWS_REGION\` |"
+            echo "| Cluster | \
+$CLUSTER_NAME \
+|"
+            echo "| Region | \
+$AWS_REGION \
+|"
             echo "| Cluster Status | $([[ '${{ steps.cluster_status.outputs.cluster_exists }}' == 'true' ]] && echo 'Running' || echo 'Deleted') |"
             echo "| Audit Time | $(date -u '+%Y-%m-%d %H:%M:%S UTC') |"
             echo ""
@@ -224,10 +231,11 @@ jobs:
                 echo "${{ steps.audit.outputs.orphaned_resources }}"
                 echo ""
                 echo "### Estimated Cost"
-                echo "- Monthly: \`${{ steps.cost.outputs.estimated_cost }}\`"
-                echo ""
+                echo "- Monthly: \
+`${{ steps.cost.outputs.estimated_cost }}`\n"
                 echo "### Action Required"
-                echo "1. Run cleanup: \`gh workflow run terraform-manual.yml -f action=destroy\`"
+                echo "1. Run cleanup: \
+`gh workflow run terraform-manual.yml -f action=destroy`\n"
                 echo "2. Wait for completion"
                 echo "3. Verify cleanup in next audit cycle"
               else
@@ -313,5 +321,6 @@ jobs:
             echo ""
             echo "Cluster is still running. Audit only checks for orphaned resources when cluster is deleted."
             echo ""
-            echo "To clean up: \`gh workflow run terraform-manual.yml -f action=destroy\`"
+            echo "To clean up: \
+`gh workflow run terraform-manual.yml -f action=destroy`"
           } >> "$GITHUB_STEP_SUMMARY"

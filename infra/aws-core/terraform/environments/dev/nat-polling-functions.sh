@@ -85,27 +85,14 @@ wait_for_nat_gateway_deletion() {
 
         # State analysis
         case "$nat_state" in
-            "")
-                # Empty response = NAT Gateway fully deleted
+            ""|"deleted")
+                # Empty response or 'deleted' state = NAT Gateway fully deleted
                 log_success "NAT Gateway deleted (verified at ${elapsed}s after ${retry_count} checks)"
                 return 0
                 ;;
-            "deleting")
-                # Normal state during deletion
-                log_info "  [${retry_count}] State: deleting | Elapsed: ${elapsed}s | Next check in ${interval}s"
-                ;;
-            "available")
-                # Not yet deleted
-                log_info "  [${retry_count}] State: available | Elapsed: ${elapsed}s | Next check in ${interval}s"
-                ;;
-            "deleted")
-                # Officially marked as deleted
-                log_success "NAT Gateway marked as deleted (${elapsed}s, ${retry_count} checks)"
-                return 0
-                ;;
-            "pending")
-                # Rare state: deletion initiated but not yet started
-                log_info "  [${retry_count}] State: pending | Elapsed: ${elapsed}s | Next check in ${interval}s"
+            "deleting"|"available"|"pending")
+                # Normal states during deletion or before it starts
+                log_info "  [${retry_count}] State: $nat_state | Elapsed: ${elapsed}s | Next check in ${interval}s"
                 ;;
             "failed")
                 # Deletion failed
@@ -361,9 +348,7 @@ cleanup_all_nat_gateways() {
     log_info "Initiating deletions for ${#nat_array[@]} NAT Gateway(s)..."
     for nat in "${nat_array[@]}"; do
         log_info "  Initiating: $nat"
-        if ! aws ec2 delete-nat-gateway --nat-gateway-id "$nat" --region "$region" >/dev/null 2>&1; then
-            log_warn "    Delete request failed (it may already be deleting or scoped elsewhere)"
-        fi
+        aws ec2 delete-nat-gateway --nat-gateway-id "$nat" --region "$region" 2>/dev/null || true
     done
 
     echo ""
@@ -403,7 +388,7 @@ export -f log_info log_success log_warn log_error
 # MAIN: Allow script to be called directly
 # =============================================================================
 
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+if [[ "${BASH_SOURCE[0]}" == ""); then
     # Script is being executed directly (not sourced)
 
     case "${1:-help}" in

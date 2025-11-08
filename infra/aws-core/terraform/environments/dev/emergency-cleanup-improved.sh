@@ -24,11 +24,14 @@ echo ""
 echo "Use 'terraform destroy' instead for safe cleanup:"
 echo "  cd infra/aws-core/terraform/environments/dev"
 echo "  terraform destroy"
+
 echo ""
 echo "For detailed cleanup procedures, see: docs/CLEANUP_RUNBOOK.md"
+
 echo ""
 echo "If you still need to use this script (disaster recovery only),"
 echo "set FORCE_DEPRECATED=true as an environment variable."
+
 echo ""
 
 if [[ "${FORCE_DEPRECATED:-false}" != "true" ]]; then
@@ -102,14 +105,14 @@ show_summary() {
     echo "Resources to delete:"
     echo "  • Node Groups: $ng_count (ALL - failed and successful)"
     echo "  • EC2 Instances: $instance_count"
-    echo "  • NAT Gateways: $nat_count (~\$$NAT_GATEWAY_MONTHLY_COST/month each)"
+    echo "  • NAT Gateways: $nat_count (~$$NAT_GATEWAY_MONTHLY_COST/month each)"
     echo "  • Elastic IPs: $eip_count"
     echo "  • Load Balancers: $lb_count"
-    echo "  • EKS Cluster: 1 (~\$$EKS_CLUSTER_MONTHLY_COST/month)"
+    echo "  • EKS Cluster: 1 (~$$EKS_CLUSTER_MONTHLY_COST/month)"
     echo ""
 
     local monthly_cost=$((nat_count * NAT_GATEWAY_MONTHLY_COST + EKS_CLUSTER_MONTHLY_COST + instance_count * INSTANCE_MONTHLY_COST_ESTIMATE))
-    log_warn "Estimated monthly cost: ~\$$monthly_cost"
+    log_warn "Estimated monthly cost: ~$monthly_cost"
     echo ""
 }
 
@@ -124,7 +127,8 @@ delete_all_nodegroups() {
         return 0
     fi
 
-    for ng in $nodegroups; do
+    for ng in $nodegroups;
+    do
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  [DRY RUN] Would delete: $ng"
         else
@@ -135,7 +139,8 @@ delete_all_nodegroups() {
 
     if [[ "$DRY_RUN" != "true" ]]; then
         log_info "  Waiting for deletions..."
-        for ng in $nodegroups; do
+        for ng in $nodegroups;
+        do
             aws eks wait nodegroup-deleted --cluster-name "$CLUSTER_NAME" --nodegroup-name "$ng" --region "$REGION" 2>/dev/null || true
         done
     fi
@@ -164,7 +169,8 @@ delete_nat_gateways() {
         return 0
     fi
 
-    for nat in $nat_gws; do
+    for nat in $nat_gws;
+    do
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  [DRY RUN] Would delete: $nat"
         else
@@ -196,7 +202,8 @@ delete_elastic_ips() {
         return 0
     fi
 
-    for eip in $eips; do
+    for eip in $eips;
+    do
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  [DRY RUN] Would release: $eip"
         else
@@ -217,7 +224,8 @@ delete_load_balancers() {
         return 0
     fi
 
-    for lb in $lbs; do
+    for lb in $lbs;
+    do
         if [[ "$DRY_RUN" == "true" ]]; then
             log_info "  [DRY RUN] Would delete: $lb"
         else
