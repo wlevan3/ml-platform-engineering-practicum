@@ -173,7 +173,7 @@ k3d cluster start ml-platform-dev
    - Performance testing with real ALB
    - Security testing with actual IAM policies
 
-### Example Workflow
+### Example Cloud Workflow
 
 ```bash
 # Friday afternoon: Weekly EKS validation
