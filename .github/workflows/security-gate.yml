@@ -15,39 +15,126 @@ jobs:
     permissions:
       security-events: write # Required for Dependabot alerts API access
       contents: read
+      pull-requests: write # Required to post PR comments
 
     steps:
       - name: Check for open code scanning alerts
+        id: code_scanning
         run: |
           echo "🔍 Checking for open code scanning alerts..."
 
           ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts \
             --jq '[.[] | select(.state == "open")] | length')
 
+          # Save count for later steps
+          echo "count=${ALERTS}" >> "$GITHUB_OUTPUT"
+
           if [ "$ALERTS" -gt 0 ]; then
             echo ""
-            echo "❌ Found $ALERTS open code scanning alert(s)"
+            echo "❌ Found ${ALERTS} open code scanning alert(s)"
             echo ""
             echo "View alerts at: https://github.com/${{ github.repository }}/security/code-scanning"
             echo ""
             echo "Open alerts:"
             gh api /repos/${{ github.repository }}/code-scanning/alerts \
               --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.rule.description) (\(.rule.severity)) - \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)"'
+
+            # Save alert details for PR comment
+            gh api /repos/${{ github.repository }}/code-scanning/alerts \
+              --jq '[.[] | select(.state == "open")]' > /tmp/alerts.json
+
             echo ""
             echo "❗ PRs cannot be merged until all code scanning alerts are resolved or dismissed."
-            exit 1
           else
             echo "✅ No open code scanning alerts"
           fi
         env:
           GH_TOKEN: ${{ github.token }}
 
+      - name: Comment on PR with alert details
+        if: github.event_name == 'pull_request' && steps.code_scanning.outputs.count > 0
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              // Check if alerts file exists
+              if (!fs.existsSync('/tmp/alerts.json')) {
+                core.info('No /tmp/alerts.json file found, skipping PR comment.');
+                return;
+              }
+
+              const alerts = JSON.parse(fs.readFileSync('/tmp/alerts.json', 'utf8'));
+
+            // Build comment body
+            let body = `## 🚨 Code Scanning Security Alerts\n\n`;
+            body += `Found **${alerts.length}** open security alert(s) that must be resolved before merging:\n\n`;
+
+            alerts.forEach(alert => {
+              body += `### ❌ Alert #${alert.number}: ${alert.rule.description}\n`;
+              body += `- **Tool:** ${alert.tool.name}\n`;
+              body += `- **Severity:** \`${alert.rule.severity}\`\n`;
+              body += `- **Location:** \`${alert.most_recent_instance.location.path}:${alert.most_recent_instance.location.start_line}\`\n`;
+              body += `- **Message:** ${alert.most_recent_instance.message.text}\n`;
+              body += `- **[View Alert →](${alert.html_url})**\n\n`;
+            });
+
+            body += `---\n`;
+            body += `### ⚠️ Action Required\n\n`;
+            body += `Choose one of the following:\n`;
+            body += `1. **Fix the issue** - Update code to address the security concern\n`;
+            body += `2. **Dismiss as false positive** - If not a real issue, dismiss with justification\n`;
+            body += `3. **Run automated analysis** - Use \`/fix-code-scanning-alerts\` command\n\n`;
+            body += `This check will pass once all alerts are resolved or dismissed.\n`;
+
+            // Check if we already commented (avoid spam)
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number
+            });
+
+            const botComment = comments.data.find(comment =>
+              comment.user.type === 'Bot' &&
+              comment.body.includes('## 🚨 Code Scanning Security Alerts')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+              core.info(`Updated existing comment #${botComment.id}`);
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: body
+              });
+              core.info('Created new PR comment');
+            }
+
+            } catch (error) {
+              core.setFailed(`Failed to process code scanning alerts: ${error.message}`);
+              throw error;
+            }
+
       - name: Check for open Dependabot alerts
+        id: dependabot
         run: |
           echo "🔍 Checking for open Dependabot alerts..."
 
           ALERTS=$(gh api /repos/${{ github.repository }}/dependabot/alerts \
             --jq '[.[] | select(.state == "open")] | length')
+
+          # Save count for later steps
+          echo "count=${ALERTS}" >> "$GITHUB_OUTPUT"
 
           if [ "$ALERTS" -gt 0 ]; then
             echo ""
@@ -60,9 +147,16 @@ jobs:
               --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.security_advisory.summary) (\(.security_advisory.severity)) - \(.dependency.package.name)"'
             echo ""
             echo "❗ PRs cannot be merged until all Dependabot alerts are resolved or dismissed."
-            exit 1
           else
             echo "✅ No open Dependabot alerts"
           fi
         env:
           GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
+
+      - name: Fail if any security alerts exist
+        if: steps.code_scanning.outputs.count > 0 || steps.dependabot.outputs.count > 0
+        run: |
+          echo "❌ Workflow failed due to open security alerts"
+          echo "Code scanning alerts: ${{ steps.code_scanning.outputs.count }}"
+          echo "Dependabot alerts: ${{ steps.dependabot.outputs.count }}"
+          exit 1
