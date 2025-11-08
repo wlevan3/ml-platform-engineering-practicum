@@ -79,7 +79,7 @@ jobs:
 
       - name: Terraform Refresh State
         run: terraform apply -refresh-only -auto-approve -no-color
-        continue-on-error: false
+        continue-on-error: true # Allow this to fail if resources were manually deleted
 
       - name: Terraform Apply
         run: |
