@@ -84,7 +84,6 @@ check_resource_type() {
 
     if [ "$RESOURCE_COUNT" -eq 0 ]; then
         log_info "$type_label: 0 found"
-        echo "$RESOURCES" | jq -r '.[] | .ResourceARN' | sed 's/^/  - /'
     else
         log_error "$type_label: Found $RESOURCE_COUNT resources (ORPHANED)"
         echo "$RESOURCES" | jq -r '.[] | .ResourceARN' | sed 's/^/  - /'
