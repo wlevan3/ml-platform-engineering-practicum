@@ -24,8 +24,8 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'infra/aws-core/terraform/**'
-      - '.github/workflows/terraform-*.yml'
+      - "infra/aws-core/terraform/**"
+      - ".github/workflows/terraform-*.yml"
 
 # Prevent concurrent plans for same PR
 concurrency:
@@ -33,9 +33,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  id-token: write   # Required for AWS OIDC
-  contents: read    # Required to checkout
-  pull-requests: write  # To comment on PR
+  id-token: write # Required for AWS OIDC
+  contents: read # Required to checkout
+  pull-requests: write # To comment on PR
 
 env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
@@ -88,7 +88,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('plan.txt', 'utf8');
+            const plan = fs.readFileSync('infra/aws-core/terraform/environments/dev/plan.txt', 'utf8');
             const output = `## Terraform Plan 📋
 
             <details>
