@@ -28,7 +28,10 @@ jobs:
         with:
           globs: |
             **/*.md
-            #infra/aws-core/terraform/**/*.md
+            !infra/aws-core/terraform/**/*.md
+            !README.md
+            !.github/PULL_REQUEST_TEMPLATE.md
+            !docs/LOCAL_VS_CLOUD.md
 
   yaml-lint:
     name: YAML Linting
