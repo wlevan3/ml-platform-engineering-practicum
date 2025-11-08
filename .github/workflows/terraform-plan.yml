@@ -71,6 +71,10 @@ jobs:
       - name: Terraform Validate
         run: terraform validate -no-color
 
+      - name: Terraform Refresh
+        run: terraform refresh -no-color
+        continue-on-error: false
+
       - name: Terraform Plan
         id: plan
         run: |
