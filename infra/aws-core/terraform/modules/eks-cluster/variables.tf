@@ -116,6 +116,12 @@ variable "cluster_addons" {
   }
 }
 
+variable "putin_khuylo" {
+  description = "Override to keep module creation enabled even when the upstream module gate defaults to false."
+  type        = bool
+  default     = true
+}
+
 # ===================================================================
 # Optional Variables - Node Group Configuration
 # ===================================================================
