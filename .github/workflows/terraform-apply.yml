@@ -40,11 +40,14 @@ permissions:
   contents: read    # Required to checkout
   issues: write     # To comment on related issues
 
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
 jobs:
   deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    environment: production  # Requires approval (GitHub settings)
+    environment: production  # "production" is the GitHub environment protection name (not the infra env)
 
     defaults:
       run:
@@ -61,7 +64,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GitHubActions-TF-Apply-${{ github.run_id }}
 
@@ -82,6 +85,14 @@ jobs:
       - name: Capture outputs
         id: outputs
         run: |
+          if ! terraform output cluster_name >/dev/null 2>&1; then
+            echo "ERROR: cluster_name output not found in Terraform configuration"
+            exit 1
+          fi
+          if ! terraform output ecr_repository_url >/dev/null 2>&1; then
+            echo "ERROR: ecr_repository_url output not found in Terraform configuration"
+            exit 1
+          fi
           {
             echo "cluster_name=$(terraform output -raw cluster_name)"
             echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)"
@@ -119,14 +130,16 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GitHubActions-ECR-${{ github.run_id }}
 
       - name: Login to ECR
         run: |
+          set -e
           aws ecr get-login-password --region us-west-2 | \
             docker login --username AWS --password-stdin ${{ needs.deploy.outputs.ecr_repository_url }}
+          echo "✓ ECR login successful"
 
       - name: Build and push
         env:

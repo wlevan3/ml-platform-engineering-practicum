@@ -63,6 +63,9 @@ permissions:
   id-token: write
   contents: read
 
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
 jobs:
   # ===========================================================================
   # Bootstrap: Create Terraform backend (S3 + DynamoDB)
@@ -78,13 +81,13 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GHA-Bootstrap-${{ github.run_id }}
 
       - name: Create S3 bucket
         run: |
-          BUCKET="ml-platform-terraform-state-984479408136"
+          BUCKET="ml-platform-terraform-state-${{ env.AWS_ACCOUNT_ID }}"
           if aws s3api head-bucket --bucket "${BUCKET}" 2>/dev/null; then
             echo "✅ S3 bucket already exists"
           else
@@ -135,7 +138,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GHA-Terraform-${{ github.run_id }}
 
@@ -178,7 +181,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GHA-ECR-${{ github.run_id }}
 
@@ -216,7 +219,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GHA-Destroy-${{ github.run_id }}
 

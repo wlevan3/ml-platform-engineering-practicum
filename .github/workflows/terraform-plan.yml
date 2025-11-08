@@ -37,6 +37,9 @@ permissions:
   contents: read    # Required to checkout
   pull-requests: write  # To comment on PR
 
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
 jobs:
   plan:
     name: Terraform Plan
@@ -53,7 +56,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
-          role-to-assume: arn:aws:iam::984479408136:role/GitHubActions-AssumeRoleForActions
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
           aws-region: us-west-2
           role-session-name: GitHubActions-TF-Plan-${{ github.run_id }}
 
@@ -85,7 +88,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('infra/aws-core/terraform/environments/dev/plan.txt', 'utf8');
+            const plan = fs.readFileSync('plan.txt', 'utf8');
             const output = `## Terraform Plan 📋
 
             <details>
