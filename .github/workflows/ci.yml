@@ -6,6 +6,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ci-terraform-${{ github.ref }}
+  cancel-in-progress: false # Wait for queued runs to prevent state lock conflicts
+
 permissions: {} # Restrict default permissions, grant specific permissions per job
 
 env:
@@ -315,7 +319,7 @@ jobs:
         working-directory: infra/aws-core/terraform/environments/dev
         run: |
           echo "📋 Running Terraform plan..."
-          terraform plan -lock=false -out plan.tfplan -no-color
+          terraform plan -out plan.tfplan -no-color
 
       - name: Terraform Show (text)
         if: steps.check_terraform.outputs.exists == 'true' && steps.check_aws.outputs.aws_available == 'true'
