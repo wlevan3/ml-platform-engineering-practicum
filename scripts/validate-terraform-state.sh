@@ -123,7 +123,7 @@ if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
         echo "$REFRESH_OUTPUT"
         exit 1
     fi
-    log_warn "State refresh reported issues (non-fatal; set STRICT_REFRESH_FAILURE=true to fail):"
+    log_warn "State refresh reported issues (may be non-critical; set STRICT_REFRESH_FAILURE=true to fail):"
     echo "$REFRESH_OUTPUT"
 else
     log_info "State refresh successful (no critical issues)"
