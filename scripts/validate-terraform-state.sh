@@ -119,30 +119,38 @@ if [ "$OPERATION" = "plan" ]; then
 
     # Create a temporary plan to check for conflicts
     TEMP_PLAN=$(mktemp)
+    # Capture the exit code from terraform plan
     if terraform plan -detailed-exitcode -out="$TEMP_PLAN" 2>/dev/null; then
+        # Exit code 0 means no changes, but plan succeeded - run conflict check
         # Run the conflict detection script on the plan
         if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
             log_info "Pre-flight conflict detection passed"
         else
             log_error "Pre-flight conflict detection failed"
-            rm -f "$TEMP_PLAN"
+            rm -f "$TEMP_PLAN" 2>/dev/null
             exit 1
         fi
     else
-        # If terraform plan shows changes, that's OK - we'll still run the conflict check
-        if [ $? -eq 2 ]; then  # Terraform exit code 2 indicates changes exist
+        # Capture the actual exit code from terraform plan
+        TF_EXIT_CODE=$?
+        # Terraform exit codes:
+        # 0 - Succeeded with no changes
+        # 1 - General error
+        # 2 - Succeeded with changes (this is OK for our purposes)
+        if [ $TF_EXIT_CODE -eq 2 ]; then  # Terraform exit code 2 indicates changes exist
             if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
                 log_info "Pre-flight conflict detection passed"
             else
                 log_error "Pre-flight conflict detection failed"
-                rm -f "$TEMP_PLAN"
+                rm -f "$TEMP_PLAN" 2>/dev/null
                 exit 1
             fi
         else
-            log_warn "Could not generate plan for conflict detection"
+            log_warn "Could not generate plan for conflict detection (terraform exit code: $TF_EXIT_CODE)"
+            rm -f "$TEMP_PLAN" 2>/dev/null
         fi
     fi
-    rm -f "$TEMP_PLAN"
+    rm -f "$TEMP_PLAN" 2>/dev/null
 fi
 
 echo ""
