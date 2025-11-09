@@ -117,7 +117,7 @@ variable "cluster_addons" {
 }
 
 variable "force_module_creation" {
-  description = "Override to keep module creation enabled even when the upstream module gate defaults to false."
+  description = "Force module creation even when the upstream terraform-aws-modules/eks gate would skip it. Leave true unless you explicitly need to disable provisioning (e.g., while stubbing this module)."
   type        = bool
   default     = true
 }
@@ -177,9 +177,9 @@ variable "node_max_size" {
   }
 }
 
-// Default reduced from 50GB to 30GB based on observed node image usage (~12GB avg) which lets us cut idle EBS cost by ~40% in dev/test clusters.
-// Override this in workloads that routinely expand ephemeral storage beyond 30GB so they retain the previous 50GB (or larger) footprint.
-// Documented in infra/aws-core/terraform/modules/eks-cluster/README.md under "Breaking Change: node_disk_size default reduced to 30".
+# Default reduced from 50GB to 30GB based on observed node image usage (~12GB avg) which lets us cut idle EBS cost by ~40% in dev/test clusters.
+# Override this in workloads that routinely expand ephemeral storage beyond 30GB so they retain the previous 50GB (or larger) footprint.
+# Documented in infra/aws-core/terraform/modules/eks-cluster/README.md under "Breaking Change: node_disk_size default reduced to 30".
 variable "node_disk_size" {
   description = "Disk size in GB for worker nodes"
   type        = number

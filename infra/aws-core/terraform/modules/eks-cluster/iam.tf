@@ -3,17 +3,10 @@
 
 # Shared locals
 locals {
-  eks_oidc_provider_components = split("oidc-provider/", module.eks.oidc_provider_arn)
-  eks_oidc_provider_path = try(
-    local.eks_oidc_provider_components[1],
-    tonumber(
-      format(
-        "Invalid OIDC provider ARN for cluster %s: %s (expected to contain 'oidc-provider/').",
-        var.cluster_name,
-        module.eks.oidc_provider_arn
-      )
-    )
-  )
+  # regex() raises a descriptive error if the oidc-provider segment is missing, which is clearer than the
+  # previous tonumber fallback (Terraform 1.13.5 still lacks an error() helper).
+  eks_oidc_provider_match = regex("oidc-provider/(.*)$", module.eks.oidc_provider_arn)
+  eks_oidc_provider_path  = local.eks_oidc_provider_match[0]
 }
 
 # IAM role for node groups

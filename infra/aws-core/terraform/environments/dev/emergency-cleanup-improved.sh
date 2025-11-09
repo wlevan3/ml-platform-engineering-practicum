@@ -241,7 +241,7 @@ main() {
     else
         log_error "THIS WILL DELETE EVERYTHING - CANNOT BE UNDONE"
         local expected_confirm="yes-delete-all-resources"
-        read -r -p "Type '$expected_confirm' to confirm: " confirm
+        read -r -p "Type $expected_confirm to confirm: " confirm
 
         if [[ "$confirm" != "$expected_confirm" ]]; then
             log_info "Aborted"

@@ -117,7 +117,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'NatGateways[].NatGatewayId' \
             --output text)
-          NAT_COUNT=$(echo "$NAT_GATEWAYS" | wc -w)
+          NAT_COUNT=$(echo "$NAT_GATEWAYS" | awk 'NF {count++} END {print count+0}')
 
           # VPC Endpoints
           VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
@@ -125,7 +125,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'VpcEndpoints[].VpcEndpointId' \
             --output text)
-          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | wc -w)
+          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | awk 'NF {count++} END {print count+0}')
 
           # Elastic IPs
           EIPS=$(aws ec2 describe-addresses \
@@ -133,7 +133,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'Addresses[].AllocationId' \
             --output text)
-          EIP_COUNT=$(echo "$EIPS" | wc -w)
+          EIP_COUNT=$(echo "$EIPS" | awk 'NF {count++} END {print count+0}')
 
           # Security Groups
           SECURITY_GROUPS=$(aws ec2 describe-security-groups \
@@ -141,7 +141,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'SecurityGroups[].GroupId' \
             --output text)
-          SG_COUNT=$(echo "$SECURITY_GROUPS" | wc -w)
+          SG_COUNT=$(echo "$SECURITY_GROUPS" | awk 'NF {count++} END {print count+0}')
 
           {
             echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"

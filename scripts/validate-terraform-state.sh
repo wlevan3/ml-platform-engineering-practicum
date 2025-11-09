@@ -99,7 +99,9 @@ esac
 # Check 6: Look for broken references or dangling imports
 echo "Checking for state integrity issues..."
 
-# Attempt a refresh to catch any state drift
+# Attempt a refresh to catch any state drift. By default we warn so that flaky AWS
+# API hiccups don't abort CI runs; set STRICT_REFRESH_FAILURE=true to restore the
+# historical "fail hard on refresh errors" behavior.
 REFRESH_OUTPUT=$(terraform refresh -no-color 2>&1 || true)
 if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
     if [[ "${STRICT_REFRESH_FAILURE,,}" == "true" ]]; then
