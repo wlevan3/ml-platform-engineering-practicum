@@ -12,6 +12,9 @@
 #   plan    - Validate state before operations (expect resources)
 #   destroy - Validate state after destroy (expect empty)
 #
+# ENVIRONMENT VARIABLES:
+#   STRICT_REFRESH_FAILURE=true  - Treat terraform refresh issues as fatal (default: warn only)
+#
 # EXIT CODES:
 #   0 - State is valid
 #   1 - State validation failed
@@ -24,6 +27,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/logging.sh"
 
 OPERATION="${1:-plan}"
+STRICT_REFRESH_FAILURE="${STRICT_REFRESH_FAILURE:-false}"
 
 # Check 1: Terraform is initialized
 echo "Checking terraform state..."
@@ -98,7 +102,12 @@ echo "Checking for state integrity issues..."
 # Attempt a refresh to catch any state drift
 REFRESH_OUTPUT=$(terraform refresh -no-color 2>&1 || true)
 if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
-    log_warn "State refresh reported issues (non-fatal):"
+    if [[ "${STRICT_REFRESH_FAILURE,,}" == "true" ]]; then
+        log_error "State refresh reported issues (STRICT_REFRESH_FAILURE=true)"
+        echo "$REFRESH_OUTPUT"
+        exit 1
+    fi
+    log_warn "State refresh reported issues (non-fatal; set STRICT_REFRESH_FAILURE=true to fail):"
     echo "$REFRESH_OUTPUT"
 else
     log_info "State refresh successful (no critical issues)"

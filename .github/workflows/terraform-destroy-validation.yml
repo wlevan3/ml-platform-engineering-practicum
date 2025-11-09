@@ -250,7 +250,7 @@ jobs:
         run: |
           echo "Validating terraform state after destroy..."
 
-          # shellcheck disable=SC2126,SC2086
+          # shellcheck disable=SC2086
           REMAINING=$(terraform state list 2>/dev/null | awk 'NF {count++} END {print count+0}')
 
           if [ "$REMAINING" -eq 0 ]; then

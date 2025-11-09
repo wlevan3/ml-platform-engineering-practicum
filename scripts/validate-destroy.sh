@@ -269,7 +269,8 @@ echo "  After:  ~$FUTURE_STATE resources (approximate)"
 echo "  Deleted: $DELETES"
 
 if [[ "$FUTURE_STATE" =~ ^-?[0-9]+$ ]] && [ "$FUTURE_STATE" -lt 0 ]; then
-  print_warning "Expected future state is negative (possible counting error from approximate counts)"
+  print_error "Expected future state is negative (counting error detected). Aborting validation."
+  exit 1
 fi
 
 # ============================================================================

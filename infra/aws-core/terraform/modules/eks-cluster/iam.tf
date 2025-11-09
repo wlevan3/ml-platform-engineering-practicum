@@ -1,6 +1,12 @@
 # IAM role for EKS managed node groups
 # Created separately to avoid for_each with dynamic data sources
 
+# Shared locals
+locals {
+  eks_oidc_provider_components = split("oidc-provider/", module.eks.oidc_provider_arn)
+  eks_oidc_provider_path       = length(local.eks_oidc_provider_components) > 1 ? local.eks_oidc_provider_components[1] : module.eks.oidc_provider_arn
+}
+
 # IAM role for node groups
 resource "aws_iam_role" "node_group" {
   name_prefix = "${var.cluster_name}-ng-"
@@ -77,13 +83,13 @@ data "aws_iam_policy_document" "ebs_csi_driver_assume_role" {
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(module.eks.oidc_provider_arn, "/^(.*provider/)/", "")}:sub"
+      variable = "${local.eks_oidc_provider_path}:sub"
       values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(module.eks.oidc_provider_arn, "/^(.*provider/)/", "")}:aud"
+      variable = "${local.eks_oidc_provider_path}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }

@@ -20,17 +20,17 @@ LOG_COLOR_BLUE='\033[0;34m'
 LOG_COLOR_RESET='\033[0m'
 
 log_info() {
-  echo -e "${LOG_COLOR_BLUE}[INFO]${LOG_COLOR_RESET} $1"
+  echo -e "${LOG_COLOR_BLUE}[INFO]${LOG_COLOR_RESET} $*"
 }
 
 log_success() {
-  echo -e "${LOG_COLOR_GREEN}[SUCCESS]${LOG_COLOR_RESET} $1"
+  echo -e "${LOG_COLOR_GREEN}[SUCCESS]${LOG_COLOR_RESET} $*"
 }
 
 log_warn() {
-  echo -e "${LOG_COLOR_YELLOW}[WARN]${LOG_COLOR_RESET} $1"
+  echo -e "${LOG_COLOR_YELLOW}[WARN]${LOG_COLOR_RESET} $*"
 }
 
 log_error() {
-  echo -e "${LOG_COLOR_RED}[ERROR]${LOG_COLOR_RESET} $1"
+  echo -e "${LOG_COLOR_RED}[ERROR]${LOG_COLOR_RESET} $*"
 }

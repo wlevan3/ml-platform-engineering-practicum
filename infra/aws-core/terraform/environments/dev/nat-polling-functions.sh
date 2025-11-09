@@ -134,7 +134,7 @@ wait_for_nat_gateway_deletion() {
         # Wait before next check (exponential backoff)
         sleep "$interval"
 
-        # Calculate next interval: multiply by 1.5, cap at max
+        # Calculate next interval: multiply by 1.5, cap at max (integer math is intentional because sleep only accepts whole seconds)
         interval=$(( interval * 3 / 2 ))
         if (( interval > max_interval )); then
             interval=$max_interval
@@ -217,7 +217,7 @@ wait_for_eip_unassociated() {
         # Wait before next check
         sleep "$interval"
 
-        # Calculate next interval
+        # Calculate next interval (integer math keeps sleep-compatible whole seconds)
         interval=$(( interval * 3 / 2 ))
         if (( interval > max_interval )); then
             interval=$max_interval
