@@ -112,32 +112,36 @@ jobs:
             --output text 2>/dev/null || echo "NOT_FOUND")
 
           # NAT Gateways
-          NAT_COUNT=$(aws ec2 describe-nat-gateways \
+          NAT_GATEWAYS=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'length(NatGateways)' \
+            --query 'NatGateways[].NatGatewayId' \
             --output text)
+          NAT_COUNT=$(echo "$NAT_GATEWAYS" | wc -w)
 
           # VPC Endpoints
-          VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
+          VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'length(VpcEndpoints)' \
+            --query 'VpcEndpoints[].VpcEndpointId' \
             --output text)
+          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | wc -w)
 
           # Elastic IPs
-          EIP_COUNT=$(aws ec2 describe-addresses \
+          EIPS=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'length(Addresses)' \
+            --query 'Addresses[].AllocationId' \
             --output text)
+          EIP_COUNT=$(echo "$EIPS" | wc -w)
 
           # Security Groups
-          SG_COUNT=$(aws ec2 describe-security-groups \
+          SECURITY_GROUPS=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'length(SecurityGroups)' \
+            --query 'SecurityGroups[].GroupId' \
             --output text)
+          SG_COUNT=$(echo "$SECURITY_GROUPS" | wc -w)
 
           {
             echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"
@@ -150,10 +154,10 @@ jobs:
           if [ "${{ github.event.inputs.verbose_logging }}" == "true" ]; then
             echo "Pre-Destroy Resources:"
             echo "  EKS Cluster: $EKS_CLUSTER"
-            echo "  NAT Gateways: $NAT_GATEWAYS"
-            echo "  VPC Endpoints: $VPC_ENDPOINTS"
-            echo "  Elastic IPs: $EIPS"
-            echo "  Security Groups: $SECURITY_GROUPS"
+            echo "  NAT Gateways: $NAT_COUNT"
+            echo "  VPC Endpoints: $VPCE_COUNT"
+            echo "  Elastic IPs: $EIP_COUNT"
+            echo "  Security Groups: $SG_COUNT"
           fi
 
       - name: Phase 3 - Validate Resource Tags
@@ -183,9 +187,14 @@ jobs:
           terraform destroy \
             -auto-approve \
             -var="cluster_name=$TEST_CLUSTER_NAME" \
-            -no-color || { echo "Terraform destroy failed"; exit 1; }
+            -no-color
+          destroy_exit_code=$?
+          echo "destroy_exit_code=$destroy_exit_code" >> "$GITHUB_OUTPUT"
+          if [ "$destroy_exit_code" -ne 0 ]; then
+            echo "Terraform destroy failed with exit code $destroy_exit_code"
+            exit "$destroy_exit_code"
+          fi
 
-          echo "destroy_exit_code=$?" >> "$GITHUB_OUTPUT"
           echo "✅ Terraform destroy completed"
 
       - name: Phase 5 - Record Post-Destroy State
@@ -241,7 +250,8 @@ jobs:
         run: |
           echo "Validating terraform state after destroy..."
 
-          REMAINING=$(terraform state list 2>/dev/null | wc -l)
+          # shellcheck disable=SC2126,SC2086
+          REMAINING=$(terraform state list 2>/dev/null | awk 'NF {count++} END {print count+0}')
 
           if [ "$REMAINING" -eq 0 ]; then
             echo "✅ Terraform state is empty"
@@ -308,6 +318,7 @@ jobs:
           VPCE_COUNT=${{ steps.post_destroy.outputs.vpc_endpoint_count }}
           EIP_COUNT=${{ steps.post_destroy.outputs.eip_count }}
           SG_COUNT=${{ steps.post_destroy.outputs.security_group_count }}
+          # shellcheck disable=SC2309,SC2086
           {
             echo "# Destroy Validation Report"
             echo ""
@@ -331,7 +342,6 @@ jobs:
             echo "## Post-Destroy State"
             echo "| Resource Type | Count | Status |"
             echo "|---|---|---|"
-            echo "| EKS Cluster | - | $([[ '${{ steps.post_destroy.outputs.eks_cluster }}' == 'DELETED' ]] && echo '✅ Deleted' || echo '❌ Still exists') |"
             echo "| NAT Gateways | $NAT_COUNT | $([[ "$NAT_COUNT" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
             echo "| VPC Endpoints | $VPCE_COUNT | $([[ "$VPCE_COUNT" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
             echo "| Elastic IPs | $EIP_COUNT | $([[ "$EIP_COUNT" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"

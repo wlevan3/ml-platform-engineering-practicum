@@ -18,29 +18,16 @@
 
 set -euo pipefail
 
-# Color codes for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Default logging function (can be overridden by caller)
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-    echo -e "${GREEN}[✓]${NC} $1"
-}
-
-log_warn() {
-    echo -e "${YELLOW}[⚠]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[✗]${NC} $1"
-}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$SCRIPT_DIR"
+while [[ "$REPO_ROOT" != "/" && ! -f "$REPO_ROOT/scripts/logging.sh" ]]; do
+    REPO_ROOT="$(dirname "$REPO_ROOT")"
+done
+if [[ ! -f "$REPO_ROOT/scripts/logging.sh" ]]; then
+    echo "[ERROR] Logging helper not found" >&2
+    exit 1
+fi
+source "$REPO_ROOT/scripts/logging.sh"
 
 # =============================================================================
 # POLLING FUNCTIONS
@@ -148,7 +135,10 @@ wait_for_nat_gateway_deletion() {
         sleep "$interval"
 
         # Calculate next interval: multiply by 1.5, cap at max
-        interval=$(awk "BEGIN {print int((($interval * 1.5) < $max_interval ? ($interval * 1.5) : $max_interval))}")
+        interval=$(( interval * 3 / 2 ))
+        if (( interval > max_interval )); then
+            interval=$max_interval
+        fi
     done
 }
 
@@ -228,7 +218,10 @@ wait_for_eip_unassociated() {
         sleep "$interval"
 
         # Calculate next interval
-        interval=$(awk "BEGIN {print int((($interval * 1.5) < $max_interval ? ($interval * 1.5) : $max_interval))}")
+        interval=$(( interval * 3 / 2 ))
+        if (( interval > max_interval )); then
+            interval=$max_interval
+        fi
     done
 }
 
@@ -367,7 +360,9 @@ cleanup_all_nat_gateways() {
     log_info "Initiating deletions for ${#nat_array[@]} NAT Gateway(s)..."
     for nat in "${nat_array[@]}"; do
         log_info "  Initiating: $nat"
-        aws ec2 delete-nat-gateway --nat-gateway-id "$nat" --region "$region" 2>/dev/null || true
+        if ! aws ec2 delete-nat-gateway --nat-gateway-id "$nat" --region "$region" >/dev/null 2>&1; then
+            log_warn "    Delete request failed (it may already be deleting or scoped elsewhere)"
+        fi
     done
 
     echo ""
@@ -379,6 +374,7 @@ cleanup_all_nat_gateways() {
             success_count=$((success_count + 1))
         else
             fail_count=$((fail_count + 1))
+            log_warn "    Cleanup for $nat reported issues (see earlier logs)"
         fi
         echo ""
     done

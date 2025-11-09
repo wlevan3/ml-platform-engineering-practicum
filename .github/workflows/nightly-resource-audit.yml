@@ -125,8 +125,12 @@ jobs:
               [instance]=0
             )
             for arn in "${RESOURCE_ARNS[@]}"; do
-              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6 | cut -d/ -f1)
-              RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
+              RESOURCE_TYPE=$(jq -R -r 'split(":")[5] // "" | split("/")[0] // ""' <<<"$arn")
+              RESOURCE_ID=$(jq -R -r 'split("/") | last' <<<"$arn")
+              if [[ -z "$RESOURCE_TYPE" || -z "$RESOURCE_ID" ]]; then
+                echo "  - unparsable ARN: $arn"
+                continue
+              fi
               echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
               if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
                 resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
@@ -171,10 +175,11 @@ jobs:
             --query 'ResourceTagMappingList' \
             --output json)
 
-          # Cost estimates (monthly)
-          # NAT Gateway: ~$32/month
-          # Elastic IP: ~$3.20/month (unused)
-          # EC2 t3.medium: ~$30/month
+          # Cost estimates (monthly) – approximations for us-west-2 pricing (AWS VPC pricing page, Nov 2025)
+          # Source: https://aws.amazon.com/vpc/pricing/
+          # NAT Gateway: ~$32/month (0.045 USD/hr × 730 hrs)
+          # Elastic IP: ~$3.20/month (unused allocation)
+          # EC2 t3.medium: ~$30/month (on-demand instance price)
 
           NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
           EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
@@ -183,10 +188,10 @@ jobs:
           MONTHLY_COST=$(( (NAT_COUNT * 32) + (EIP_COUNT * 3) + (INSTANCE_COUNT * 30) ))
           DAILY_COST=$(( MONTHLY_COST / 30 ))
 
-          echo "Estimated monthly cost: \$$MONTHLY_COST"
-          echo "Estimated daily cost: \$$DAILY_COST"
+          echo "Estimated monthly cost (approx, $AWS_REGION pricing as of Nov 2025): \$$MONTHLY_COST"
+          echo "Estimated daily cost (approx): \$$DAILY_COST"
 
-          echo "estimated_cost=\$$MONTHLY_COST/month (\$$DAILY_COST/day)" >> "$GITHUB_OUTPUT"
+          echo "estimated_cost=\$$MONTHLY_COST/month (approx, $AWS_REGION pricing)" >> "$GITHUB_OUTPUT"
 
       - name: Generate Report
         run: |

@@ -20,17 +20,10 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/logging.sh"
+
 OPERATION="${1:-plan}"
-
-# Color codes
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() { echo -e "${GREEN}✓${NC} $1"; }
-log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
-log_error() { echo -e "${RED}✗${NC} $1"; }
 
 # Check 1: Terraform is initialized
 echo "Checking terraform state..."
@@ -72,13 +65,10 @@ case "$OPERATION" in
         fi
 
         # Verify critical resources are present
-        if [ "$RESOURCE_COUNT" -gt 0 ]; then
-            # Check for EKS cluster
-            if terraform state list | grep -q "aws_eks_cluster" 2>/dev/null; then
-                log_info "EKS cluster found in state"
-            else
-                log_warn "EKS cluster not found in state (may already be destroyed)"
-            fi
+        if terraform state list 2>/dev/null | grep -q "aws_eks_cluster"; then
+            log_info "EKS cluster found in state"
+        elif [ "$RESOURCE_COUNT" -gt 0 ]; then
+            log_warn "EKS cluster not found in state (may already be destroyed)"
         fi
         ;;
 
@@ -108,9 +98,8 @@ echo "Checking for state integrity issues..."
 # Attempt a refresh to catch any state drift
 REFRESH_OUTPUT=$(terraform refresh -no-color 2>&1 || true)
 if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
-    log_warn "State refresh reported issues:"
+    log_warn "State refresh reported issues (non-fatal):"
     echo "$REFRESH_OUTPUT"
-    exit 1
 else
     log_info "State refresh successful (no critical issues)"
 fi

@@ -9,8 +9,9 @@ module "eks" {
 
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
-  putin_khuylo       = var.putin_khuylo
-  enabled_log_types  = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+  # Upstream module still expects the legacy name; map our renamed variable to it.
+  putin_khuylo      = var.force_module_creation
+  enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   # Networking
   vpc_id                   = var.vpc_id
@@ -37,6 +38,7 @@ module "eks" {
   attach_encryption_policy = false
 
   # Cluster addons (automatically managed)
+  # Merges the caller's addon config with the IRSA-aware EBS CSI Driver rollout so the addon map stays user-controlled while we inject the service account role ARN only when enabled.
   addons = merge(
     var.cluster_addons,
     var.enable_irsa && contains(keys(var.cluster_addons), "aws-ebs-csi-driver") ? {
