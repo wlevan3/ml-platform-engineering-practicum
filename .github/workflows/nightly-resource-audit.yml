@@ -133,24 +133,7 @@ jobs:
                 ((failed_arns++))
                 continue
               fi
-            # Build resource list
-            RESOURCE_LIST=""
-            mapfile -t RESOURCE_ARNS < <(echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"')
-            declare -A resource_counts=(
-              [nat-gateway]=0
-              [vpc-endpoint]=0
-              [elastic-ip]=0
-              [security-group]=0
-              [instance]=0
-            )
-            for arn in "${RESOURCE_ARNS[@]}"; do
-              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6 | cut -d/ -f1)
-              RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
-              echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
-              if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
-                resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
-              fi
-            done
+
 
             if [[ $failed_arns -gt 0 ]]; then
               echo "⚠️  Warning: $failed_arns ARN(s) could not be parsed"
