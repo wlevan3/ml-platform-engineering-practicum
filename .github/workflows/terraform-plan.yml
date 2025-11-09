@@ -75,42 +75,109 @@ jobs:
         id: plan
         run: |
           terraform plan -out=tfplan -no-color | tee plan.txt
+          terraform show -json tfplan > plan.json
 
-      - name: Upload plan artifact
+      - name: Analyze Terraform Plan
+        id: analyze
+        run: |
+          ../../../../scripts/analyze-terraform-plan.sh plan.json
+        continue-on-error: false
+
+      - name: Upload plan artifacts
         uses: actions/upload-artifact@604373da6381bf24206979c74d06a550515601b9 # v4.4.1
         with:
           name: terraform-plan-pr-${{ github.event.pull_request.number }}
-          path: infra/aws-core/terraform/environments/dev/plan.txt
+          path: |
+            infra/aws-core/terraform/environments/dev/plan.txt
+            infra/aws-core/terraform/environments/dev/plan.json
+            infra/aws-core/terraform/environments/dev/tfplan
           retention-days: 30
 
-      - name: Comment plan on PR
+      - name: Comment plan on PR with Analysis
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const fs = require('fs');
+
+            // Read plan output
             const plan = fs.readFileSync('infra/aws-core/terraform/environments/dev/plan.txt', 'utf8');
 
-            const bodyLines = [
-              '## Terraform Plan',
-              '',
-              '<details>',
-              '<summary>Show Plan</summary>',
-              '',
-              '```hcl',
-              plan,
-              '```',
-              '',
-              '</details>',
-              '',
-              `**Event**: ${process.env.GITHUB_EVENT_NAME}`,
-              `**Run**: [#${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`
-            ];
+            // Read analysis outputs from GitHub Actions
+            const analysisComplete = '${{ steps.analyze.outputs.analysis_complete }}' === 'true';
+            const totalChanges = '${{ steps.analyze.outputs.total_changes }}' || '0';
+            const creates = '${{ steps.analyze.outputs.creates }}' || '0';
+            const updates = '${{ steps.analyze.outputs.updates }}' || '0';
+            const deletions = '${{ steps.analyze.outputs.deletions }}' || '0';
+            const replacements = '${{ steps.analyze.outputs.replacements }}' || '0';
+            const hasDeletions = '${{ steps.analyze.outputs.has_deletions }}' === 'true';
+            const hasReplacements = '${{ steps.analyze.outputs.has_replacements }}' === 'true';
+            const hasCriticalDeletions = '${{ steps.analyze.outputs.has_critical_deletions }}' === 'true';
+            const largeChangesWarning = '${{ steps.analyze.outputs.large_changes_warning }}' === 'true';
+            const largeChangesCount = '${{ steps.analyze.outputs.large_changes_count }}' || '0';
 
-            const output = bodyLines.join('\n');
+            // Build analysis summary
+            let analysisSection = '';
+            if (analysisComplete) {
+              analysisSection = `
+            ## 📊 Plan Analysis Results
+            | Metric | Count |
+            |--------|-------|
+            | 🏗️ Resources Changed | ${totalChanges} |
+            | ➕ Create | ${creates} |
+            | 🔄 Update | ${updates} |
+            | 🗑️ Delete | ${deletions} |
+            | 🔁 Replace | ${replacements} |
 
-            await github.rest.issues.createComment({
+            `;
+
+              if (hasCriticalDeletions) {
+                analysisSection += `
+            ⚠️ **CRITICAL WARNING** ⚠️
+            🚨 This plan deletes **CRITICAL** infrastructure resources!
+            ${hasCriticalDeletions ? '❌ Workflow will fail due to critical resource deletions' : ''}
+
+            `;
+              } else if (hasDeletions || hasReplacements) {
+                analysisSection += `
+            ⚠️ **ATTENTION REQUIRED**
+            ${hasDeletions ? `🗑️ This plan includes **${deletions}** deletion(s) - review carefully\n` : ''}
+            ${hasReplacements ? `🔁 This plan includes **${replacements}** replacement(s) - review carefully\n` : ''}
+
+            `;
+              }
+
+              if (largeChangesWarning) {
+                analysisSection += `
+            📈 **Large Change Detected**
+            This plan modifies **${largeChangesCount}** resources (threshold: 10)
+
+            `;
+              }
+
+              if (!hasCriticalDeletions) {
+                analysisSection += '✅ **Plan Analysis Passed** - No critical issues detected\n\n';
+              }
+            }
+
+            const output = `## Terraform Plan 📋
+            ${analysisSection}
+            <details>
+            <summary>Show Full Plan</summary>
+
+            \`\`\`hcl
+            ${plan}
+            \`\`\`
+
+            </details>
+
+            **Event**: \`${{ github.event_name }}\`
+            **Run**: [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            **Analysis**: \`${analysisComplete ? '✅ Complete' : '❌ Failed'}\`
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
               body: output,
             });
