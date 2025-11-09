@@ -1,10 +1,42 @@
 #!/usr/bin/env bash
 # =============================================================================
-# Emergency AWS Resource Cleanup
+# Emergency AWS Resource Cleanup - DEPRECATED
 # =============================================================================
-# Destroys ALL resources (failed and successful) - use with extreme caution
-# For failed node groups only, use: cleanup-failed-nodegroups.sh
+# ⚠️  DEPRECATED: This script is no longer recommended for use.
+#
+# Use 'terraform destroy' instead for safe, complete resource cleanup.
+# See: docs/CLEANUP_RUNBOOK.md for the recommended cleanup procedure.
+#
+# This script is kept for disaster recovery reference only (when Terraform
+# state is corrupted or unavailable). It has known bugs and requires manual
+# intervention. Use at your own risk.
+#
+# Known Issues:
+# - Missing VPC endpoint deletion (causes DNS conflicts)
+# - Unsafe region-wide filtering (could delete wrong resources)
+# - Fixed sleep timings (doesn't adapt to actual AWS deletion times)
+#
+# Last updated: 2025-11-08
 # =============================================================================
+
+echo "⚠️  ERROR: This script is DEPRECATED"
+echo ""
+echo "Use 'terraform destroy' instead for safe cleanup:"
+echo "  cd infra/aws-core/terraform/environments/dev"
+echo "  terraform destroy"
+echo ""
+echo "For detailed cleanup procedures, see: docs/CLEANUP_RUNBOOK.md"
+echo ""
+echo "If you still need to use this script (disaster recovery only),"
+echo "set FORCE_DEPRECATED=true as an environment variable."
+echo ""
+
+if [[ "${FORCE_DEPRECATED:-false}" != "true" ]]; then
+    exit 1
+fi
+
+echo "⚠️  WARNING: Proceeding with deprecated emergency cleanup script..."
+echo ""
 
 set -euo pipefail
 
@@ -37,7 +69,7 @@ get_resource_counts() {
     ng_count=$(aws eks list-nodegroups --cluster-name "$CLUSTER_NAME" --region "$REGION" --query 'length(nodegroups)' --output text 2>/dev/null || echo "0")
     lb_count=$(aws elbv2 describe-load-balancers --region "$REGION" --query 'length(LoadBalancers)' --output text 2>/dev/null || echo "0")
     nat_count=$(aws ec2 describe-nat-gateways --region "$REGION" --filter "Name=state,Values=available" --query 'length(NatGateways)' --output text 2>/dev/null || echo "0")
-    eip_count=$(aws ec2 describe-addresses --region "$REGION" --query 'length(Addresses[?Tags[?Key==`ManagedBy` && Value==`Terraform`]])' --output text 2>/dev/null || echo "0")
+    eip_count=$(aws ec2 describe-addresses --region "$REGION" --query "length(Addresses[?Tags[?Key==\`ManagedBy\` && Value==\`Terraform\`]])" --output text 2>/dev/null || echo "0")
     instance_count=$(aws ec2 describe-instances --region "$REGION" --filters "Name=instance-state-name,Values=running,pending,stopping,stopped" "Name=tag:Cluster,Values=$CLUSTER_NAME" --query 'length(Reservations[].Instances[])' --output text 2>/dev/null || echo "0")
 
     echo "$ng_count|$lb_count|$nat_count|$eip_count|$instance_count"
@@ -140,7 +172,7 @@ delete_elastic_ips() {
     log_info "Step 4: Releasing Elastic IPs..."
 
     local eips
-    eips=$(aws ec2 describe-addresses --region "$REGION" --query 'Addresses[?Tags[?Key==`ManagedBy` && Value==`Terraform`]].AllocationId' --output text 2>/dev/null || echo "")
+    eips=$(aws ec2 describe-addresses --region "$REGION" --query "Addresses[?Tags[?Key==\`ManagedBy\` && Value==\`Terraform\`]].AllocationId" --output text 2>/dev/null || echo "")
 
     if [[ -z "$eips" ]]; then
         log_info "  No Elastic IPs found"
@@ -191,7 +223,7 @@ main() {
         echo ""
     else
         log_error "THIS WILL DELETE EVERYTHING - CANNOT BE UNDONE"
-        read -p "Type 'DELETE EVERYTHING' to confirm: " confirm
+        read -r -p "Type 'DELETE EVERYTHING' to confirm: " confirm
 
         if [[ "$confirm" != "DELETE EVERYTHING" ]]; then
             log_info "Aborted"
