@@ -190,6 +190,19 @@ jq -r '.resource_changes[] | select(.change.actions[] == "delete") | "  - \(.typ
 print_section "Safety checks"
 
 # Check 1: Data-storage resources (RDS, DynamoDB)
+# STORAGE_TYPES_PATTERN includes all known data-storage resource types that should trigger a safety warning if deleted.
+# Each entry is documented below:
+#   rds                  - AWS RDS cluster (newer resource type)
+#   db_instance          - AWS RDS instance (legacy resource type, still used in some modules)
+#   dynamodb             - AWS DynamoDB tables
+#   documentdb_cluster   - AWS DocumentDB clusters
+#   memorydb_cluster     - AWS MemoryDB clusters
+#   neptune_cluster      - AWS Neptune clusters
+#   elasticsearch        - AWS Elasticsearch domains (legacy, replaced by opensearch_domain)
+#   elasticache          - AWS ElastiCache clusters
+#   redshift             - AWS Redshift clusters
+#   opensearch_domain    - AWS OpenSearch domains (newer, successor to elasticsearch)
+#   kinesis_stream       - AWS Kinesis data streams
 STORAGE_TYPES_PATTERN="rds|db_instance|dynamodb|documentdb_cluster|memorydb_cluster|neptune_cluster|elasticsearch|elasticache|redshift|opensearch_domain|kinesis_stream"
 STORAGE_DELETES=$(jq --arg pattern "$STORAGE_TYPES_PATTERN" '[.resource_changes[] | select(.change.actions[] == "delete" and (.type | test($pattern)))] | length' "$TEMP_JSON")
 
