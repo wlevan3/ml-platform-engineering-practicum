@@ -119,6 +119,7 @@ test_s3_access() {
     log_info "Testing ${test_name}..."
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     # Send the test command directly via SSM
     local send_command_output
     if ! send_command_output=$(aws ssm send-command \
@@ -218,23 +219,75 @@ EOF
     # Run the script on the instance
     local result
     if result=$(aws ssm send-command \
+=======
+    # Send the test command directly via SSM
+    local send_command_output
+    if ! send_command_output=$(aws ssm send-command \
+>>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
         --instance-ids "${instance_id}" \
         --document-name "AWS-RunShellScript" \
-        --parameters 'commands=["bash /tmp/test-s3-access.sh '"${bucket_name}"' '"${should_succeed}"'"]' \
-        --output json \
-        --query 'Command[0].Status' \
-        2>/dev/null); then
-
-        if [[ "${result}" == *"Success"* ]]; then
-            log_info "✓ ${test_name} test passed"
-            return 0
-        else
-            log_error "✗ ${test_name} test failed"
-            return 1
-        fi
-    else
+        --parameters "commands=[\"BUCKET_NAME='${bucket_name}'; EXPECTED_RESULT='${should_succeed}'; \
+        aws s3 ls \\\"s3://\${BUCKET_NAME}/\\\" > /dev/null 2>&1; \
+        EXIT_CODE=\$?; \
+        if [[ \\\"\${EXPECTED_RESULT}\\\" == \\\"success\\\" ]]; then \
+            if [[ \$EXIT_CODE -eq 0 ]]; then \
+                echo 'SUCCESS: Access granted to \${BUCKET_NAME}'; exit 0; \
+            else \
+                echo 'FAILURE: Access denied to \${BUCKET_NAME} (expected success)'; exit 1; \
+            fi; \
+        else \
+            if [[ \$EXIT_CODE -ne 0 ]]; then \
+                echo 'SUCCESS: Access properly denied to \${BUCKET_NAME}'; exit 0; \
+            else \
+                echo 'FAILURE: Access granted to \${BUCKET_NAME} (expected denial)'; exit 1; \
+            fi; \
+        fi\"]" \
+        --output json 2>/dev/null); then
         log_error "Failed to execute test on instance ${instance_id}"
 >>>>>>> 1f2d535 (feat(security): add S3 endpoint least-privilege policy)
+        return 1
+    fi
+
+    # Extract command ID from the response
+    local command_id
+    command_id=$(echo "${send_command_output}" | jq -r '.Command.CommandId')
+    if [[ -z "${command_id}" || "${command_id}" == "null" ]]; then
+        log_error "Could not retrieve CommandId from send-command output"
+        return 1
+    fi
+
+    # Poll for command completion
+    local status
+    for i in {1..30}; do
+        status=$(aws ssm get-command-invocation \
+            --command-id "${command_id}" \
+            --instance-id "${instance_id}" \
+            --output json 2>/dev/null | jq -r '.Status')
+
+        if [[ "${status}" == "Success" || "${status}" == "Failed" || "${status}" == "Cancelled" || "${status}" == "TimedOut" ]]; then
+            break
+        fi
+
+        sleep 2
+    done
+
+    # Get the final result
+    local output
+    output=$(aws ssm get-command-invocation \
+        --command-id "${command_id}" \
+        --instance-id "${instance_id}" \
+        --output json 2>/dev/null)
+
+    status=$(echo "${output}" | jq -r '.Status')
+    local stdout
+    stdout=$(echo "${output}" | jq -r '.StandardOutputContent')
+
+    if [[ "${status}" == "Success" && "${stdout}" == *"SUCCESS"* ]]; then
+        log_info "✓ ${test_name} test passed"
+        return 0
+    else
+        log_error "✗ ${test_name} test failed"
+        [[ -n "${stdout}" ]] && echo -e "${YELLOW}Output:${NC}\n${stdout}"
         return 1
     fi
 }
@@ -243,6 +296,7 @@ EOF
 test_ecr_pull() {
     log_info "Testing ECR image pull from pod..."
 
+<<<<<<< HEAD
 # Default ECR image (can be overridden via environment)
     local ecr_image="${ECR_TEST_IMAGE:-<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest}"
 
@@ -257,6 +311,13 @@ test_ecr_pull() {
     # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
     kubectl run s3-policy-test \
         --image="${ecr_image}" \
+=======
+    # Create a test pod using a private ECR image
+    # NOTE: Replace <account-id>, <region>, and <image-name> with your own values
+    # Public ECR images don't test the S3 VPC endpoint policy
+    kubectl run s3-policy-test \
+        --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest \
+>>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
         --rm -i --restart=Never \
         --command -- bash -c "echo 'ECR image pull successful'" \
         > /dev/null 2>&1
@@ -269,7 +330,11 @@ test_ecr_pull() {
         return 0
     else
         log_error "✗ ECR image pull test failed"
+<<<<<<< HEAD
         log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
+=======
+        log_warn "Note: Ensure you replace <account-id>, <region>, and <image-name> with your ECR details"
+>>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
         return 1
     fi
 }
