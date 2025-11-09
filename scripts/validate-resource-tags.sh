@@ -124,27 +124,22 @@ echo ""
 
 # Check 3: VPC Endpoint Tags
 echo "Checking VPC Endpoint tags..."
-VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
+VPC_ENDPOINTS_JSON=$(aws ec2 describe-vpc-endpoints \
     --region "$REGION" \
-    --query 'VpcEndpoints[].VpcEndpointId' \
-    --output text 2>/dev/null || echo "")
+    --query 'VpcEndpoints[]' \
+    --output json 2>/dev/null || echo "[]")
 
-if [ -z "$VPC_ENDPOINTS" ]; then
+TOTAL_VPCES=$(echo "$VPC_ENDPOINTS_JSON" | jq 'length')
+if [ "$TOTAL_VPCES" -eq 0 ]; then
     log_info "No VPC Endpoints found (none to validate)"
 else
     TAGGED_VPCES=0
-    TOTAL_VPCES=$(echo "$VPC_ENDPOINTS" | wc -w)
+    mapfile -t VPS < <(echo "$VPC_ENDPOINTS_JSON" | jq -c '.[]')
+    for vpce in "${VPS[@]}"; do
+        vpce_id=$(echo "$vpce" | jq -r '.VpcEndpointId')
+        vpce_tags=$(echo "$vpce" | jq -c '.Tags // []')
 
-    for vpce_id in $VPC_ENDPOINTS; do
-        VPCE_TAGS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids "$vpce_id" \
-            --region "$REGION" \
-            --query 'VpcEndpoints[0].Tags' \
-            --output json 2>/dev/null || echo "[]")
-
-        HAS_CLUSTER_TAG=$(echo "$VPCE_TAGS" | jq --arg CLUSTER "$CLUSTER_NAME" '.[] | select(.Key=="Cluster" and .Value==$CLUSTER)' | jq -s 'length > 0')
-
-        if [ "$HAS_CLUSTER_TAG" = "true" ]; then
+        if check_resource_tags "vpc-endpoint" "$vpce_id" "$vpce_tags"; then
             TAGGED_VPCES=$((TAGGED_VPCES + 1))
         fi
     done
@@ -188,17 +183,27 @@ echo ""
 
 # Check 5: Security Group Tags (Cluster-specific)
 echo "Checking Security Group tags..."
-SECURITY_GROUPS=$(aws ec2 describe-security-groups \
+SECURITY_GROUPS_JSON=$(aws ec2 describe-security-groups \
     --region "$REGION" \
     --filter "Name=tag:Cluster,Values=$CLUSTER_NAME" \
-    --query 'SecurityGroups[].GroupId' \
-    --output text 2>/dev/null || echo "")
+    --query 'SecurityGroups[]' \
+    --output json 2>/dev/null || echo "[]")
 
-if [ -z "$SECURITY_GROUPS" ]; then
+SG_COUNT=$(echo "$SECURITY_GROUPS_JSON" | jq 'length')
+if [ "$SG_COUNT" -eq 0 ]; then
     log_info "No Security Groups with cluster tag found"
 else
-    SG_COUNT=$(echo "$SECURITY_GROUPS" | wc -w)
     log_info "Found $SG_COUNT Security Groups with cluster tag"
+    mapfile -t SGS < <(echo "$SECURITY_GROUPS_JSON" | jq -c '.[]')
+    for sg in "${SGS[@]}"; do
+        sg_id=$(echo "$sg" | jq -r '.GroupId')
+        sg_tags=$(echo "$sg" | jq -c '.Tags // []')
+        if check_resource_tags "security-group" "$sg_id" "$sg_tags"; then
+            log_info "  $sg_id properly tagged"
+        else
+            log_warn "  $sg_id missing tags"
+        fi
+    done
 fi
 
 echo ""

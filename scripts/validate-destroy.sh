@@ -33,7 +33,6 @@ TEMP_JSON=$(mktemp)
 TEMP_ANALYSIS=$(mktemp)
 
 # Cleanup on exit
-# shellcheck disable=SC2329
 cleanup() {
   rm -f "$TEMP_JSON" "$TEMP_ANALYSIS"
 }
@@ -122,10 +121,10 @@ print_section "Analyzing plan contents"
 RESOURCE_CHANGES=$(jq '.resource_changes | length' "$TEMP_JSON")
 TOTAL_CHANGES=$(jq '[.resource_changes[] | .change.actions[]] | length' "$TEMP_JSON")
 
-# Count by action
-CREATES=$(jq '[.resource_changes[] | select(.change.actions[] == "create")] | length' "$TEMP_JSON")
-UPDATES=$(jq '[.resource_changes[] | select(.change.actions[] == "update")] | length' "$TEMP_JSON")
-DELETES=$(jq '[.resource_changes[] | select(.change.actions[] == "delete")] | length' "$TEMP_JSON")
+# Count by action using jq's index() to handle multi-action resources
+CREATES=$(jq '[.resource_changes[] | select(.change.actions | index("create"))] | length' "$TEMP_JSON")
+UPDATES=$(jq '[.resource_changes[] | select(.change.actions | index("update"))] | length' "$TEMP_JSON")
+DELETES=$(jq '[.resource_changes[] | select(.change.actions | index("delete"))] | length' "$TEMP_JSON")
 REPLACES=$(jq '[.resource_changes[] | select(.change.actions[] | length > 1)] | length' "$TEMP_JSON")
 
 echo ""
