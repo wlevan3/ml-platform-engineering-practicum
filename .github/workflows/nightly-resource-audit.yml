@@ -181,11 +181,12 @@ jobs:
             --query 'ResourceTagMappingList' \
             --output json)
 
-          # Cost estimates (monthly) – rough us-west-2 approximations (AWS VPC pricing page, verified Jan 2025)
-          # Source: https://aws.amazon.com/vpc/pricing/ (re-verify if AWS updates pricing or you use another region)
-          # NAT Gateway: ~$32/month (0.045 USD/hr × 730 hrs)
-          # Elastic IP: ~$3.20/month (unused allocation)
-          # EC2 t3.medium: ~$30/month (on-demand instance price)
+          # Cost estimates (monthly) – rough us-west-2 approximations (AWS VPC pricing page, last manually verified Jan 2025).
+          # Rates drift over time and vary by region, so re-check https://aws.amazon.com/vpc/pricing/ (or your local region sheet)
+          # before acting on these numbers:
+          #   - NAT Gateway: ~$32/month (0.045 USD/hr × 730 hrs)
+          #   - Elastic IP: ~$3.20/month when allocated but unused
+          #   - EC2 t3.medium: ~$30/month (on-demand instance price)
 
           NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
           EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')

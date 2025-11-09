@@ -15,6 +15,10 @@
 # ENVIRONMENT VARIABLES:
 #   STRICT_REFRESH_FAILURE=true  - Treat terraform refresh issues as fatal (default: warn only)
 #
+# NOTE:
+#   Refresh failures used to be fatal by default. We now emit warnings unless STRICT_REFRESH_FAILURE=true so
+#   transient AWS API hiccups don't flap CI. Set the env var to restore the previous fail-fast behavior.
+#
 # EXIT CODES:
 #   0 - State is valid
 #   1 - State validation failed
@@ -28,6 +32,16 @@ source "$SCRIPT_DIR/logging.sh"
 
 OPERATION="${1:-plan}"
 STRICT_REFRESH_FAILURE="${STRICT_REFRESH_FAILURE:-false}"
+
+# Validate STRICT_REFRESH_FAILURE value early so typos fail loudly.
+case "${STRICT_REFRESH_FAILURE,,}" in
+    true|false)
+        ;;
+    *)
+        log_error "STRICT_REFRESH_FAILURE must be 'true' or 'false' (case-insensitive); received '${STRICT_REFRESH_FAILURE}'."
+        exit 1
+        ;;
+esac
 
 # Check 1: Terraform is initialized
 echo "Checking terraform state..."
