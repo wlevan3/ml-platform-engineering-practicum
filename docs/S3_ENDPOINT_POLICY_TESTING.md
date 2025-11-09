@@ -27,12 +27,11 @@ terraform apply -target=module.networking
 Test ECR image pulls from a pod:
 
 ```bash
-# Replace <account-id>, <region>, and <image-name> with your own values
+# Test with a private ECR image to properly test the S3 VPC endpoint policy
 kubectl run test-pod --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest --rm -i --restart=Never -- date
 ```
 
 Note: Public ECR images don't test the S3 VPC endpoint policy. Use a private ECR image from your account to properly test the policy.
-
 ### 2. Validate S3 Access
 
 Get the ECR S3 bucket name:
