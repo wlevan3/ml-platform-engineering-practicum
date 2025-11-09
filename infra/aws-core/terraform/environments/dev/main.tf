@@ -73,8 +73,9 @@ module "eks_cluster" {
   # Trade-off: More secure for insider threats, but adds cost/complexity for CI/CD
   #
   # Refs: https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
-  cluster_endpoint_public_access  = true # Required for GitHub Actions + kubectl
-  cluster_endpoint_private_access = true # Required for nodes to join cluster
+  cluster_endpoint_public_access       = true # Required for GitHub Actions + kubectl
+  cluster_endpoint_private_access      = true # Required for nodes to join cluster
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
 
   # Node group configuration
   use_spot_instances = var.use_spot_instances
