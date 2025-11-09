@@ -1,6 +1,14 @@
 # IAM role for EKS managed node groups
 # Created separately to avoid for_each with dynamic data sources
 
+# Shared locals
+locals {
+  # regex() raises a descriptive error if the oidc-provider segment is missing, which is clearer than the
+  # previous tonumber fallback (Terraform 1.13.5 still lacks an error() helper).
+  eks_oidc_provider_match = regex("oidc-provider/(.*)$", module.eks.oidc_provider_arn)
+  eks_oidc_provider_path  = local.eks_oidc_provider_match[0]
+}
+
 # IAM role for node groups
 resource "aws_iam_role" "node_group" {
   name_prefix = "${var.cluster_name}-ng-"
@@ -56,4 +64,54 @@ resource "aws_iam_role_policy_attachment" "node_group_additional" {
 
   policy_arn = each.value
   role       = aws_iam_role.node_group.name
+}
+
+# ===================================================================
+# EBS CSI Driver IRSA Role
+# ===================================================================
+
+data "aws_iam_policy_document" "ebs_csi_driver_assume_role" {
+  count = var.enable_irsa ? 1 : 0
+
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Federated"
+      identifiers = [module.eks.oidc_provider_arn]
+    }
+
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.eks_oidc_provider_path}:sub"
+      values   = ["system:serviceaccount:kube-system:ebs-csi-controller-sa"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "${local.eks_oidc_provider_path}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "ebs_csi_driver" {
+  count              = var.enable_irsa ? 1 : 0
+  name_prefix        = "${var.cluster_name}-ebs-csi-"
+  assume_role_policy = data.aws_iam_policy_document.ebs_csi_driver_assume_role[0].json
+
+  tags = merge(
+    var.tags,
+    {
+      Name = "${var.cluster_name}-ebs-csi-driver"
+    }
+  )
+}
+
+resource "aws_iam_role_policy_attachment" "ebs_csi_driver" {
+  count      = var.enable_irsa ? 1 : 0
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+  role       = aws_iam_role.ebs_csi_driver[0].name
 }

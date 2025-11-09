@@ -32,6 +32,9 @@ echo "set FORCE_DEPRECATED=true as an environment variable."
 echo ""
 
 if [[ "${FORCE_DEPRECATED:-false}" != "true" ]]; then
+    echo ""
+    echo "❌ Script execution blocked (deprecated)"
+    echo "Set FORCE_DEPRECATED=true to override (NOT RECOMMENDED)"
     exit 1
 fi
 
@@ -39,6 +42,17 @@ echo "⚠️  WARNING: Proceeding with deprecated emergency cleanup script..."
 echo ""
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$SCRIPT_DIR"
+while [[ "$REPO_ROOT" != "/" && ! -f "$REPO_ROOT/scripts/logging.sh" ]]; do
+    REPO_ROOT="$(dirname "$REPO_ROOT")"
+done
+if [[ ! -f "$REPO_ROOT/scripts/logging.sh" ]]; then
+    echo "[ERROR] Logging helper not found" >&2
+    exit 1
+fi
+source "$REPO_ROOT/scripts/logging.sh"
 
 REGION="us-west-2"
 CLUSTER_NAME="ml-platform-dev"
@@ -48,15 +62,6 @@ DRY_RUN="${DRY_RUN:-false}"
 readonly NAT_GATEWAY_MONTHLY_COST=32  # AWS NAT Gateway: ~$0.045/hr × 730 hrs
 readonly EKS_CLUSTER_MONTHLY_COST=73  # AWS EKS cluster: $0.10/hr × 730 hrs
 readonly INSTANCE_MONTHLY_COST_ESTIMATE=1  # Rough average for cost estimation
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
-
-log_info() { echo -e "${GREEN}ℹ${NC} $1"; }
-log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
-log_error() { echo -e "${RED}✗${NC} $1"; }
 
 check_prerequisites() {
     command -v aws >/dev/null || { log_error "AWS CLI not installed"; exit 1; }
@@ -69,7 +74,13 @@ get_resource_counts() {
     ng_count=$(aws eks list-nodegroups --cluster-name "$CLUSTER_NAME" --region "$REGION" --query 'length(nodegroups)' --output text 2>/dev/null || echo "0")
     lb_count=$(aws elbv2 describe-load-balancers --region "$REGION" --query 'length(LoadBalancers)' --output text 2>/dev/null || echo "0")
     nat_count=$(aws ec2 describe-nat-gateways --region "$REGION" --filter "Name=state,Values=available" --query 'length(NatGateways)' --output text 2>/dev/null || echo "0")
-    eip_count=$(aws ec2 describe-addresses --region "$REGION" --query "length(Addresses[?Tags[?Key==\`ManagedBy\` && Value==\`Terraform\`]])" --output text 2>/dev/null || echo "0")
+    eip_count=$(aws ec2 describe-addresses \
+        --region "$REGION" \
+        --filters \
+            "Name=tag:Cluster,Values=$CLUSTER_NAME" \
+            "Name=tag:ManagedBy,Values=Terraform" \
+        --query 'length(Addresses)' \
+        --output text 2>/dev/null || echo "0")
     instance_count=$(aws ec2 describe-instances --region "$REGION" --filters "Name=instance-state-name,Values=running,pending,stopping,stopped" "Name=tag:Cluster,Values=$CLUSTER_NAME" --query 'length(Reservations[].Instances[])' --output text 2>/dev/null || echo "0")
 
     echo "$ng_count|$lb_count|$nat_count|$eip_count|$instance_count"
@@ -172,7 +183,13 @@ delete_elastic_ips() {
     log_info "Step 4: Releasing Elastic IPs..."
 
     local eips
-    eips=$(aws ec2 describe-addresses --region "$REGION" --query "Addresses[?Tags[?Key==\`ManagedBy\` && Value==\`Terraform\`]].AllocationId" --output text 2>/dev/null || echo "")
+    eips=$(aws ec2 describe-addresses \
+        --region "$REGION" \
+        --filters \
+            "Name=tag:Cluster,Values=$CLUSTER_NAME" \
+            "Name=tag:ManagedBy,Values=Terraform" \
+        --query 'Addresses[].AllocationId' \
+        --output text 2>/dev/null || echo "")
 
     if [[ -z "$eips" ]]; then
         log_info "  No Elastic IPs found"
@@ -223,9 +240,10 @@ main() {
         echo ""
     else
         log_error "THIS WILL DELETE EVERYTHING - CANNOT BE UNDONE"
-        read -r -p "Type 'DELETE EVERYTHING' to confirm: " confirm
+        local expected_confirm="yes-delete-all-resources"
+        read -r -p "Type $expected_confirm to confirm: " confirm
 
-        if [[ "$confirm" != "DELETE EVERYTHING" ]]; then
+        if [[ "$confirm" != "$expected_confirm" ]]; then
             log_info "Aborted"
             exit 0
         fi
