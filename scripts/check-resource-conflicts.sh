@@ -71,7 +71,7 @@ if [ -f "$PLAN_INPUT" ]; then
     log_info "Using provided plan file: $PLAN_FILE"
 
     # Convert plan to JSON if it's a binary plan file
-    if file "$PLAN_FILE" | grep -q "data\|binary"; then
+    if file "$PLAN_FILE" 2>/dev/null | grep -q "data\|binary"; then
         log_info "Converting binary plan to JSON"
         if ! terraform show -json "$PLAN_FILE" > "$TEMP_JSON" 2>/dev/null; then
             log_error "Failed to read plan file (may not be a valid Terraform plan)"
@@ -83,7 +83,10 @@ if [ -f "$PLAN_INPUT" ]; then
     fi
 elif [ -d "$PLAN_INPUT" ]; then
     # Input is a directory, run terraform plan to generate a plan file
-    cd "$PLAN_INPUT"
+    cd "$PLAN_INPUT" || {
+        log_error "Failed to change directory to: $PLAN_INPUT"
+        exit 1
+    }
     log_info "Generating plan in directory: $PLAN_INPUT"
 
     # Check if terraform is initialized
@@ -94,7 +97,7 @@ elif [ -d "$PLAN_INPUT" ]; then
 
     # Create a temporary plan file
     TEMP_PLAN=$(mktemp)
-    if ! terraform plan -out="$TEMP_PLAN" -detailed-exitcode 2>/dev/null; then
+    if ! terraform plan -out="$TEMP_PLAN" -detailed-exitcode -input=false 2>/dev/null; then
         # If plan has changes to apply, that's OK for our purposes
         log_info "Terraform plan generated with changes (this is normal)"
     fi
@@ -102,11 +105,11 @@ elif [ -d "$PLAN_INPUT" ]; then
     # Convert plan to JSON
     if ! terraform show -json "$TEMP_PLAN" > "$TEMP_JSON" 2>/dev/null; then
         log_error "Failed to convert plan to JSON format"
-        rm -f "$TEMP_PLAN"
+        rm -f "$TEMP_PLAN" 2>/dev/null
         exit 1
     fi
 
-    rm -f "$TEMP_PLAN"
+    rm -f "$TEMP_PLAN" 2>/dev/null
 else
     log_error "Plan file or directory does not exist: $PLAN_INPUT"
     exit 1
@@ -180,24 +183,32 @@ fi
 check_s3_bucket_conflicts() {
     local conflict_count=0
 
-    # Get S3 buckets being created
-    local s3_buckets_to_create
-    s3_buckets_to_create=$(jq -r '.resource_changes[] | select(.change.actions[] == "create" and .type == "aws_s3_bucket") | .change.after.bucket' "$TEMP_JSON" 2>/dev/null || echo "")
+    # Get S3 buckets being created - use a safer approach to process one by one
+    local s3_buckets_json
+    s3_buckets_json=$(jq -r '.resource_changes[] | select(.change.actions[] == "create" and .type == "aws_s3_bucket") | .change.after.bucket' "$TEMP_JSON" 2>/dev/null || echo "")
 
-    if [ -n "$s3_buckets_to_create" ] && [ "$s3_buckets_to_create" != "null" ]; then
+    if [ -n "$s3_buckets_json" ] && [ "$s3_buckets_json" != "null" ]; then
         log_info "Checking S3 bucket name conflicts..."
 
+        # Process each bucket name individually to avoid issues with special characters
         while IFS= read -r bucket_name; do
+            # Validate bucket name format to prevent command injection
             if [ -n "$bucket_name" ] && [ "$bucket_name" != "null" ]; then
-                # Check if bucket name already exists (globally in AWS)
-                if aws s3api head-bucket --bucket "$bucket_name" 2>/dev/null; then
-                    log_error "S3 bucket name conflict: Bucket '$bucket_name' already exists globally"
-                    ((conflict_count++))
+                # Sanitize bucket name - basic validation for AWS S3 bucket naming
+                if [[ "$bucket_name" =~ ^[a-z0-9][a-z0-9.-]*[a-z0-9]$ ]] && [ ${#bucket_name} -ge 3 ] && [ ${#bucket_name} -le 63 ]; then
+                    # Check if bucket name already exists (globally in AWS)
+                    if aws s3api head-bucket --bucket "$bucket_name" 2>/dev/null; then
+                        log_error "S3 bucket name conflict: Bucket '$bucket_name' already exists globally"
+                        ((conflict_count++))
+                    else
+                        log_info "S3 bucket '$bucket_name' is available"
+                    fi
                 else
-                    log_info "S3 bucket '$bucket_name' is available"
+                    log_error "Invalid S3 bucket name format: $bucket_name"
+                    ((conflict_count++))
                 fi
             fi
-        done <<< "$s3_buckets_to_create"
+        done <<< "$s3_buckets_json"
     else
         log_info "No S3 buckets being created in this plan"
     fi
