@@ -16,7 +16,11 @@
 # Generate ECR S3 bucket ARN for the current region
 locals {
   # ECR uses region-specific S3 buckets for storing image layers
-  # Format: prod-{region}-starport-layer-bucket
+  # The naming pattern `prod-{region}-starport-layer-bucket` is observed in practice,
+  # but is not officially documented by AWS and may change in the future.
+  # Please verify this pattern for your region and refer to the AWS ECR documentation
+  # for updates: https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html
+  # If AWS changes their infrastructure, this pattern may need to be updated.
   ecr_s3_bucket_name = "prod-${data.aws_region.current.region}-starport-layer-bucket"
 
   # Create both bucket and bucket object ARNs for the ECR bucket
@@ -38,17 +42,16 @@ locals {
       {
         Effect = "Allow"
         Principal = {
-          # Allow any AWS principal in the VPC to access the allowed buckets
-          # This is required for EKS nodes and other AWS services
+          # NOTE: Allows any AWS principal to access the allowed buckets via the VPC endpoint.
+          # This is required for EKS nodes and other AWS services to function.
+          # This policy only restricts which S3 buckets can be accessed, NOT which IAM roles/users can access them.
+          # Actual authentication and principal-level restrictions are enforced via IAM policies on roles/users.
           AWS = "*"
         }
         Action = [
-          # Required actions for ECR to pull image layers
+          # Required actions for ECR to pull image layers (least privilege)
           "s3:GetObject",
-          "s3:ListBucket",
-          # Additional actions that might be needed by other services
-          "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:ListBucket"
         ]
         Resource = local.all_allowed_s3_bucket_arns
       },
@@ -57,15 +60,9 @@ locals {
         Principal = {
           AWS = "*"
         }
-        Action   = "*"
-        Resource = "*"
-        Condition = {
-          # Explicitly deny access to any S3 buckets not in the allowed list
-          # This ensures true least privilege access
-          StringNotLike = {
-            "s3:arn" = local.all_allowed_s3_bucket_arns
-          }
-        }
+        Action      = "s3:*"
+        Resource    = "arn:aws:s3:::*"
+        NotResource = local.all_allowed_s3_bucket_arns
       }
     ]
   }) : null

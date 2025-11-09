@@ -27,8 +27,11 @@ terraform apply -target=module.networking
 Test ECR image pulls from a pod:
 
 ```bash
-kubectl run test-pod --image=public.ecr.aws/amazonlinux/amazonlinux:latest --rm -i --restart=Never -- date
+# Replace <account-id>, <region>, and <image-name> with your own values
+kubectl run test-pod --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest --rm -i --restart=Never -- date
 ```
+
+Note: Public ECR images don't test the S3 VPC endpoint policy. Use a private ECR image from your account to properly test the policy.
 
 ### 2. Validate S3 Access
 
@@ -63,10 +66,17 @@ aws s3 mb s3://ml-platform-test-bucket-$(date +%s)
 2. Add bucket to the networking configuration:
 
 ```hcl
+# Replace <timestamp> with the actual value used when creating the bucket
 s3_endpoint_allow_additional_buckets = [
-  "arn:aws:s3:::ml-platform-test-bucket-*",
-  "arn:aws:s3:::ml-platform-test-bucket-*/*"
+  "arn:aws:s3:::ml-platform-test-bucket-<timestamp>",
+  "arn:aws:s3:::ml-platform-test-bucket-<timestamp>/*"
 ]
+# If you need to allow dynamic bucket names, use an account-level constraint in the policy, e.g.:
+# condition {
+#   test     = "StringEquals"
+#   variable = "s3:ResourceAccount"
+#   values   = ["<your-account-id>"]
+# }
 ```
 
 3. Apply changes and verify access
