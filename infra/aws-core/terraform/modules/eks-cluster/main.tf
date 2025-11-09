@@ -52,7 +52,7 @@ module "eks" {
   # - IRSA disabled: return var.cluster_addons untouched so teams can omit the driver entirely or manage it themselves.
   addons = merge(
     var.cluster_addons,
-    var.enable_irsa ? {
+    var.enable_irsa && contains(keys(var.cluster_addons), "aws-ebs-csi-driver") ? {
       aws-ebs-csi-driver = merge(
         lookup(var.cluster_addons, "aws-ebs-csi-driver", local.default_aws_ebs_csi_addon),
         {
