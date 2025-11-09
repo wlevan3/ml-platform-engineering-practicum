@@ -70,16 +70,17 @@ if [ -f "$PLAN_INPUT" ]; then
     PLAN_FILE="$PLAN_INPUT"
     log_info "Using provided plan file: $PLAN_FILE"
 
-    # Convert plan to JSON if it's a binary plan file
-    if file "$PLAN_FILE" 2>/dev/null | grep -q "data\|binary"; then
+    # Try to read as JSON first; if that fails, assume it's a binary plan and convert via terraform show
+    if jq empty "$PLAN_FILE" 2>/dev/null; then
+        # File is already valid JSON
+        cp "$PLAN_FILE" "$TEMP_JSON"
+    else
+        # Assume binary plan format; convert via terraform show
         log_info "Converting binary plan to JSON"
         if ! terraform show -json "$PLAN_FILE" > "$TEMP_JSON" 2>/dev/null; then
             log_error "Failed to read plan file (may not be a valid Terraform plan)"
             exit 1
         fi
-    else
-        # Assume it's already JSON
-        cp "$PLAN_FILE" "$TEMP_JSON"
     fi
 elif [ -d "$PLAN_INPUT" ]; then
     # Input is a directory, run terraform plan to generate a plan file
@@ -97,8 +98,18 @@ elif [ -d "$PLAN_INPUT" ]; then
 
     # Create a temporary plan file
     TEMP_PLAN=$(mktemp)
+    PLAN_EXIT_CODE=0
     if ! terraform plan -out="$TEMP_PLAN" -detailed-exitcode -input=false 2>/dev/null; then
-        # If plan has changes to apply, that's OK for our purposes
+        PLAN_EXIT_CODE=$?
+    fi
+
+    if [ "$PLAN_EXIT_CODE" -eq 1 ]; then
+        log_error "Terraform plan failed with an error"
+        rm -f "$TEMP_PLAN" 2>/dev/null
+        exit 1
+    fi
+
+    if [ "$PLAN_EXIT_CODE" -eq 2 ]; then
         log_info "Terraform plan generated with changes (this is normal)"
     fi
 
@@ -183,11 +194,11 @@ fi
 check_s3_bucket_conflicts() {
     local conflict_count=0
 
-    # Get S3 buckets being created - use a safer approach to process one by one
-    local s3_buckets_json
-    s3_buckets_json=$(jq -r '.resource_changes[] | select(.change.actions[] == "create" and .type == "aws_s3_bucket") | .change.after.bucket' "$TEMP_JSON" 2>/dev/null || echo "")
+    # Get S3 buckets being created
+    local s3_buckets_to_create
+    s3_buckets_to_create=$(jq -r '.resource_changes[] | select(.change.actions[] == "create" and .type == "aws_s3_bucket") | .change.after.bucket' "$TEMP_JSON" 2>/dev/null || echo "")
 
-    if [ -n "$s3_buckets_json" ] && [ "$s3_buckets_json" != "null" ]; then
+    if [ -n "$s3_buckets_to_create" ] && [ "$s3_buckets_to_create" != "null" ]; then
         log_info "Checking S3 bucket name conflicts..."
 
         # Process each bucket name individually to avoid issues with special characters
@@ -208,7 +219,7 @@ check_s3_bucket_conflicts() {
                     ((conflict_count++))
                 fi
             fi
-        done <<< "$s3_buckets_json"
+        done <<< "$s3_buckets_to_create"
     else
         log_info "No S3 buckets being created in this plan"
     fi

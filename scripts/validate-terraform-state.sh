@@ -185,13 +185,23 @@ if [ "$OPERATION" = "plan" ]; then
     echo ""
     log_info "Running pre-flight conflict detection..."
 
+    # Get script directory relative to this script for correct path resolution
+    SCRIPT_DIR="$(dirname "$0")"
+    # If we're in infra/aws-core/terraform/environments/dev, we need to go up a few levels
+    if [[ "$SCRIPT_DIR" == *"infra/aws-core/terraform/environments"* ]]; then
+        CONFLICT_SCRIPT_PATH="../../../scripts/check-resource-conflicts.sh"
+    else
+        # If we're in the scripts directory, use relative path
+        CONFLICT_SCRIPT_PATH="./check-resource-conflicts.sh"
+    fi
+
     # Create a temporary plan to check for conflicts
     TEMP_PLAN=$(mktemp)
     # Capture the exit code from terraform plan
     if terraform plan -detailed-exitcode -out="$TEMP_PLAN" 2>/dev/null; then
         # Exit code 0 means no changes, but plan succeeded - run conflict check
         # Run the conflict detection script on the plan
-        if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
+        if "$CONFLICT_SCRIPT_PATH" "$TEMP_PLAN"; then
             log_info "Pre-flight conflict detection passed"
         else
             log_error "Pre-flight conflict detection failed"
@@ -206,7 +216,7 @@ if [ "$OPERATION" = "plan" ]; then
         # 1 - General error
         # 2 - Succeeded with changes (this is OK for our purposes)
         if [ $TF_EXIT_CODE -eq 2 ]; then  # Terraform exit code 2 indicates changes exist
-            if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
+            if "$CONFLICT_SCRIPT_PATH" "$TEMP_PLAN"; then
                 log_info "Pre-flight conflict detection passed"
             else
                 log_error "Pre-flight conflict detection failed"
