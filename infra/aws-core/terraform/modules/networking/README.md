@@ -92,6 +92,40 @@ module "networking" {
 }
 ```
 
+### S3 Endpoint with Least-Privilege Policy (Recommended)
+
+For production environments, restrict S3 VPC endpoint access to only ECR buckets:
+
+```hcl
+module "networking" {
+  source = "../../modules/networking"
+
+  vpc_name = "secure-eks-vpc"
+  vpc_cidr = "10.0.0.0/16"
+
+  azs                  = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  private_subnet_cidrs = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnet_cidrs  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+
+  cluster_name = "secure-eks-cluster"
+
+  # Enable least-privilege S3 endpoint policy (default: true)
+  s3_endpoint_enable_policy = true
+
+  # Allow access to additional S3 buckets if needed
+  # Example: ALB access logs bucket
+  s3_endpoint_allow_additional_buckets = [
+    "arn:aws:s3:::my-alb-access-logs-bucket",
+    "arn:aws:s3:::my-alb-access-logs-bucket/*"
+  ]
+
+  tags = {
+    Environment = "prod"
+    Security    = "least-privilege"
+  }
+}
+```
+
 ## Requirements
 
 | Name | Version |
@@ -126,6 +160,8 @@ module "networking" {
 | `single_nat_gateway` | Use single NAT gateway (cost optimization) | `bool` | `true` |
 | `enable_dns_hostnames` | Enable DNS hostnames in VPC | `bool` | `true` |
 | `enable_dns_support` | Enable DNS support in VPC | `bool` | `true` |
+| `s3_endpoint_enable_policy` | Enable least-privilege policy for S3 VPC endpoint. When false, allows full access to all S3 buckets. | `bool` | `true` |
+| `s3_endpoint_allow_additional_buckets` | List of additional S3 bucket ARNs to allow access through the S3 VPC endpoint. Used for services like ALB logging, etc. | `list(string)` | `[]` |
 | `additional_public_subnet_tags` | Additional tags for public subnets | `map(string)` | `{}` |
 | `additional_private_subnet_tags` | Additional tags for private subnets | `map(string)` | `{}` |
 | `tags` | Tags to apply to all resources | `map(string)` | `{}` |
@@ -210,6 +246,70 @@ VPC (10.0.0.0/16)
 - 1-N NAT Gateways (depending on `single_nat_gateway`)
 - 1-N Elastic IPs (one per NAT gateway)
 - Route tables and associations
+- 6 VPC Endpoints (ECR API, ECR DKR, S3, STS, EC2, Autoscaling)
+
+## S3 VPC Endpoint Security
+
+### Least-Privilege Access (Enabled by Default)
+
+The module implements a least-privilege policy for the S3 VPC endpoint that:
+
+1. **Restricts access to ECR buckets only**
+   - Allows access to `prod-{region}-starport-layer-bucket` for ECR image layers
+   - Follows AWS Well-Architected security best practices
+
+2. **Configurable additional bucket access**
+   - Use `s3_endpoint_allow_additional_buckets` to allow access to other buckets
+   - Common use cases: ALB access logs, CloudTrail logs, custom application buckets
+
+3. **Security benefits**
+   - Reduces blast radius if nodes are compromised
+   - Prevents data exfiltration to unauthorized S3 buckets
+   - Implements defense-in-depth strategy
+
+### Disabling the Policy
+
+For development or testing environments, you can disable the policy:
+
+```hcl
+module "networking" {
+  source = "../../modules/networking"
+
+  # ... other configuration ...
+
+  # Disable S3 endpoint policy - allows full access to all S3 buckets
+  s3_endpoint_enable_policy = false
+}
+```
+
+**Warning**: Disabling the policy allows full access to all S3 buckets in the AWS account. Use only for non-production environments.
+
+### Troubleshooting
+
+If ECR image pulls fail after enabling the policy:
+
+1. Verify the ECR S3 bucket name for your region:
+
+   ```bash
+   aws ecr describe-repositories --region us-west-2
+   ```
+
+2. Check VPC endpoint logs in CloudTrail for denied access
+
+3. Temporarily disable the policy for testing:
+
+   ```hcl
+   s3_endpoint_enable_policy = false
+   ```
+
+4. If you need access to additional buckets, add them to:
+
+   ```hcl
+   s3_endpoint_allow_additional_buckets = [
+     "arn:aws:s3:::your-bucket-name",
+     "arn:aws:s3:::your-bucket-name/*"
+   ]
+   ```
 
 ## Module Dependencies
 
@@ -269,6 +369,8 @@ This module is part of the ml-platform-engineering-practicum project (learning p
 | <a name="input_flow_log_retention_in_days"></a> [flow\_log\_retention\_in\_days](#input\_flow\_log\_retention\_in\_days) | CloudWatch Logs retention period for VPC flow logs (90 days meets PCI-DSS requirements) | `number` | `90` | no |
 | <a name="input_private_subnet_cidrs"></a> [private\_subnet\_cidrs](#input\_private\_subnet\_cidrs) | List of CIDR blocks for private subnets | `list(string)` | n/a | yes |
 | <a name="input_public_subnet_cidrs"></a> [public\_subnet\_cidrs](#input\_public\_subnet\_cidrs) | List of CIDR blocks for public subnets | `list(string)` | n/a | yes |
+| <a name="input_s3_endpoint_allow_additional_buckets"></a> [s3\_endpoint\_allow\_additional\_buckets](#input\_s3\_endpoint\_allow\_additional\_buckets) | List of additional S3 bucket ARNs to allow access through the S3 VPC endpoint. Used for services like ALB logging, etc. | `list(string)` | `[]` | no |
+| <a name="input_s3_endpoint_enable_policy"></a> [s3\_endpoint\_enable\_policy](#input\_s3\_endpoint\_enable\_policy) | Enable least-privilege policy for S3 VPC endpoint. When false, allows full access to all S3 buckets. | `bool` | `true` | no |
 | <a name="input_single_nat_gateway"></a> [single\_nat\_gateway](#input\_single\_nat\_gateway) | Use a single NAT gateway for all private subnets (cost optimization) | `bool` | `true` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources | `map(string)` | `{}` | no |
 | <a name="input_vpc_cidr"></a> [vpc\_cidr](#input\_vpc\_cidr) | CIDR block for the VPC | `string` | n/a | yes |
@@ -279,11 +381,13 @@ This module is part of the ml-platform-engineering-practicum project (learning p
 | Name | Description |
 |------|-------------|
 | <a name="output_azs"></a> [azs](#output\_azs) | Availability zones used |
+| <a name="output_ecr_s3_bucket_name"></a> [ecr\_s3\_bucket\_name](#output\_ecr\_s3\_bucket\_name) | The ECR S3 bucket name for the current region |
 | <a name="output_nat_gateway_ids"></a> [nat\_gateway\_ids](#output\_nat\_gateway\_ids) | IDs of the NAT gateways |
 | <a name="output_private_subnet_cidrs"></a> [private\_subnet\_cidrs](#output\_private\_subnet\_cidrs) | CIDR blocks of the private subnets |
 | <a name="output_private_subnet_ids"></a> [private\_subnet\_ids](#output\_private\_subnet\_ids) | IDs of the private subnets |
 | <a name="output_public_subnet_cidrs"></a> [public\_subnet\_cidrs](#output\_public\_subnet\_cidrs) | CIDR blocks of the public subnets |
 | <a name="output_public_subnet_ids"></a> [public\_subnet\_ids](#output\_public\_subnet\_ids) | IDs of the public subnets |
+| <a name="output_s3_endpoint_policy"></a> [s3\_endpoint\_policy](#output\_s3\_endpoint\_policy) | The S3 VPC endpoint policy (if enabled) |
 | <a name="output_vpc_cidr"></a> [vpc\_cidr](#output\_vpc\_cidr) | CIDR block of the VPC |
 | <a name="output_vpc_id"></a> [vpc\_id](#output\_vpc\_id) | ID of the VPC |
 | <a name="output_vpc_name"></a> [vpc\_name](#output\_vpc\_name) | Name of the VPC |

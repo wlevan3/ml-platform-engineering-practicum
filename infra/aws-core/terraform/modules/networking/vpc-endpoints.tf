@@ -89,6 +89,10 @@ resource "aws_vpc_endpoint" "s3" {
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
 
+  # Apply least-privilege policy when enabled
+  # When disabled (s3_endpoint_enable_policy = false), allows full access to all S3 buckets
+  policy = local.s3_endpoint_policy
+
   # Explicit dependency: ensure VPC exists before endpoint creation
   # Gateway endpoints don't require security groups
   depends_on = [module.vpc]
