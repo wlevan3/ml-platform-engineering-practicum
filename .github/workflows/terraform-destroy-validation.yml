@@ -47,10 +47,33 @@ env:
   TEST_CLUSTER_NAME: ml-platform-destroy-test-${{ github.run_id }}
 
 jobs:
+  validate-inputs:
+    runs-on: ubuntu-latest
+    outputs:
+      validated-cluster-name: ${{ steps.validate.outputs.cluster_name }}
+    steps:
+      - name: Validate TEST_CLUSTER_NAME format
+        id: validate
+        run: |
+          # Validate that TEST_CLUSTER_NAME has expected format to prevent injection
+          if [[ ! "$TEST_CLUSTER_NAME" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "ERROR: Invalid TEST_CLUSTER_NAME format: $TEST_CLUSTER_NAME"
+            exit 1
+          fi
+
+          echo "cluster_name=$TEST_CLUSTER_NAME" >> "$GITHUB_OUTPUT"
+          echo "Validated cluster name: $TEST_CLUSTER_NAME"
+        env:
+          TEST_CLUSTER_NAME: ${{ env.TEST_CLUSTER_NAME }}
+
   destroy-validation:
     name: Test Destroy & Validate Cleanup
     runs-on: ubuntu-latest
+    needs: validate-inputs
     timeout-minutes: 60
+
+    env:
+      TEST_CLUSTER_NAME: ${{ needs.validate-inputs.outputs.validated-cluster-name }}
 
     defaults:
       run:
@@ -94,10 +117,10 @@ jobs:
 
           terraform apply \
             -auto-approve \
-            -var="cluster_name=$TEST_CLUSTER_NAME" \
+            -var="cluster_name=${{ env.TEST_CLUSTER_NAME }}" \
             -no-color
 
-          echo "✅ Test cluster created: $TEST_CLUSTER_NAME"
+          echo "✅ Test cluster created: ${{ env.TEST_CLUSTER_NAME }}"
 
       - name: Phase 2 - Record Pre-Destroy State
         id: pre_destroy
@@ -106,7 +129,7 @@ jobs:
 
           # EKS Cluster
           EKS_CLUSTER=$(aws eks describe-cluster \
-            --name "$TEST_CLUSTER_NAME" \
+            --name "${{ env.TEST_CLUSTER_NAME }}" \
             --region "$AWS_REGION" \
             --query 'cluster.name' \
             --output text 2>/dev/null || echo "NOT_FOUND")
@@ -114,7 +137,7 @@ jobs:
           # NAT Gateways
           NAT_GATEWAYS=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'NatGateways[].NatGatewayId' \
             --output text)
           NAT_COUNT=$(echo "$NAT_GATEWAYS" | awk 'NF {count++} END {print count+0}')
@@ -122,7 +145,7 @@ jobs:
           # VPC Endpoints
           VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'VpcEndpoints[].VpcEndpointId' \
             --output text)
           VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | awk 'NF {count++} END {print count+0}')
@@ -130,7 +153,7 @@ jobs:
           # Elastic IPs
           EIPS=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'Addresses[].AllocationId' \
             --output text)
           EIP_COUNT=$(echo "$EIPS" | awk 'NF {count++} END {print count+0}')
@@ -138,7 +161,7 @@ jobs:
           # Security Groups
           SECURITY_GROUPS=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'SecurityGroups[].GroupId' \
             --output text)
           SG_COUNT=$(echo "$SECURITY_GROUPS" | awk 'NF {count++} END {print count+0}')
@@ -166,12 +189,12 @@ jobs:
 
           # Verify cluster has required tags
           CLUSTER_TAG=$(aws eks describe-cluster \
-            --name "$TEST_CLUSTER_NAME" \
+            --name "${{ env.TEST_CLUSTER_NAME }}" \
             --region "$AWS_REGION" \
             --query 'cluster.tags.Cluster' \
             --output text 2>/dev/null || echo "MISSING")
 
-          if [ "$CLUSTER_TAG" != "$TEST_CLUSTER_NAME" ]; then
+          if [ "$CLUSTER_TAG" != "${{ env.TEST_CLUSTER_NAME }}" ]; then
             echo "✗ ERROR: Cluster missing required tag"
             exit 1
           fi
@@ -186,7 +209,7 @@ jobs:
 
           terraform destroy \
             -auto-approve \
-            -var="cluster_name=$TEST_CLUSTER_NAME" \
+            -var="cluster_name=${{ env.TEST_CLUSTER_NAME }}" \
             -no-color
           destroy_exit_code=$?
           echo "destroy_exit_code=$destroy_exit_code" >> "$GITHUB_OUTPUT"
@@ -204,7 +227,7 @@ jobs:
 
           # EKS Cluster
           EKS_CLUSTER=$(aws eks describe-cluster \
-            --name "$TEST_CLUSTER_NAME" \
+            --name "${{ env.TEST_CLUSTER_NAME }}" \
             --region "$AWS_REGION" \
             --query 'cluster.name' \
             --output text 2>/dev/null || echo "DELETED")
@@ -212,28 +235,28 @@ jobs:
           # NAT Gateways
           NAT_COUNT=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'length(NatGateways)' \
             --output text)
 
           # VPC Endpoints
           VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'length(VpcEndpoints)' \
             --output text)
 
           # Elastic IPs
           EIP_COUNT=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'length(Addresses)' \
             --output text)
 
           # Security Groups
           SG_COUNT=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
+            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --query 'length(SecurityGroups)' \
             --output text)
 
@@ -272,7 +295,7 @@ jobs:
               "ec2:nat-gateway" \
               "ec2:vpc-endpoint" \
               "ec2:security-group" \
-            --tag-filter "Key=Cluster,Values=$TEST_CLUSTER_NAME" \
+            --tag-filter "Key=Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
             --region "$AWS_REGION" \
             --query 'ResourceTagMappingList' \
             --output json)
@@ -325,10 +348,10 @@ jobs:
             echo "## Test Details"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
-            echo "| Region | \`$AWS_REGION\` |"
-            echo "| Terraform Version | \`1.13.5\` |"
-            echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
+            echo "| Test Cluster Name | 	este{ env.TEST_CLUSTER_NAME }} |"
+            echo "| Region | 	este$AWS_REGION |"
+            echo "| Terraform Version | 	este1.13.5 |"
+            echo "| Run ID | [	este{github.run_id}}\](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
             echo "## Pre-Destroy State"
             echo "| Resource Type | Count |"
@@ -342,10 +365,14 @@ jobs:
             echo "## Post-Destroy State"
             echo "| Resource Type | Count | Status |"
             echo "|---|---|---|"
-            echo "| NAT Gateways | $NAT_COUNT | $([[ \"$NAT_COUNT\" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
-            echo "| VPC Endpoints | $VPCE_COUNT | $([[ \"$VPCE_COUNT\" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
-            echo "| Elastic IPs | $EIP_COUNT | $([[ \"$EIP_COUNT\" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
-            echo "| Security Groups | $SG_COUNT | $([[ \"$SG_COUNT\" -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
+            nat_status=$([[ "$NAT_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
+            vpce_status=$([[ "$VPCE_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
+            eip_status=$([[ "$EIP_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
+            sg_status=$([[ "$SG_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
+            echo "| NAT Gateways | $NAT_COUNT | $nat_status |"
+            echo "| VPC Endpoints | $VPCE_COUNT | $vpce_status |"
+            echo "| Elastic IPs | $EIP_COUNT | $eip_status |"
+            echo "| Security Groups | $SG_COUNT | $sg_status |"
             echo ""
             echo "## Validation Results"
             if [ "$PHASE6_OUTCOME" == "success" ]; then
