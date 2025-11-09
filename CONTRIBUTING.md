@@ -504,6 +504,9 @@ terraform fmt -check
 terraform validate
 terraform plan
 
+# Pre-flight resource conflict detection
+./scripts/check-resource-conflicts.sh .
+
 # Python
 pytest tests/
 # Note: black, ruff, and mypy run automatically via pre-commit hooks

@@ -194,6 +194,12 @@ Each top-level area owns a distinct concern:
 - **kubeval** - Kubernetes manifest validation
 - **Black & Ruff** - Python formatting and linting
 
+### Infrastructure Validation
+
+- **Pre-flight Resource Conflict Detection** - Validates potential conflicts before Terraform apply
+- **Terraform State Validation** - Ensures state consistency
+- **Resource Tagging Validation** - Verifies proper resource tagging
+
 ## 📖 Development Workflow
 
 **Quick:** Create issue → Branch → Develop → Test → PR → CI/CD → Merge
