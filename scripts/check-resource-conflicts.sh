@@ -235,9 +235,17 @@ check_iam_conflicts() {
     if [ -n "$iam_policies_to_create" ] && [ "$iam_policies_to_create" != "null" ]; then
         log_info "Checking IAM policy name conflicts..."
 
+        # Get AWS account ID once to avoid repeated calls
+        local aws_account_id
+        aws_account_id=$(aws sts get-caller-identity --query Account --output text 2>/dev/null) || {
+            log_error "Could not retrieve AWS account ID"
+            return 1  # Return error, don't increment conflict count here
+        }
+
         while IFS= read -r policy_name; do
             if [ -n "$policy_name" ] && [ "$policy_name" != "null" ]; then
-                if aws iam get-policy --policy-arn "arn:aws:iam::$(aws sts get-caller-identity --query Account --output text):policy/$policy_name" 2>/dev/null; then
+                local policy_arn="arn:aws:iam::$aws_account_id:policy/$policy_name"
+                if aws iam get-policy --policy-arn "$policy_arn" 2>/dev/null; then
                     log_error "IAM policy conflict: Policy '$policy_name' already exists"
                     ((conflict_count++))
                 else
@@ -364,6 +372,7 @@ check_general_conflicts() {
     fi
 
     # Check for required tags compliance
+    # This check is informational only and doesn't affect conflict count
     local all_resources_with_tags
     all_resources_with_tags=$(jq -r '.resource_changes[] | select(.change.actions[] == "create" or .change.actions[] == "update") | .type + "|" + (.change.after.tags // {}) | . as $resource | to_entries[] | "\($resource)|\(.key)=\(.value)"' "$TEMP_JSON" 2>/dev/null || echo "")
 
@@ -372,17 +381,22 @@ check_general_conflicts() {
     if [ -n "$all_resources_with_tags" ] && [ "$all_resources_with_tags" != "null" ]; then
         log_info "Checking required tags compliance..."
 
-        # Check that resources have common required tags (example: 'Environment', 'Owner')
-        # This is a simplified version - in practice you might have different requirements per resource type
-        while IFS='|' read -r resource_type resource_tags; do
-            if [ "$resource_type" != "null" ]; then
+        # Extract unique resource types to check for missing tags
+        local unique_resource_types
+        unique_resource_types=$(echo "$all_resources_with_tags" | cut -d'|' -f1 | sort -u)
+
+        while IFS= read -r resource_type; do
+            if [ "$resource_type" != "null" ] && [ -n "$resource_type" ]; then
                 # For this example, we'll check if there are any tags at all
                 # In a real implementation, you'd check for specific required tags
-                if [ -z "$resource_tags" ] || [ "$resource_tags" = "{}" ]; then
+                local resource_tags_for_type
+                resource_tags_for_type=$(echo "$all_resources_with_tags" | grep "^$resource_type|" | head -n 1 | cut -d'|' -f2)
+
+                if [ -z "$resource_tags_for_type" ] || [ "$resource_tags_for_type" = "{}" ]; then
                     log_warn "Resource $resource_type has no tags defined (not necessarily an error, depends on organization policy)"
                 fi
             fi
-        done <<< "$(echo "$all_resources_with_tags" | cut -d'|' -f1 | sort -u)"
+        done <<< "$unique_resource_types"
     fi
 
     echo "$conflict_count"

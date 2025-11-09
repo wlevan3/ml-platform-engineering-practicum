@@ -158,9 +158,24 @@ fi
 
 chmod +x scripts/check-resource-conflicts.sh
 
+# Check if the script exists
+if [ ! -f "scripts/check-resource-conflicts.sh" ]; then
+    log_error "scripts/check-resource-conflicts.sh not found"
+    exit 1
+fi
+
+# Make sure the script is executable
+chmod +x scripts/check-resource-conflicts.sh
+
 # Create a temporary directory for test files
-TEST_DIR=$(mktemp -d)
+TEST_DIR=$(mktemp -d) || {
+    log_error "Failed to create temporary directory"
+    exit 1
+}
 log_info "Created test directory: $TEST_DIR"
+
+# Ensure cleanup happens on exit
+trap 'rm -rf "$TEST_DIR"' EXIT
 
 # Test 1: Empty plan should pass
 log_header "Test 1: Empty plan (should pass)"
