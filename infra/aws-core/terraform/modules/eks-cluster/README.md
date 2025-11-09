@@ -185,7 +185,7 @@ module "eks_cluster" {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | cluster_name | Name of the EKS cluster | `string` | n/a | yes |
-| cluster_version | Kubernetes version for the cluster | `string` | `"1.28"` | no |
+| cluster_version | Kubernetes version for the cluster | `string` | `"1.34"` | no |
 | vpc_id | VPC ID where the cluster will be deployed | `string` | n/a | yes |
 | subnet_ids | List of subnet IDs for worker nodes | `list(string)` | n/a | yes |
 | control_plane_subnet_ids | List of subnet IDs for control plane | `list(string)` | `[]` | no |
@@ -200,7 +200,7 @@ module "eks_cluster" {
 | node_desired_size | Desired number of worker nodes | `number` | `2` | no |
 | node_min_size | Minimum number of worker nodes | `number` | `1` | no |
 | node_max_size | Maximum number of worker nodes | `number` | `4` | no |
-| node_disk_size | Disk size in GB for worker nodes | `number` | `50` | no |
+| node_disk_size | Disk size in GB for worker nodes | `number` | `30` | no |
 | node_ami_type | AMI type for worker nodes | `string` | `"AL2_x86_64"` | no |
 | enable_ssm_access | Enable AWS Systems Manager for node debugging | `bool` | `true` | no |
 | node_iam_role_additional_policies | Additional IAM policies for nodes | `list(string)` | `[]` | no |

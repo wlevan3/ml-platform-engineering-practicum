@@ -4,7 +4,16 @@
 # Shared locals
 locals {
   eks_oidc_provider_components = split("oidc-provider/", module.eks.oidc_provider_arn)
-  eks_oidc_provider_path       = length(local.eks_oidc_provider_components) > 1 ? local.eks_oidc_provider_components[1] : module.eks.oidc_provider_arn
+  eks_oidc_provider_path = try(
+    local.eks_oidc_provider_components[1],
+    tonumber(
+      format(
+        "Invalid OIDC provider ARN for cluster %s: %s (expected to contain 'oidc-provider/').",
+        var.cluster_name,
+        module.eks.oidc_provider_arn
+      )
+    )
+  )
 }
 
 # IAM role for node groups

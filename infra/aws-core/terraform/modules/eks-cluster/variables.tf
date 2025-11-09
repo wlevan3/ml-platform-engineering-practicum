@@ -177,8 +177,9 @@ variable "node_max_size" {
   }
 }
 
-// Default reduced from 50GB to 30GB to better match our dev/test node image usage (~12GB avg) and cut EBS cost by ~40%.
-// Override this when workloads routinely expand ephemeral storage beyond 30GB.
+// Default reduced from 50GB to 30GB based on observed node image usage (~12GB avg) which lets us cut idle EBS cost by ~40% in dev/test clusters.
+// Override this in workloads that routinely expand ephemeral storage beyond 30GB so they retain the previous 50GB (or larger) footprint.
+// Documented in infra/aws-core/terraform/modules/eks-cluster/README.md under "Breaking Change: node_disk_size default reduced to 30".
 variable "node_disk_size" {
   description = "Disk size in GB for worker nodes"
   type        = number

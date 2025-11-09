@@ -193,9 +193,9 @@ jobs:
           if [ "$destroy_exit_code" -ne 0 ]; then
             echo "Terraform destroy failed with exit code $destroy_exit_code"
             exit "$destroy_exit_code"
+          else
+            echo "✅ Terraform destroy completed"
           fi
-
-          echo "✅ Terraform destroy completed"
 
       - name: Phase 5 - Record Post-Destroy State
         id: post_destroy
@@ -318,7 +318,7 @@ jobs:
           VPCE_COUNT=${{ steps.post_destroy.outputs.vpc_endpoint_count }}
           EIP_COUNT=${{ steps.post_destroy.outputs.eip_count }}
           SG_COUNT=${{ steps.post_destroy.outputs.security_group_count }}
-          # shellcheck disable=SC2309,SC2086
+          # shellcheck disable=SC2086
           {
             echo "# Destroy Validation Report"
             echo ""
