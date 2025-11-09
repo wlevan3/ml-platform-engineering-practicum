@@ -80,7 +80,7 @@ jobs:
       - name: Analyze Terraform Plan
         id: analyze
         run: |
-          ../../../../scripts/analyze-terraform-plan.sh plan.json
+          "${GITHUB_WORKSPACE}/scripts/analyze-terraform-plan.sh" plan.json
         continue-on-error: false
 
       - name: Upload plan artifacts
