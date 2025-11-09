@@ -17,7 +17,7 @@
 locals {
   # ECR uses region-specific S3 buckets for storing image layers
   # Format: prod-{region}-starport-layer-bucket
-  ecr_s3_bucket_name = "prod-${data.aws_region.current.name}-starport-layer-bucket"
+  ecr_s3_bucket_name = "prod-${data.aws_region.current.region}-starport-layer-bucket"
 
   # Create both bucket and bucket object ARNs for the ECR bucket
   ecr_s3_bucket_arns = [
