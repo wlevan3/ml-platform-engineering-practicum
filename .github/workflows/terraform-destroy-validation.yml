@@ -72,7 +72,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: 1.13.5
+          terraform_version: ${{ env.TERRAFORM_VERSION || '1.13.5' }}
 
       - name: Terraform Init
         run: terraform init
@@ -327,7 +327,7 @@ jobs:
             echo "|------|-------|"
             echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
             echo "| Region | \`$AWS_REGION\` |"
-            echo "| Terraform Version | \`1.13.5\` |"
+            echo "| Terraform Version | \`$(terraform version -json | jq -r '.terraform_version')\` |"
             echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
             echo "## Pre-Destroy State"

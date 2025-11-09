@@ -72,8 +72,11 @@ locals {
       Action      = "s3:*"
 =======
         Action      = "s3:*"
+<<<<<<< HEAD
 >>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
         Resource    = "arn:aws:s3:::*"
+=======
+>>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         NotResource = local.all_allowed_s3_bucket_arns
       }
     ]

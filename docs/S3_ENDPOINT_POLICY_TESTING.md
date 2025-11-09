@@ -48,17 +48,36 @@ Get the ECR S3 bucket name:
 terraform output -raw ecr_s3_bucket_name
 ```
 
-SSH to an EKS node and test access:
+Test S3 access from an EKS node using SSM:
 
 ```bash
-aws ssm start-session --target <node-instance-id>
+# Get instance ID of an EKS node
+INSTANCE_ID=$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}' && \
+  kubectl describe node $(kubectl get nodes -o jsonpath='{.items[0].metadata.name}') | \
+  grep "ProviderID:" | awk -F'/' '{print $NF}')
 
 # Test ECR bucket access (should succeed)
-aws s3 ls s3://prod-us-west-2-starport-layer-bucket/
+aws ssm send-command \
+  --instance-ids "${INSTANCE_ID}" \
+  --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["aws s3 ls s3://prod-us-west-2-starport-layer-bucket/"]' \
+  --output json
+
+# Get the command ID and check result
+COMMAND_ID=$(aws ssm send-command ... | jq -r '.Command.CommandId')
+aws ssm get-command-invocation \
+  --command-id "${COMMAND_ID}" \
+  --instance-id "${INSTANCE_ID}"
 
 # Test unauthorized bucket access (should fail)
-aws s3 ls s3://aws-public-blockchain-snapshots/
+aws ssm send-command \
+  --instance-ids "${INSTANCE_ID}" \
+  --document-name "AWS-RunShellScript" \
+  --parameters 'commands=["aws s3 ls s3://aws-public-blockchain-snapshots/"]' \
+  --output json
 ```
+
+Note: The `send-command` API is asynchronous. Use the provided `test-s3-endpoint-policy.sh` script which handles the proper polling for command completion.
 
 ### 3. Additional Bucket Testing
 

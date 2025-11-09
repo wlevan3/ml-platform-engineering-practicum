@@ -56,6 +56,12 @@ check_prerequisites() {
         exit 1
     fi
 
+    # Check if jq is installed
+    if ! command -v jq &> /dev/null; then
+        log_error "jq is not installed"
+        exit 1
+    fi
+
     # Check if we're in the right directory
     if [[ ! -d "${INFRA_DIR}" ]]; then
         log_error "Infrastructure directory not found: ${INFRA_DIR}"
@@ -297,7 +303,11 @@ test_ecr_pull() {
     log_info "Testing ECR image pull from pod..."
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Default ECR image (can be overridden via environment)
+=======
+    # Default ECR image (can be overridden via environment)
+>>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
     local ecr_image="${ECR_TEST_IMAGE:-<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest}"
 
     # Skip if placeholders not replaced
@@ -307,17 +317,23 @@ test_ecr_pull() {
         return 0
     fi
 
+<<<<<<< HEAD
     # Create a test pod using a private ECR image
     # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
     kubectl run s3-policy-test \
         --image="${ecr_image}" \
 =======
+=======
+>>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
     # Create a test pod using a private ECR image
-    # NOTE: Replace <account-id>, <region>, and <image-name> with your own values
-    # Public ECR images don't test the S3 VPC endpoint policy
+    # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
     kubectl run s3-policy-test \
+<<<<<<< HEAD
         --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest \
 >>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
+=======
+        --image="${ecr_image}" \
+>>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         --rm -i --restart=Never \
         --command -- bash -c "echo 'ECR image pull successful'" \
         > /dev/null 2>&1
@@ -331,10 +347,14 @@ test_ecr_pull() {
     else
         log_error "✗ ECR image pull test failed"
 <<<<<<< HEAD
+<<<<<<< HEAD
         log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
 =======
         log_warn "Note: Ensure you replace <account-id>, <region>, and <image-name> with your ECR details"
 >>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
+=======
+        log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
+>>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         return 1
     fi
 }

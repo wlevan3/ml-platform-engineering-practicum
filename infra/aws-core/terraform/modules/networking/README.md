@@ -291,7 +291,12 @@ If ECR image pulls fail after enabling the policy:
 1. Verify the ECR S3 bucket name for your region:
 
    ```bash
-   aws ecr describe-repositories --region us-west-2
+   # Get the ECR S3 bucket name from Terraform output
+   cd infra/aws-core/terraform/environments/dev
+   terraform output -raw ecr_s3_bucket_name
+
+   # Or check AWS ECR registry ID to infer the bucket pattern
+   aws ecr describe-registry --region us-west-2 --query 'registryId' --output text
    ```
 
 2. Check VPC endpoint logs in CloudTrail for denied access

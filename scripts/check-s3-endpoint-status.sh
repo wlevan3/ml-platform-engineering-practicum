@@ -101,8 +101,8 @@ check_endpoint_policy() {
         return 1
     fi
 
-    # Check if it contains ECR bucket references
-    if echo "${POLICY_JSON}" | jq -e '.Statement[] | select(.Resource[] | contains("starport-layer-bucket"))' > /dev/null; then
+    # Check if it contains ECR bucket references in either Resource or NotResource fields
+    if echo "${POLICY_JSON}" | jq -e '.Statement[] | select((.Resource? // [])[] | contains("starport-layer-bucket") or (.NotResource? // [])[] | contains("starport-layer-bucket"))' > /dev/null; then
         log_info "✓ Policy contains ECR bucket restrictions"
         return 0
     else
