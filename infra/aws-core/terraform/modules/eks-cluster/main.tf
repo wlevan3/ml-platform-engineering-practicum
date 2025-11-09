@@ -37,7 +37,17 @@ module "eks" {
   attach_encryption_policy = false
 
   # Cluster addons (automatically managed)
-  addons = var.cluster_addons
+  addons = merge(
+    var.cluster_addons,
+    var.enable_irsa ? {
+      aws-ebs-csi-driver = merge(
+        lookup(var.cluster_addons, "aws-ebs-csi-driver", {}),
+        {
+          service_account_role_arn = aws_iam_role.ebs_csi_driver[0].arn
+        }
+      )
+    } : {}
+  )
 
   # Managed node groups (defined in node-groups.tf)
   eks_managed_node_groups = local.eks_managed_node_groups

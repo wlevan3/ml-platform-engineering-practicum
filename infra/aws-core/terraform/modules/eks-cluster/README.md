@@ -322,12 +322,15 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 
 | Name | Type |
 |------|------|
+| [aws_iam_role.ebs_csi_driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
 | [aws_iam_role.node_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role) | resource |
+| [aws_iam_role_policy_attachment.ebs_csi_driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.node_group_additional](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.node_group_amazon_ec2_container_registry_read_only](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.node_group_amazon_eks_cni_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.node_group_amazon_eks_worker_node_policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
 | [aws_iam_role_policy_attachment.node_group_amazon_ssm_managed_instance_core](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_role_policy_attachment) | resource |
+| [aws_iam_policy_document.ebs_csi_driver_assume_role](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/iam_policy_document) | data source |
 
 ## Inputs
 
@@ -344,7 +347,7 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 | <a name="input_enable_ssm_access"></a> [enable\_ssm\_access](#input\_enable\_ssm\_access) | Enable AWS Systems Manager access for node debugging | `bool` | `true` | no |
 | <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_x86_64_STANDARD"` | no |
 | <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
-| <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `50` | no |
+| <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `30` | no |
 | <a name="input_node_iam_role_additional_policies"></a> [node\_iam\_role\_additional\_policies](#input\_node\_iam\_role\_additional\_policies) | List of additional IAM policy ARNs to attach to worker node IAM role (e.g., custom CloudWatch policies) | `list(string)` | `[]` | no |
 | <a name="input_node_instance_type"></a> [node\_instance\_type](#input\_node\_instance\_type) | Instance type for on-demand worker nodes (used when use\_spot\_instances=false) | `string` | `"t3.medium"` | no |
 | <a name="input_node_labels"></a> [node\_labels](#input\_node\_labels) | Kubernetes labels to apply to worker nodes (for pod scheduling) | `map(string)` | `{}` | no |

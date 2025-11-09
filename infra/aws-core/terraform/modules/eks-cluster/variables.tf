@@ -180,7 +180,7 @@ variable "node_max_size" {
 variable "node_disk_size" {
   description = "Disk size in GB for worker nodes"
   type        = number
-  default     = 50
+  default     = 30
 
   validation {
     condition     = var.node_disk_size >= 20 && var.node_disk_size <= 1000
