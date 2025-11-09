@@ -1,5 +1,7 @@
 # Cleanup Prevention Strategy: Automated Validation to Catch Orphaned Resources
 
+<!-- markdownlint-disable MD031 MD032 MD022 MD036 MD040 -->
+
 **Date**: 2025-11-08
 **Status**: Design Complete
 **Priority**: Critical (blocks deployment workflows)
