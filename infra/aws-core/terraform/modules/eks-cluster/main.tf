@@ -1,6 +1,15 @@
 # EKS Cluster Module
 # Creates an Amazon EKS cluster with managed node groups
 
+locals {
+  # Terraform requires lookup() defaults to match the declared map value type (object with optional fields), so
+  # maintain a typed stub config we can merge with the IRSA-generated role details when callers omit the addon.
+  default_aws_ebs_csi_addon = {
+    most_recent = true
+    version     = null
+  }
+}
+
 module "eks" {
   #tfsec:ignore:aws-eks-encrypt-secrets EKS uses AWS-owned KMS keys; org policy forbids CMKs.
   # Using v21.8.0 (commit 32599e5) - latest stable v21 with AWS provider v6.x support
@@ -47,7 +56,7 @@ module "eks" {
     var.cluster_addons,
     var.enable_irsa ? {
       aws-ebs-csi-driver = merge(
-        lookup(var.cluster_addons, "aws-ebs-csi-driver", {}),
+        lookup(var.cluster_addons, "aws-ebs-csi-driver", local.default_aws_ebs_csi_addon),
         {
           # aws_iam_role.ebs_csi_driver uses `count = var.enable_irsa ? 1 : 0`, so
           # the zero index is safe whenever IRSA is enabled.
