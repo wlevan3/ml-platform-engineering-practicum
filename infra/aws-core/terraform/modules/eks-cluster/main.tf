@@ -38,13 +38,21 @@ module "eks" {
   attach_encryption_policy = false
 
   # Cluster addons (automatically managed)
-  # Merges the caller's addon config with the IRSA-aware EBS CSI Driver rollout so the addon map stays user-controlled while we inject the service account role ARN only when enabled.
+  # Merge the caller's addon map with the IRSA-aware aws-ebs-csi-driver addon so
+  # users keep control over their chosen addons while we insert the IRSA role ARN
+  # only when it matters.
+  # When IRSA is enabled: merge aws-ebs-csi-driver from cluster_addons with the
+  # additional service_account_role_arn so user overrides are preserved while we
+  # still supply the IRSA service account role.
+  # When IRSA is disabled: leave cluster_addons untouched so no defaults sneak in.
   addons = merge(
     var.cluster_addons,
     var.enable_irsa && contains(keys(var.cluster_addons), "aws-ebs-csi-driver") ? {
       aws-ebs-csi-driver = merge(
         var.cluster_addons["aws-ebs-csi-driver"],
         {
+          # aws_iam_role.ebs_csi_driver uses `count = var.enable_irsa ? 1 : 0`, so
+          # the zero index is safe whenever IRSA is enabled.
           service_account_role_arn = aws_iam_role.ebs_csi_driver[0].arn
         }
       )

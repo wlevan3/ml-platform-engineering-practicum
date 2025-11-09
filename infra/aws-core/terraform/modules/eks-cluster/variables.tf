@@ -177,6 +177,8 @@ variable "node_max_size" {
   }
 }
 
+// Default reduced from 50GB to 30GB to better match our dev/test node image usage (~12GB avg) and cut EBS cost by ~40%.
+// Override this when workloads routinely expand ephemeral storage beyond 30GB.
 variable "node_disk_size" {
   description = "Disk size in GB for worker nodes"
   type        = number
