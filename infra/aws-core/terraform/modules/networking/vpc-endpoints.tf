@@ -44,15 +44,11 @@ resource "aws_security_group" "vpc_endpoints" {
 # ECR API endpoint (required for pulling images)
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id              = module.vpc.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.api"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.ecr.api"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = module.vpc.private_subnets
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
-
-  # Explicit dependency: ensure VPC and security group exist before endpoint creation
-  # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
-  depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
     var.tags,
@@ -65,14 +61,12 @@ resource "aws_vpc_endpoint" "ecr_api" {
 # ECR Docker registry endpoint (required for pulling image layers)
 resource "aws_vpc_endpoint" "ecr_dkr" {
   vpc_id              = module.vpc.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ecr.dkr"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.ecr.dkr"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = module.vpc.private_subnets
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure VPC and security group exist before endpoint creation
-  # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -86,7 +80,7 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
 # S3 gateway endpoint (required for ECR image layers stored in S3)
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = module.vpc.vpc_id
-  service_name      = "com.amazonaws.${data.aws_region.current.name}.s3"
+  service_name      = "com.amazonaws.${data.aws_region.current.region}.s3"
   vpc_endpoint_type = "Gateway"
   route_table_ids   = module.vpc.private_route_table_ids
 
@@ -105,14 +99,12 @@ resource "aws_vpc_endpoint" "s3" {
 # STS endpoint (required for IRSA - IAM roles for service accounts)
 resource "aws_vpc_endpoint" "sts" {
   vpc_id              = module.vpc.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.sts"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.sts"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = module.vpc.private_subnets
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure VPC and security group exist before endpoint creation
-  # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -126,14 +118,12 @@ resource "aws_vpc_endpoint" "sts" {
 # EC2 endpoint (required for node metadata and EC2 API calls)
 resource "aws_vpc_endpoint" "ec2" {
   vpc_id              = module.vpc.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.ec2"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.ec2"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = module.vpc.private_subnets
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure VPC and security group exist before endpoint creation
-  # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -147,14 +137,12 @@ resource "aws_vpc_endpoint" "ec2" {
 # Autoscaling endpoint (required for Cluster Autoscaler)
 resource "aws_vpc_endpoint" "autoscaling" {
   vpc_id              = module.vpc.vpc_id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.autoscaling"
+  service_name        = "com.amazonaws.${data.aws_region.current.region}.autoscaling"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = module.vpc.private_subnets
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure VPC and security group exist before endpoint creation
-  # and are deleted after endpoint deletion (prevents DNS conflicts on recreate)
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(

@@ -316,3 +316,4 @@ docs/backlog/
 # Temporary work session notes
 SAVEPOINT.md
 MONOREPO_NOTES.md
+.q_cli_session
