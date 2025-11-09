@@ -74,7 +74,7 @@ jobs:
       - name: Terraform Plan
         id: plan
         run: |
-          terraform plan -out=tfplan -no-color | tee plan.txt
+          terraform plan -out=tfplan -no-color -lock=false | tee plan.txt
           terraform show -json tfplan > plan.json
 
       - name: Analyze Terraform Plan
