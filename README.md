@@ -133,6 +133,9 @@ infra/
 └── policies/               # Policy-as-code (Sentinel, OPA/Rego, Checkov)
 clusters/
 └── dev/bootstrap/          # GitOps entrypoint, bootstrap manifests (app-of-apps ready)
+argocd/
+├── applications/           # ArgoCD Application definitions (what to deploy)
+└── projects/               # ArgoCD Project definitions (where and how)
 services/
 └── api/                    # FastAPI inference service and packaged model assets
 platform/
