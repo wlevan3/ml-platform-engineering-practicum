@@ -31,7 +31,6 @@ Successfully implemented a least-privilege S3 VPC endpoint policy that restricts
       "Effect": "Deny",
       "Principal": { "AWS": "*" },
       "Action": "s3:*",
-      "Resource": "arn:aws:s3:::*",
       "NotResource": "ECR_BUCKET_ARNS"
     }
   ]
