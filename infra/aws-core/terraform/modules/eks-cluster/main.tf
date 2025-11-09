@@ -39,9 +39,9 @@ module "eks" {
   # Cluster addons (automatically managed)
   addons = merge(
     var.cluster_addons,
-    var.enable_irsa ? {
+    var.enable_irsa && contains(keys(var.cluster_addons), "aws-ebs-csi-driver") ? {
       aws-ebs-csi-driver = merge(
-        lookup(var.cluster_addons, "aws-ebs-csi-driver", {}),
+        var.cluster_addons["aws-ebs-csi-driver"],
         {
           service_account_role_arn = aws_iam_role.ebs_csi_driver[0].arn
         }
