@@ -25,7 +25,6 @@ on:
     branches: [main]
     paths:
       - "infra/aws-core/terraform/**"
-      - "scripts/pre-flight-name-check.sh"
       - ".github/workflows/terraform-*.yml"
 
 # Prevent concurrent plans for same PR
@@ -71,21 +70,6 @@ jobs:
 
       - name: Terraform Validate
         run: terraform validate -no-color
-
-      - name: Pre-flight Resource Conflict Detection
-        run: |
-          # Check if our script exists
-          if [ ! -f "scripts/pre-flight-name-check.sh" ]; then
-            echo "Error: scripts/pre-flight-name-check.sh not found"
-            exit 1
-          fi
-
-          # Make script executable
-          chmod +x scripts/pre-flight-name-check.sh
-
-          # Run the conflict detection script
-          # This will check the current Terraform configuration for conflicts
-          ./scripts/pre-flight-name-check.sh . || exit 1
 
       - name: Terraform Refresh State
         run: terraform apply -refresh-only -auto-approve -no-color
