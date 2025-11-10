@@ -246,7 +246,7 @@ VPC (10.0.0.0/16)
 - 1-N NAT Gateways (depending on `single_nat_gateway`)
 - 1-N Elastic IPs (one per NAT gateway)
 - Route tables and associations
-- 6 VPC Endpoints (ECR API, ECR DKR, S3, STS, EC2, Autoscaling)
+- VPC Endpoints for ECR API, ECR DKR, S3, STS, EC2, and Autoscaling
 
 ## S3 VPC Endpoint Security
 
@@ -291,7 +291,12 @@ If ECR image pulls fail after enabling the policy:
 1. Verify the ECR S3 bucket name for your region:
 
    ```bash
-   aws ecr describe-repositories --region us-west-2
+   # Get the ECR S3 bucket name from Terraform output
+   cd infra/aws-core/terraform/environments/dev
+   terraform output -raw ecr_s3_bucket_name
+
+   # Or check AWS ECR registry ID to infer the bucket pattern
+   aws ecr describe-registry --region us-west-2 --query 'registryId' --output text
    ```
 
 2. Check VPC endpoint logs in CloudTrail for denied access

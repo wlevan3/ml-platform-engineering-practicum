@@ -64,11 +64,10 @@ validate_terraform_syntax() {
     cd "${NETWORKING_MODULE}"
 
     # Check formatting
-    if terraform fmt -check -diff > /dev/null 2>&1; then
+    if terraform fmt -check -diff; then
         log_info "✓ Terraform formatting is correct"
     else
         log_error "✗ Terraform formatting issues found"
-        terraform fmt -diff
         return 1
     fi
 

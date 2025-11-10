@@ -56,6 +56,12 @@ check_prerequisites() {
         exit 1
     fi
 
+    # Check if jq is installed
+    if ! command -v jq &> /dev/null; then
+        log_error "jq is not installed"
+        exit 1
+    fi
+
     # Check if we're in the right directory
     if [[ ! -d "${INFRA_DIR}" ]]; then
         log_error "Infrastructure directory not found: ${INFRA_DIR}"
@@ -192,11 +198,20 @@ test_s3_access() {
 test_ecr_pull() {
     log_info "Testing ECR image pull from pod..."
 
+    # Default ECR image (can be overridden via environment)
+    local ecr_image="${ECR_TEST_IMAGE:-}"
+
+    # Skip if no ECR image is configured
+    if [[ -z "${ecr_image}" ]]; then
+        log_warn "Skipping ECR pull test - Set ECR_TEST_IMAGE environment variable with your ECR image details"
+        log_warn "Example: export ECR_TEST_IMAGE=123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app:latest"
+        return 0
+    fi
+
     # Create a test pod using a private ECR image
-    # NOTE: Replace <account-id>, <region>, and <image-name> with your own values
-    # Public ECR images don't test the S3 VPC endpoint policy
+    # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
     kubectl run s3-policy-test \
-        --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest \
+        --image="${ecr_image}" \
         --rm -i --restart=Never \
         --command -- bash -c "echo 'ECR image pull successful'" \
         > /dev/null 2>&1
@@ -209,7 +224,7 @@ test_ecr_pull() {
         return 0
     else
         log_error "✗ ECR image pull test failed"
-        log_warn "Note: Ensure you replace <account-id>, <region>, and <image-name> with your ECR details"
+        log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
         return 1
     fi
 }
