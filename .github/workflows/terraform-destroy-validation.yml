@@ -45,6 +45,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_REGION: us-west-2
   TEST_CLUSTER_NAME: ml-platform-destroy-test-${{ github.run_id }}
+  TERRAFORM_VERSION: 1.13.5
 
 jobs:
   validate-inputs:
@@ -67,7 +68,7 @@ jobs:
           TEST_CLUSTER_NAME: ${{ env.TEST_CLUSTER_NAME }}
 
   destroy-validation:
-    name: Test Destroy & Validate Cleanup
+    name: Test Destroy &amp; Validate Cleanup
     runs-on: ubuntu-latest
     needs: validate-inputs
     timeout-minutes: 60
@@ -95,7 +96,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
         with:
-          terraform_version: ${{ env.TERRAFORM_VERSION || '1.13.5' }}
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
 
       - name: Terraform Init
         run: terraform init
@@ -167,7 +168,7 @@ jobs:
           SG_COUNT=$(echo "$SECURITY_GROUPS" | awk 'NF {count++} END {print count+0}')
 
           {
-            echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"
+            echo "eks_cluster_exists=$([[ "$EKS_CLUSTER" != "NOT_FOUND" ]] && echo "true" || echo "false")"
             echo "nat_gateway_count=$NAT_COUNT"
             echo "vpc_endpoint_count=$VPCE_COUNT"
             echo "eip_count=$EIP_COUNT"
@@ -350,13 +351,11 @@ jobs:
             echo "|------|-------|"
             echo "| Test Cluster Name | \`${{ env.TEST_CLUSTER_NAME }}\` |"
             echo "| Region | \`$AWS_REGION\` |"
-            # Try to get Terraform version via JSON/jq, fallback to text parsing if jq or -json is unavailable
-            TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
-            if [ -z "$TERRAFORM_VERSION" ]; then
-              # Fallback: parse plain text output
-              TERRAFORM_VERSION="$(terraform version | head -n1 | awk '{print $2}')"
+            TERRAFORM_VERSION_STR="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
+            if [ -z "$TERRAFORM_VERSION_STR" ]; then
+              TERRAFORM_VERSION_STR="$(terraform version | head -n1 | awk '{print $2}')"
             fi
-            echo "| Terraform Version | \`$TERRAFORM_VERSION\` |"
+            echo "| Terraform Version | \`$TERRAFORM_VERSION_STR\` |"
             echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
             echo "## Pre-Destroy State"
@@ -397,7 +396,7 @@ jobs:
             echo "- ✅ Elastic IPs released (Bug #2 fixed)"
             echo "- ✅ Cluster-specific filtering (Bug #3 fixed)"
             echo "- ✅ EC2 instances terminated (Bug #4 fixed)"
-            } >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Success Summary
         if: success()
