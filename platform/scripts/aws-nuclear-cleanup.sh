@@ -16,6 +16,10 @@
 #
 set -euo pipefail
 
+# Source shared helpers (logging, tags, safety, delete_or_preview, etc.)
+# shellcheck source=aws-cleanup-common.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/aws-cleanup-common.sh"
+
 # ============================================================================
 # AWS PROFILE / ACCOUNT SAFETY GUARDRAILS (SAFE TO COMMIT)
 # ============================================================================
@@ -27,38 +31,7 @@ AWS_REGION="${AWS_REGION:-us-west-2}"
 readonly PROJECT_TAG_KEY="Project"
 readonly PROJECT_TAG_VALUE="ml-platform-engineering-practicum"
 
-DRY_RUN=false
-
-# ============================================================================
-# Logging Utilities
-# ============================================================================
-
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-MAGENTA='\033[0;35m'
-NC='\033[0m' # No Color
-
-log_info() {
-  echo -e "${BLUE}[INFO]${NC} $1"
-}
-
-log_success() {
-  echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
-
-log_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
-}
-
-log_error() {
-  echo -e "${RED}[ERROR]${NC} $1"
-}
-
-log_section() {
-  echo -e "\n${MAGENTA}=== $1 ===${NC}"
-}
+DRY_RUN=${DRY_RUN:-false}
 
 # ============================================================================
 # Common Safety / Preflight Helpers
@@ -77,41 +50,6 @@ parse_args() {
     esac
     shift
   done
-}
-
-check_prerequisites() {
-  if ! command -v aws &>/dev/null; then
-    log_error "AWS CLI not found. Install: macOS: 'brew install awscli' | Ubuntu: 'apt-get install awscli'"
-    exit 1
-  fi
-
-  if ! command -v jq &>/dev/null; then
-    log_error "jq not found. Install: macOS: 'brew install jq' | Ubuntu: 'apt-get install jq'"
-    exit 1
-  fi
-
-  if ! aws sts get-caller-identity >/dev/null 2>&1; then
-    log_error "AWS credentials not configured or invalid"
-    exit 1
-  fi
-}
-
-validate_aws_account() {
-  local account_id
-  account_id=$(aws sts get-caller-identity --query Account --output text)
-
-  if [[ "$account_id" != "$EXPECTED_ACCOUNT_ID" ]]; then
-    log_error "❌ Wrong AWS account!"
-    log_error "   Expected: $EXPECTED_ACCOUNT_ID (KodeKloud sandbox)"
-    log_error "   Current:  $account_id"
-    log_error "   Profile:  $AWS_PROFILE"
-    log_error ""
-    log_error "This script is hardcoded to only run against the KodeKloud sandbox account."
-    log_error "Exiting to prevent accidental operations in wrong account."
-    exit 1
-  fi
-
-  log_success "✅ Correct AWS account verified: $account_id (KodeKloud sandbox)"
 }
 
 confirm_nuclear_mode() {
