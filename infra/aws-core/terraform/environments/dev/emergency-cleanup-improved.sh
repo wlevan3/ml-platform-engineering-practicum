@@ -37,7 +37,6 @@ echo "set FORCE_DEPRECATED=true as an environment variable."
 echo ""
 
 if [[ "${FORCE_DEPRECATED:-false}" != "true" ]]; then
-    echo ""
     echo "❌ Script execution blocked (deprecated)"
     echo "Set FORCE_DEPRECATED=true to override (NOT RECOMMENDED)"
     exit 1
@@ -79,13 +78,6 @@ get_resource_counts() {
     ng_count=$(aws eks list-nodegroups --cluster-name "$CLUSTER_NAME" --region "$REGION" --query 'length(nodegroups)' --output text 2>/dev/null || echo "0")
     lb_count=$(aws elbv2 describe-load-balancers --region "$REGION" --query 'length(LoadBalancers)' --output text 2>/dev/null || echo "0")
     nat_count=$(aws ec2 describe-nat-gateways --region "$REGION" --filter "Name=state,Values=available" --query 'length(NatGateways)' --output text 2>/dev/null || echo "0")
-    eip_count=$(aws ec2 describe-addresses \
-        --region "$REGION" \
-        --filters \
-            "Name=tag:Cluster,Values=$CLUSTER_NAME" \
-            "Name=tag:ManagedBy,Values=Terraform" \
-        --query 'length(Addresses)' \
-        --output text 2>/dev/null || echo "0")
     instance_count=$(aws ec2 describe-instances --region "$REGION" --filters "Name=instance-state-name,Values=running,pending,stopping,stopped" "Name=tag:Cluster,Values=$CLUSTER_NAME" --query 'length(Reservations[].Instances[])' --output text 2>/dev/null || echo "0")
 
     echo "$ng_count|$lb_count|$nat_count|$eip_count|$instance_count"
@@ -191,13 +183,6 @@ delete_elastic_ips() {
     log_info "Step 4: Releasing Elastic IPs..."
 
     local eips
-    eips=$(aws ec2 describe-addresses \
-        --region "$REGION" \
-        --filters \
-            "Name=tag:Cluster,Values=$CLUSTER_NAME" \
-            "Name=tag:ManagedBy,Values=Terraform" \
-        --query 'Addresses[].AllocationId' \
-        --output text 2>/dev/null || echo "")
 
     if [[ -z "$eips" ]]; then
         log_info "  No Elastic IPs found"
@@ -250,8 +235,6 @@ main() {
         echo ""
     else
         log_error "THIS WILL DELETE EVERYTHING - CANNOT BE UNDONE"
-        local expected_confirm="yes-delete-all-resources"
-        read -r -p "Type $expected_confirm to confirm: " confirm
 
         if [[ "$confirm" != "$expected_confirm" ]]; then
             log_info "Aborted"

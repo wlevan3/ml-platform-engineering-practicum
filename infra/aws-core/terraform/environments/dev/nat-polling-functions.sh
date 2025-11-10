@@ -18,16 +18,29 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR"
-while [[ "$REPO_ROOT" != "/" && ! -f "$REPO_ROOT/scripts/logging.sh" ]]; do
-    REPO_ROOT="$(dirname "$REPO_ROOT")"
-done
-if [[ ! -f "$REPO_ROOT/scripts/logging.sh" ]]; then
-    echo "[ERROR] Logging helper not found" >&2
-    exit 1
-fi
-source "$REPO_ROOT/scripts/logging.sh"
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Default logging function (can be overridden by caller)
+log_info() {
+    echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[⚠]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[✗]${NC} $1"
+}
 
 # =============================================================================
 # POLLING FUNCTIONS
@@ -85,14 +98,27 @@ wait_for_nat_gateway_deletion() {
 
         # State analysis
         case "$nat_state" in
-            ""|"deleted")
-                # Empty response or 'deleted' state = NAT Gateway fully deleted
+            "")
+                # Empty response = NAT Gateway fully deleted
                 log_success "NAT Gateway deleted (verified at ${elapsed}s after ${retry_count} checks)"
                 return 0
                 ;;
-            "deleting"|"available"|"pending")
-                # Normal states during deletion or before it starts
-                log_info "  [${retry_count}] State: $nat_state | Elapsed: ${elapsed}s | Next check in ${interval}s"
+            "deleted")
+                # Official deleted state (AWS eventually returns this value)
+                log_success "NAT Gateway marked as deleted (${elapsed}s, ${retry_count} checks)"
+                return 0
+                ;;
+            "deleting")
+                # Normal state during deletion
+                log_info "  [${retry_count}] State: deleting | Elapsed: ${elapsed}s | Next check in ${interval}s"
+                ;;
+            "available")
+                # Not yet deleted
+                log_info "  [${retry_count}] State: available | Elapsed: ${elapsed}s | Next check in ${interval}s"
+                ;;
+            "pending")
+                # Rare state: deletion initiated but not yet started
+                log_info "  [${retry_count}] State: pending | Elapsed: ${elapsed}s | Next check in ${interval}s"
                 ;;
             "failed")
                 # Deletion failed
@@ -121,8 +147,7 @@ wait_for_nat_gateway_deletion() {
         # Wait before next check (exponential backoff)
         sleep "$interval"
 
-        # Calculate next interval: multiply by 1.5, cap at max. Using integer math is intentional—sleep only accepts whole seconds,
-        # so (for example) 5 * 3 / 2 = 7 and we prefer that deterministic floor over subshell bc math that would still round.
+        # Calculate next interval: multiply by 1.5, cap at max. Using integer math is intentional—sleep only accepts whole seconds.
         interval=$(( interval * 3 / 2 ))
         if (( interval > max_interval )); then
             interval=$max_interval
@@ -204,11 +229,8 @@ wait_for_eip_unassociated() {
         # Wait before next check
         sleep "$interval"
 
-        # Calculate next interval (integer math keeps sleep-compatible whole seconds)
-        interval=$(( interval * 3 / 2 ))
-        if (( interval > max_interval )); then
-            interval=$max_interval
-        fi
+        # Calculate next interval
+        interval=$(awk "BEGIN {print int(min($interval * 1.5, $max_interval))}")
     done
 }
 
@@ -359,7 +381,6 @@ cleanup_all_nat_gateways() {
             success_count=$((success_count + 1))
         else
             fail_count=$((fail_count + 1))
-            log_warn "    Cleanup for $nat reported issues (see earlier logs)"
         fi
         echo ""
     done

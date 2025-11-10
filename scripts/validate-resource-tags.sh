@@ -23,11 +23,18 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/logging.sh"
-
 CLUSTER_NAME="${CLUSTER_NAME:-ml-platform-dev}"
 REGION="${AWS_REGION:-us-west-2}"
+
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}✓${NC} $1"; }
+log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+log_error() { echo -e "${RED}✗${NC} $1"; }
 
 echo "Validating resource tags for cluster: $CLUSTER_NAME (region: $REGION)"
 echo ""
@@ -117,17 +124,30 @@ echo ""
 
 # Check 3: VPC Endpoint Tags
 echo "Checking VPC Endpoint tags..."
-VPC_ENDPOINTS_JSON=$(aws ec2 describe-vpc-endpoints \
+VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
     --region "$REGION" \
-    --query 'VpcEndpoints[]' \
-    --output json 2>/dev/null || echo "[]")
+    --query 'VpcEndpoints[].VpcEndpointId' \
+    --output text 2>/dev/null || echo "")
 
-TOTAL_VPCES=$(echo "$VPC_ENDPOINTS_JSON" | jq 'length')
-
-if [ "$TOTAL_VPCES" -eq 0 ]; then
+if [ -z "$VPC_ENDPOINTS" ]; then
     log_info "No VPC Endpoints found (none to validate)"
 else
-    TAGGED_VPCES=$(echo "$VPC_ENDPOINTS_JSON" | jq --arg CLUSTER "$CLUSTER_NAME" '[.[] | select(.Tags[]? | select(.Key=="Cluster" and .Value==$CLUSTER))] | length')
+    TAGGED_VPCES=0
+    TOTAL_VPCES=$(echo "$VPC_ENDPOINTS" | wc -w)
+
+    for vpce_id in $VPC_ENDPOINTS; do
+        VPCE_TAGS=$(aws ec2 describe-vpc-endpoints \
+            --vpc-endpoint-ids "$vpce_id" \
+            --region "$REGION" \
+            --query 'VpcEndpoints[0].Tags' \
+            --output json 2>/dev/null || echo "[]")
+
+        HAS_CLUSTER_TAG=$(echo "$VPCE_TAGS" | jq --arg CLUSTER "$CLUSTER_NAME" '.[] | select(.Key=="Cluster" and .Value==$CLUSTER)' | jq -s 'length > 0')
+
+        if [ "$HAS_CLUSTER_TAG" = "true" ]; then
+            TAGGED_VPCES=$((TAGGED_VPCES + 1))
+        fi
+    done
 
     if [ "$TAGGED_VPCES" -eq "$TOTAL_VPCES" ]; then
         log_info "All $TOTAL_VPCES VPC Endpoints properly tagged"

@@ -1,0 +1,89 @@
+name: Pre-flight Resource Conflict Detection
+
+# =============================================================================
+# PRE-FLIGHT RESOURCE CONFLICT DETECTION WORKFLOW
+# =============================================================================
+#
+# PURPOSE:
+#   Detects potential resource conflicts before Terraform apply operations
+#   Prevents deployment failures due to resource naming conflicts, quota issues,
+#   and other common infrastructure conflicts
+#
+# WHEN IT RUNS:
+#   - On pull requests that modify Terraform files
+#   - On push to main branch for Terraform files
+#   - Manually triggered
+#
+# WHAT IT DOES:
+#   - Runs pre-flight conflict detection script
+#   - Checks for S3 bucket name conflicts
+#   - Checks for IAM resource conflicts
+#   - Checks for network resource conflicts
+#   - Fails if conflicts are detected
+#
+# =============================================================================
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "infra/aws-core/terraform/**"
+      - "scripts/check-resource-conflicts.sh"
+      - ".github/workflows/check-resource-conflicts.yml"
+  push:
+    branches: [main]
+    paths:
+      - "infra/aws-core/terraform/**"
+      - "scripts/check-resource-conflicts.sh"
+  workflow_dispatch:
+
+permissions:
+  id-token: write # Required for AWS OIDC
+  contents: read # Required to checkout
+
+env:
+  AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+
+jobs:
+  check-conflicts:
+    name: Pre-flight Resource Conflict Detection
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
+          aws-region: us-west-2
+          role-session-name: GitHubActions-ConflictCheck-${{ github.run_id }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.13.5
+
+      - name: Run pre-flight conflict detection
+        run: |
+          # Check if our script exists
+          if [ ! -f "scripts/check-resource-conflicts.sh" ]; then
+            echo "Error: scripts/check-resource-conflicts.sh not found"
+            exit 1
+          fi
+
+          # Make script executable
+          chmod +x scripts/check-resource-conflicts.sh
+
+          # Define Terraform working directory for conflict checks
+          TF_WORKDIR="infra/aws-core/terraform/environments/dev"
+          echo "Using Terraform working directory: $TF_WORKDIR"
+
+          if [ ! -d "$TF_WORKDIR" ]; then
+            echo "Error: Terraform working directory does not exist: $TF_WORKDIR"
+            exit 1
+          fi
+
+          # Run the conflict detection script against the Terraform environment directory
+          ./scripts/check-resource-conflicts.sh "$TF_WORKDIR" || exit 1

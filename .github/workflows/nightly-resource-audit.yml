@@ -46,6 +46,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_REGION: us-west-2
   CLUSTER_NAME: ml-platform-dev
+  AUDIT_VERBOSE: ${{ vars.AUDIT_VERBOSE || 'false' }}
 
 jobs:
   audit:
@@ -116,7 +117,10 @@ jobs:
           else
             echo "❌ Found $TOTAL_RESOURCES orphaned resources:"
 
+            # Collect ARNs
             mapfile -t RESOURCE_ARNS < <(echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"')
+
+            # Initialize tracked counts
             declare -A resource_counts=(
               [nat-gateway]=0
               [vpc-endpoint]=0
@@ -124,42 +128,44 @@ jobs:
               [security-group]=0
               [instance]=0
             )
+
             failed_arns=0
+
             for arn in "${RESOURCE_ARNS[@]}"; do
               RESOURCE_TYPE=$(jq -R -r 'split(":")[5] // "" | split("/")[0] // ""' <<<"$arn")
               RESOURCE_ID=$(jq -R -r 'split("/") | last' <<<"$arn")
+
               if [[ -z "$RESOURCE_TYPE" || -z "$RESOURCE_ID" ]]; then
                 echo "  - unparsable ARN: $arn"
                 ((failed_arns++))
                 continue
               fi
-              echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
+
+              if [[ "${AUDIT_VERBOSE}" == "true" ]]; then
+                echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
+              fi
+
               if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
                 resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
               fi
             done
 
-            if [[ $failed_arns -gt 0 ]]; then
-              echo "⚠️  Warning: $failed_arns ARN(s) could not be parsed"
-            fi
-
-            # Count by type
-            NAT_COUNT=${resource_counts[nat-gateway]:-0}
-            VPCE_COUNT=${resource_counts[vpc-endpoint]:-0}
-            EIP_COUNT=${resource_counts[elastic-ip]:-0}
-            SG_COUNT=${resource_counts[security-group]:-0}
-            INSTANCE_COUNT=${resource_counts[instance]:-0}
+            NAT_COUNT="${resource_counts[nat-gateway]}"
+            VPCE_COUNT="${resource_counts[vpc-endpoint]}"
+            EIP_COUNT="${resource_counts[elastic-ip]}"
+            SG_COUNT="${resource_counts[security-group]}"
+            INSTANCE_COUNT="${resource_counts[instance]}"
 
             {
               echo "orphaned_found=true"
               echo "orphaned_resources<<EOF"
               echo "| Type | Count |"
               echo "|------|-------|"
-              [ "$NAT_COUNT" -gt 0 ] && echo "| NAT Gateways | $NAT_COUNT |"
-              [ "$VPCE_COUNT" -gt 0 ] && echo "| VPC Endpoints | $VPCE_COUNT |"
-              [ "$EIP_COUNT" -gt 0 ] && echo "| Elastic IPs | $EIP_COUNT |"
-              [ "$SG_COUNT" -gt 0 ] && echo "| Security Groups | $SG_COUNT |"
-              [ "$INSTANCE_COUNT" -gt 0 ] && echo "| EC2 Instances | $INSTANCE_COUNT |"
+              [[ "$NAT_COUNT" -gt 0 ]] && echo "| NAT Gateways | $NAT_COUNT |"
+              [[ "$VPCE_COUNT" -gt 0 ]] && echo "| VPC Endpoints | $VPCE_COUNT |"
+              [[ "$EIP_COUNT" -gt 0 ]] && echo "| Elastic IPs | $EIP_COUNT |"
+              [[ "$SG_COUNT" -gt 0 ]] && echo "| Security Groups | $SG_COUNT |"
+              [[ "$INSTANCE_COUNT" -gt 0 ]] && echo "| EC2 Instances | $INSTANCE_COUNT |"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi
@@ -181,12 +187,10 @@ jobs:
             --query 'ResourceTagMappingList' \
             --output json)
 
-          # Cost estimates (monthly) – rough us-west-2 approximations (AWS VPC pricing page, last manually verified Jan 2025).
-          # Rates drift over time and vary by region, so re-check https://aws.amazon.com/vpc/pricing/ (or your local region sheet)
-          # before acting on these numbers:
-          #   - NAT Gateway: ~$32/month (0.045 USD/hr × 730 hrs)
-          #   - Elastic IP: ~$3.20/month when allocated but unused
-          #   - EC2 t3.medium: ~$30/month (on-demand instance price)
+          # Cost estimates (monthly)
+          # NAT Gateway: ~$32/month
+          # Elastic IP: ~$3.20/month (unused)
+          # EC2 t3.medium: ~$30/month
 
           NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
           EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
@@ -195,10 +199,10 @@ jobs:
           MONTHLY_COST=$(( (NAT_COUNT * 32) + (EIP_COUNT * 3) + (INSTANCE_COUNT * 30) ))
           DAILY_COST=$(( MONTHLY_COST / 30 ))
 
-          echo "Estimated monthly cost (rough, $AWS_REGION pricing verified Jan 2025): $MONTHLY_COST"
-          echo "Estimated daily cost (rough): $DAILY_COST"
+          echo "Estimated monthly cost: \$$MONTHLY_COST"
+          echo "Estimated daily cost: \$$DAILY_COST"
 
-          echo "estimated_cost=${MONTHLY_COST}/month (rough, verify region pricing)" >> "$GITHUB_OUTPUT"
+          echo "estimated_cost=\$$MONTHLY_COST/month (\$$DAILY_COST/day)" >> "$GITHUB_OUTPUT"
 
       - name: Generate Report
         run: |
@@ -225,8 +229,9 @@ jobs:
                 echo ""
                 echo "### Estimated Cost"
                 echo "- Monthly: ${{ steps.cost.outputs.estimated_cost }}"
+                echo ""
                 echo "### Action Required"
-                echo "1. Run cleanup: gh workflow run terraform-manual.yml -f action=destroy"
+                echo "1. Run cleanup: \`gh workflow run terraform-manual.yml -f action=destroy\`"
                 echo "2. Wait for completion"
                 echo "3. Verify cleanup in next audit cycle"
               else
@@ -238,7 +243,7 @@ jobs:
               echo "## Cluster Status"
               echo "Cluster is still running. Skipping orphaned resource check."
             fi
-          } >> "$GITHUB_STEP_SUMMARY"
+          } >> $GITHUB_STEP_SUMMARY
 
       - name: Create Issue if Resources Found
         if: steps.audit.outputs.orphaned_found == 'true' && (github.event.inputs.send_alerts == 'true' || github.event_name == 'schedule')
@@ -312,5 +317,5 @@ jobs:
             echo ""
             echo "Cluster is still running. Audit only checks for orphaned resources when cluster is deleted."
             echo ""
-            echo "To clean up: gh workflow run terraform-manual.yml -f action=destroy"
+            echo "To clean up: \`gh workflow run terraform-manual.yml -f action=destroy\`"
           } >> "$GITHUB_STEP_SUMMARY"

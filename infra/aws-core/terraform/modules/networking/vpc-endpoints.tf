@@ -53,7 +53,6 @@ resource "aws_vpc_endpoint" "ecr_api" {
   # Explicit dependency: ensure the VPC and security group exist before we create the endpoint,
   # and ensure Terraform deletes the endpoint before touching those dependencies (prevents DNS conflicts on recreate).
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
-
   tags = merge(
     var.tags,
     {
@@ -71,8 +70,6 @@ resource "aws_vpc_endpoint" "ecr_dkr" {
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure the VPC and security group exist before we create the endpoint,
-  # and ensure Terraform deletes the endpoint before touching those dependencies (prevents DNS conflicts on recreate).
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -94,8 +91,7 @@ resource "aws_vpc_endpoint" "s3" {
   # When disabled (s3_endpoint_enable_policy = false), allows full access to all S3 buckets
   policy = local.s3_endpoint_policy
 
-  # Explicit dependency: ensure VPC exists before endpoint creation
-  # Gateway endpoints don't require security groups
+  # Ensure VPC exists before creating gateway endpoint; gateway endpoints don't use security groups
   depends_on = [module.vpc]
 
   tags = merge(
@@ -115,8 +111,6 @@ resource "aws_vpc_endpoint" "sts" {
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure the VPC and security group exist before we create the endpoint,
-  # and ensure Terraform deletes the endpoint before touching those dependencies (prevents DNS conflicts on recreate).
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -136,8 +130,6 @@ resource "aws_vpc_endpoint" "ec2" {
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure the VPC and security group exist before we create the endpoint,
-  # and ensure Terraform deletes the endpoint before touching those dependencies (prevents DNS conflicts on recreate).
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
@@ -157,8 +149,6 @@ resource "aws_vpc_endpoint" "autoscaling" {
   security_group_ids  = [aws_security_group.vpc_endpoints.id]
   private_dns_enabled = true
 
-  # Explicit dependency: ensure the VPC and security group exist before we create the endpoint,
-  # and ensure Terraform deletes the endpoint before touching those dependencies (prevents DNS conflicts on recreate).
   depends_on = [aws_security_group.vpc_endpoints, module.vpc]
 
   tags = merge(
