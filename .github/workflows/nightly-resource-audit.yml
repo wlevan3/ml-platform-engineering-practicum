@@ -46,6 +46,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_REGION: us-west-2
   CLUSTER_NAME: ml-platform-dev
+  AUDIT_VERBOSE: ${{ vars.AUDIT_VERBOSE || 'false' }}
 
 jobs:
   audit:
@@ -134,8 +135,13 @@ jobs:
                 continue
               fi
 
-              # Count resource type
-              if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
+               # Optional verbose logging of each orphaned resource
+               if [[ "${AUDIT_VERBOSE}" == "true" ]]; then
+                 echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
+               fi
+
+               # Count resource type
+               if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
                 resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
               fi
             done
