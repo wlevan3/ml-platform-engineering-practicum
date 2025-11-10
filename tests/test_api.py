@@ -1,6 +1,4 @@
-"""
-Unit tests for FastAPI endpoints.
-"""
+"""Tests for the API service."""
 
 import json
 import shutil
@@ -10,9 +8,8 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
-
 from services.api.main import app
-from services.api.model import get_model, IrisModel
+from services.api.model import IrisModel, get_model
 from services.api.security import calculate_file_hash
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -135,9 +132,7 @@ def test_predict_invalid_features_count(client):
 
 def test_predict_invalid_features_type(client):
     """Test prediction with invalid feature types."""
-    response = client.post(
-        "/predict", json={"features": ["not", "a", "number", "list"]}
-    )
+    response = client.post("/predict", json={"features": ["not", "a", "number", "list"]})
     assert response.status_code == 422  # Validation error
 
 

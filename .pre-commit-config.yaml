@@ -118,3 +118,13 @@ repos:
           - --verbose
         files: \.py$
         exclude: ^tests/
+
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: ruff-all-with-uv
+        name: ruff check . via uv (full repo)
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+        stages: [commit]
