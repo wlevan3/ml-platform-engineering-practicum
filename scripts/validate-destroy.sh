@@ -189,12 +189,32 @@ jq -r '.resource_changes[] | select(.change.actions[] == "delete") | "  - \(.typ
 
 print_section "Safety checks"
 
-# Check 1: Data-storage resources (RDS, DynamoDB)
-STORAGE_DELETES=$(jq '[.resource_changes[] | select(.change.actions[] == "delete" and (.type | test("rds|dynamodb|elasticsearch|elasticache|redshift")))] | length' "$TEMP_JSON")
+# Check 1: Data-storage resources (broad coverage)
+# STORAGE_TYPES_PATTERN includes all known data-storage resource types that should trigger a safety warning if deleted.
+#   rds                  - AWS RDS cluster
+#   db_instance          - AWS RDS instance
+#   dynamodb             - AWS DynamoDB tables
+#   documentdb_cluster   - AWS DocumentDB clusters
+#   memorydb_cluster     - AWS MemoryDB clusters
+#   neptune_cluster      - AWS Neptune clusters
+#   elasticsearch        - AWS Elasticsearch domains
+#   elasticache          - AWS ElastiCache clusters
+#   redshift             - AWS Redshift clusters
+#   opensearch_domain    - AWS OpenSearch domains
+#   kinesis_stream       - AWS Kinesis data streams
+STORAGE_TYPES_PATTERN="rds|db_instance|dynamodb|documentdb_cluster|memorydb_cluster|neptune_cluster|elasticsearch|elasticache|redshift|opensearch_domain|kinesis_stream"
+
+STORAGE_DELETES=$(jq --arg pattern "$STORAGE_TYPES_PATTERN" \
+  '[.resource_changes[]
+    | select(.change.actions[] == "delete" and (.type | test($pattern)))]
+   | length' "$TEMP_JSON")
 
 if [ "$STORAGE_DELETES" -gt 0 ]; then
   print_error "Plan includes deletion of data-storage resources!"
-  jq -r '.resource_changes[] | select(.change.actions[] == "delete" and (.type | test("rds|dynamodb|elasticsearch|elasticache|redshift"))) | "   - \(.type).\(.name)"' "$TEMP_JSON"
+  jq -r --arg pattern "$STORAGE_TYPES_PATTERN" \
+    '.resource_changes[]
+     | select(.change.actions[] == "delete" and (.type | test($pattern)))
+     | "   - \(.type).\(.name)"' "$TEMP_JSON"
   echo ""
   print_error "This is likely a MISTAKE. Data-storage deletions should be intentional."
   echo ""

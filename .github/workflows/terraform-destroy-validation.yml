@@ -125,36 +125,32 @@ jobs:
             --output text 2>/dev/null || echo "NOT_FOUND")
 
           # NAT Gateways
-          NAT_GATEWAYS=$(aws ec2 describe-nat-gateways \
+          NAT_COUNT=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'NatGateways[].NatGatewayId' \
+            --query 'length(NatGateways)' \
             --output text)
-          NAT_COUNT=$(echo "$NAT_GATEWAYS" | wc -w)
 
           # VPC Endpoints
-          VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
+          VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'VpcEndpoints[].VpcEndpointId' \
+            --query 'length(VpcEndpoints)' \
             --output text)
-          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | wc -w)
 
           # Elastic IPs
-          EIPS=$(aws ec2 describe-addresses \
+          EIP_COUNT=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'Addresses[].AllocationId' \
+            --query 'length(Addresses)' \
             --output text)
-          EIP_COUNT=$(echo "$EIPS" | wc -w)
 
           # Security Groups
-          SECURITY_GROUPS=$(aws ec2 describe-security-groups \
+          SG_COUNT=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
-            --query 'SecurityGroups[].GroupId' \
+            --query 'length(SecurityGroups)' \
             --output text)
-          SG_COUNT=$(echo "$SECURITY_GROUPS" | wc -w)
 
           {
             echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"
@@ -167,10 +163,10 @@ jobs:
           if [ "${{ github.event.inputs.verbose_logging }}" == "true" ]; then
             echo "Pre-Destroy Resources:"
             echo "  EKS Cluster: $EKS_CLUSTER"
-            echo "  NAT Gateways: $NAT_GATEWAYS"
-            echo "  VPC Endpoints: $VPC_ENDPOINTS"
-            echo "  Elastic IPs: $EIPS"
-            echo "  Security Groups: $SECURITY_GROUPS"
+            echo "  NAT Gateways: $NAT_COUNT"
+            echo "  VPC Endpoints: $VPCE_COUNT"
+            echo "  Elastic IPs: $EIP_COUNT"
+            echo "  Security Groups: $SG_COUNT"
           fi
 
       - name: Phase 3 - Validate Resource Tags
@@ -307,7 +303,7 @@ jobs:
             echo "## Test Details"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
+            echo "| Test Cluster Name | \`${{ env.TEST_CLUSTER_NAME }}\` |"
             echo "| Region | \`$AWS_REGION\` |"
             echo "| Terraform Version | \`$TERRAFORM_VERSION\` |"
             echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
@@ -339,7 +335,7 @@ jobs:
             echo "- ✅ Elastic IPs released (Bug #2 fixed)"
             echo "- ✅ Cluster-specific filtering (Bug #3 fixed)"
             echo "- ✅ EC2 instances terminated (Bug #4 fixed)"
-            } >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Success Summary
         if: success()

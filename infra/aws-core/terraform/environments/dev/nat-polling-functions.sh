@@ -147,8 +147,11 @@ wait_for_nat_gateway_deletion() {
         # Wait before next check (exponential backoff)
         sleep "$interval"
 
-        # Calculate next interval: multiply by 1.5, cap at max
-        interval=$(awk "BEGIN {print int(min($interval * 1.5, $max_interval))}")
+        # Calculate next interval: multiply by 1.5, cap at max. Using integer math is intentional—sleep only accepts whole seconds.
+        interval=$(( interval * 3 / 2 ))
+        if (( interval > max_interval )); then
+            interval=$max_interval
+        fi
     done
 }
 

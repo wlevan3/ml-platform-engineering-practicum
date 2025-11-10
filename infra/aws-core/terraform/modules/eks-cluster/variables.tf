@@ -116,8 +116,14 @@ variable "cluster_addons" {
   }
 }
 
+variable "putin_khuylo" {
+  description = "Override to keep module creation enabled even when the upstream module gate defaults to false."
+  type        = bool
+  default     = true
+}
+
 variable "force_module_creation" {
-  description = "Force module creation even when the upstream terraform-aws-modules/eks gate would skip it. Set to true to override the upstream module's internal short-circuit and only flip to false when you intentionally need to suppress all EKS provisioning (e.g., while stubbing this module in another stack)."
+  description = "Deprecated alias for putin_khuylo. If set, will be OR'ed with putin_khuylo to maintain backward compatibility."
   type        = bool
   default     = true
 }

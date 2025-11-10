@@ -46,6 +46,7 @@ env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
   AWS_REGION: us-west-2
   CLUSTER_NAME: ml-platform-dev
+  AUDIT_VERBOSE: ${{ vars.AUDIT_VERBOSE || 'false' }}
 
 jobs:
   audit:
@@ -116,32 +117,55 @@ jobs:
           else
             echo "❌ Found $TOTAL_RESOURCES orphaned resources:"
 
-            # Build resource list
-            RESOURCE_LIST=""
-            echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"' | while read -r arn; do
-              RESOURCE_TYPE=$(echo "$arn" | cut -d: -f6)
-              RESOURCE_ID=$(echo "$arn" | rev | cut -d/ -f1 | rev)
-              echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
-              RESOURCE_LIST="${RESOURCE_LIST}  - $RESOURCE_TYPE: $RESOURCE_ID\n"
+            # Collect ARNs
+            mapfile -t RESOURCE_ARNS < <(echo "$RESOURCES" | jq -r '.[] | "\(.ResourceARN)"')
+
+            # Initialize tracked counts
+            declare -A resource_counts=(
+              [nat-gateway]=0
+              [vpc-endpoint]=0
+              [elastic-ip]=0
+              [security-group]=0
+              [instance]=0
+            )
+
+            failed_arns=0
+
+            for arn in "${RESOURCE_ARNS[@]}"; do
+              RESOURCE_TYPE=$(jq -R -r 'split(":")[5] // "" | split("/")[0] // ""' <<<"$arn")
+              RESOURCE_ID=$(jq -R -r 'split("/") | last' <<<"$arn")
+
+              if [[ -z "$RESOURCE_TYPE" || -z "$RESOURCE_ID" ]]; then
+                echo "  - unparsable ARN: $arn"
+                ((failed_arns++))
+                continue
+              fi
+
+              if [[ "${AUDIT_VERBOSE}" == "true" ]]; then
+                echo "  - $RESOURCE_TYPE: $RESOURCE_ID"
+              fi
+
+              if [[ -n "${resource_counts[$RESOURCE_TYPE]+_}" ]]; then
+                resource_counts[$RESOURCE_TYPE]=$((resource_counts[$RESOURCE_TYPE] + 1))
+              fi
             done
 
-            # Count by type
-            NAT_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("nat-gateway"))] | length')
-            VPCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("vpc-endpoint"))] | length')
-            EIP_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("elastic-ip"))] | length')
-            SG_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("security-group"))] | length')
-            INSTANCE_COUNT=$(echo "$RESOURCES" | jq '[.[] | select(.ResourceARN | contains("instance"))] | length')
+            NAT_COUNT="${resource_counts[nat-gateway]}"
+            VPCE_COUNT="${resource_counts[vpc-endpoint]}"
+            EIP_COUNT="${resource_counts[elastic-ip]}"
+            SG_COUNT="${resource_counts[security-group]}"
+            INSTANCE_COUNT="${resource_counts[instance]}"
 
             {
               echo "orphaned_found=true"
               echo "orphaned_resources<<EOF"
               echo "| Type | Count |"
               echo "|------|-------|"
-              [ "$NAT_COUNT" -gt 0 ] && echo "| NAT Gateways | $NAT_COUNT |"
-              [ "$VPCE_COUNT" -gt 0 ] && echo "| VPC Endpoints | $VPCE_COUNT |"
-              [ "$EIP_COUNT" -gt 0 ] && echo "| Elastic IPs | $EIP_COUNT |"
-              [ "$SG_COUNT" -gt 0 ] && echo "| Security Groups | $SG_COUNT |"
-              [ "$INSTANCE_COUNT" -gt 0 ] && echo "| EC2 Instances | $INSTANCE_COUNT |"
+              [[ "$NAT_COUNT" -gt 0 ]] && echo "| NAT Gateways | $NAT_COUNT |"
+              [[ "$VPCE_COUNT" -gt 0 ]] && echo "| VPC Endpoints | $VPCE_COUNT |"
+              [[ "$EIP_COUNT" -gt 0 ]] && echo "| Elastic IPs | $EIP_COUNT |"
+              [[ "$SG_COUNT" -gt 0 ]] && echo "| Security Groups | $SG_COUNT |"
+              [[ "$INSTANCE_COUNT" -gt 0 ]] && echo "| EC2 Instances | $INSTANCE_COUNT |"
               echo "EOF"
             } >> "$GITHUB_OUTPUT"
           fi
