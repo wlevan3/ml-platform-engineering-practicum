@@ -34,6 +34,3 @@ dev = [
   # Git hooks
   "pre-commit",
 ]
-
-[tool.uv]
-src = ["src"]
