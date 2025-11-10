@@ -180,6 +180,39 @@ if [ "$OPERATION" = "plan" ]; then
     rm -f "$TEMP_PLAN" 2>/dev/null
 fi
 
+# Check 7: Run pre-flight conflict detection if in plan mode
+if [ "$OPERATION" = "plan" ]; then
+    echo ""
+    log_info "Running pre-flight conflict detection..."
+
+    # Create a temporary plan to check for conflicts
+    TEMP_PLAN=$(mktemp)
+    if terraform plan -detailed-exitcode -out="$TEMP_PLAN" 2>/dev/null; then
+        # Run the conflict detection script on the plan
+        if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
+            log_info "Pre-flight conflict detection passed"
+        else
+            log_error "Pre-flight conflict detection failed"
+            rm -f "$TEMP_PLAN"
+            exit 1
+        fi
+    else
+        # If terraform plan shows changes, that's OK - we'll still run the conflict check
+        if [ $? -eq 2 ]; then  # Terraform exit code 2 indicates changes exist
+            if ./scripts/check-resource-conflicts.sh "$TEMP_PLAN"; then
+                log_info "Pre-flight conflict detection passed"
+            else
+                log_error "Pre-flight conflict detection failed"
+                rm -f "$TEMP_PLAN"
+                exit 1
+            fi
+        else
+            log_warn "Could not generate plan for conflict detection"
+        fi
+    fi
+    rm -f "$TEMP_PLAN"
+fi
+
 echo ""
 log_info "State validation passed"
 exit 0
