@@ -44,10 +44,10 @@ module "eks_cluster" {
   source = "../../modules/eks-cluster"
 
   #tfsec:ignore:aws-eks-encrypt-secrets EKS uses AWS-owned KMS keys; Sentinel policy prohibits customer-managed CMKs.
-  cluster_name    = local.cluster_name
-  cluster_version = var.cluster_version
+  cluster_name          = local.cluster_name
+  cluster_version       = var.cluster_version
+  force_module_creation = true
 
-  putin_khuylo = true
 
   # Networking from networking module
   vpc_id                   = module.networking.vpc_id
