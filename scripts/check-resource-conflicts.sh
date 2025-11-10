@@ -90,16 +90,20 @@ elif [ -d "$PLAN_INPUT" ]; then
     }
     log_info "Generating plan in directory: $PLAN_INPUT"
 
-    # Check if terraform is initialized
+    # Initialize Terraform if not already initialized
     if [ ! -d ".terraform" ]; then
-        log_error "Terraform not initialized in directory: $PLAN_INPUT"
-        exit 1
+        log_info "Terraform not initialized in directory: $PLAN_INPUT - running 'terraform init -backend=false -input=false' for pre-flight check"
+        if ! terraform init -backend=false -input=false -no-color >/dev/null 2>&1; then
+            log_error "Terraform init failed in directory: $PLAN_INPUT"
+            exit 1
+        fi
+        log_info "Terraform init completed successfully in directory: $PLAN_INPUT"
     fi
 
     # Create a temporary plan file
     TEMP_PLAN=$(mktemp)
     PLAN_EXIT_CODE=0
-    if ! terraform plan -out="$TEMP_PLAN" -detailed-exitcode -input=false 2>/dev/null; then
+    if ! terraform plan -out="$TEMP_PLAN" -detailed-exitcode -input=false -no-color >/dev/null 2>&1; then
         PLAN_EXIT_CODE=$?
     fi
 
