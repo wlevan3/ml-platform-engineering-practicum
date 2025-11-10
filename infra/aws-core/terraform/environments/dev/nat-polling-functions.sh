@@ -85,14 +85,27 @@ wait_for_nat_gateway_deletion() {
 
         # State analysis
         case "$nat_state" in
-            ""|"deleted")
-                # Empty response or 'deleted' state = NAT Gateway fully deleted
+            "")
+                # Empty response = NAT Gateway fully deleted
                 log_success "NAT Gateway deleted (verified at ${elapsed}s after ${retry_count} checks)"
                 return 0
                 ;;
-            "deleting"|"available"|"pending")
-                # Normal states during deletion or before it starts
-                log_info "  [${retry_count}] State: $nat_state | Elapsed: ${elapsed}s | Next check in ${interval}s"
+            "deleted")
+                # Official deleted state (AWS eventually returns this value)
+                log_success "NAT Gateway marked as deleted (${elapsed}s, ${retry_count} checks)"
+                return 0
+                ;;
+            "deleting")
+                # Normal state during deletion
+                log_info "  [${retry_count}] State: deleting | Elapsed: ${elapsed}s | Next check in ${interval}s"
+                ;;
+            "available")
+                # Not yet deleted
+                log_info "  [${retry_count}] State: available | Elapsed: ${elapsed}s | Next check in ${interval}s"
+                ;;
+            "pending")
+                # Rare state: deletion initiated but not yet started
+                log_info "  [${retry_count}] State: pending | Elapsed: ${elapsed}s | Next check in ${interval}s"
                 ;;
             "failed")
                 # Deletion failed
@@ -127,6 +140,7 @@ wait_for_nat_gateway_deletion() {
         if (( interval > max_interval )); then
             interval=$max_interval
         fi
+    done
 }
 
 # wait_for_eip_unassociated

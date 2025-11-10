@@ -35,7 +35,6 @@ echo "set FORCE_DEPRECATED=true as an environment variable."
 echo ""
 
 if [[ "${FORCE_DEPRECATED:-false}" != "true" ]]; then
-    echo ""
     echo "❌ Script execution blocked (deprecated)"
     echo "Set FORCE_DEPRECATED=true to override (NOT RECOMMENDED)"
     exit 1

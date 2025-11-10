@@ -225,8 +225,9 @@ jobs:
                 echo ""
                 echo "### Estimated Cost"
                 echo "- Monthly: ${{ steps.cost.outputs.estimated_cost }}"
+                echo ""
                 echo "### Action Required"
-                echo "1. Run cleanup: gh workflow run terraform-manual.yml -f action=destroy"
+                echo "1. Run cleanup: \`gh workflow run terraform-manual.yml -f action=destroy\`"
                 echo "2. Wait for completion"
                 echo "3. Verify cleanup in next audit cycle"
               else
@@ -312,5 +313,5 @@ jobs:
             echo ""
             echo "Cluster is still running. Audit only checks for orphaned resources when cluster is deleted."
             echo ""
-            echo "To clean up: gh workflow run terraform-manual.yml -f action=destroy"
+            echo "To clean up: \`gh workflow run terraform-manual.yml -f action=destroy\`"
           } >> "$GITHUB_STEP_SUMMARY"
