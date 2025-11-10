@@ -28,34 +28,29 @@ repos:
         args: [--strict, -c, .yamllint.yaml]
 
   # Python formatting and linting
-  - repo: https://github.com/psf/black
-    rev: 25.9.0
-    hooks:
-      - id: black
-        language_version: python3
-
+  # Phase 8 end state:
+  # - Ruff is the canonical linter and formatter.
+  # - Black is removed from pre-commit to avoid conflicting formatting guidance.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.14.3
     hooks:
       - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
+        name: ruff (lint)
+        args:
+          - --fix
+          - --exit-non-zero-on-fix
+      - id: ruff-format
+        name: ruff (format)
 
   # Python type checking
-  # Note: Using explicit additional_dependencies instead of --install-types for:
-  # - Deterministic behavior (no dynamic downloads from PyPI)
-  # - Faster execution (no 10-30s download on first run)
-  # - Offline compatibility (no network dependency)
-  # Type coverage: FastAPI, pydantic, numpy, httpx ship with inline types
-  # joblib-stubs provides type stubs for joblib (no native types)
-  # sklearn ignored in mypy.ini (sklearn-stubs v0.0.3 has bugs)
+  # Uses mypy with configuration from mypy.ini; aligns with CI usage.
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.18.2
     hooks:
       - id: mypy
         additional_dependencies:
-          - pydantic # Required for mypy to understand pydantic models
-          - joblib-stubs==1.5.2.0.20250831 # Type stubs for joblib
-          # No args needed - mypy reads configuration from mypy.ini
+          - pydantic
+          - joblib-stubs==1.5.2.0.20250831
 
   # Terraform formatting and security
   - repo: https://github.com/antonbabenko/pre-commit-terraform
@@ -66,17 +61,13 @@ repos:
       - id: terraform_tflint
         args:
           - --args=--config=__GIT_WORKING_DIR__/.tflint.hcl
-      # terraform_trivy disabled - runs in CI with better filtering
-      # Our code: 0 misconfigurations. Failures only in external modules.
       - id: terraform_docs
         args:
           - --hook-config=--path-to-file=README.md
           - --hook-config=--add-to-existing-file=true
           - --hook-config=--create-file-if-not-exist=true
 
-  # IaC security scanning (Dockerfile, Kubernetes, Terraform, secrets)
-  # Division of labor: Checkov handles IaC/container scans; detect-secrets (below) handles secret baseline
-  # Performance: Multi-framework scanning adds ~5-10s to pre-commit (monitored; acceptable trade-off)
+  # IaC and container security scanning
   - repo: https://github.com/bridgecrewio/checkov
     rev: 3.2.489
     hooks:
@@ -111,7 +102,7 @@ repos:
     rev: 1.8.6
     hooks:
       - id: bandit
-        args: ["-ll", "-i"] # Low severity level, ignore info messages
+        args: ["-ll", "-i"]
         exclude: ^tests/
 
   # Semgrep SAST (Static Application Security Testing)
@@ -121,12 +112,19 @@ repos:
       - id: semgrep
         name: Semgrep Security Scan
         args:
-          - --config=.semgrep.yml # Use custom focused ruleset for speed
-          - --error # Only fail on ERROR severity findings
-          - --timeout=60 # Prevent hanging on complex files
-          - --verbose # Show which rules are running
-        files: \.py$ # Only scan Python files
-        # Exclude tests for pre-commit speed optimization
-        # Tests are scanned comprehensively in CI (see .github/workflows/ci.yml)
-        # Rationale: Developer feedback speed > comprehensive pre-commit coverage
+          - --config=.semgrep.yml
+          - --error
+          - --timeout=60
+          - --verbose
+        files: \.py$
         exclude: ^tests/
+
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: ruff-all-with-uv
+        name: ruff check . via uv (full repo)
+        entry: uv run ruff check .
+        language: system
+        pass_filenames: false
+        stages: [commit]

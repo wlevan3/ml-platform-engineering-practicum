@@ -15,13 +15,13 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def build_resource_changes(plan: Dict[str, Any]) -> Dict[str, Any]:
+def build_resource_changes(plan: dict[str, Any]) -> dict[str, Any]:
     """Convert Terraform plan resource changes into a map keyed by address."""
     changes = {}
     skipped = 0
@@ -48,7 +48,7 @@ def build_resource_changes(plan: Dict[str, Any]) -> Dict[str, Any]:
     return changes
 
 
-def format_sentinel_map(data: Dict[str, Any]) -> str:
+def format_sentinel_map(data: dict[str, Any]) -> str:
     """Render a Python dict as single-line JSON compatible with Sentinel."""
     return json.dumps(data, separators=(",", ":"), sort_keys=True)
 

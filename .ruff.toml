@@ -1,0 +1,46 @@
+target-version = "py311"
+line-length = 100
+
+# Source roots for linting/formatting:
+# - services: current FastAPI + ML service code
+# - tests: current test suite
+# - src, apps: reserved for planned application layout (STREAMLINING_PLAN)
+src = ["services", "tests", "src", "apps"]
+
+# Standard non-code / tooling / vendor paths
+# (Do not exclude actual application packages.)
+exclude = [
+  ".git",
+  ".github",
+  ".venv",
+  ".pytest_cache",
+  ".mypy_cache",
+  ".ruff_cache",
+  "infra/aws-core/terraform/.terraform",
+]
+
+[lint]
+# Conservative, quality-focused rules:
+# - E,F: pycodestyle + Pyflakes (baseline correctness)
+# - I: import sorting (non-invasive; fixable via Ruff)
+# - B: bugbear (runtime-footgun patterns)
+# - UP: pyupgrade (safe modernizations for Python 3.11+)
+extend-select = [
+  "E",
+  "F",
+  "I",
+  "B",
+  "UP",
+]
+
+# Minimal global ignores:
+# - Keep tight; prefer fixing violations incrementally.
+# - Extend here only when specific, documented legacy patterns block adoption.
+ignore = [
+  # Intentionally empty for now.
+]
+
+[lint.per-file-ignores]
+# Example: tests may use assert-style and fixtures that trigger some style rules.
+# Keep scoped and documented if/when we add entries.
+# "tests/**/*.py" = ["D"]  # Uncomment if/when docstring rules are enabled.

@@ -321,3 +321,5 @@ MONOREPO_NOTES.md
 
 #Ignore vscode AI rules
 .github/instructions/codacy.instructions.md
+
+docs/archive/

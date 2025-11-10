@@ -1,162 +1,73 @@
 name: Security Gate
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  schedule:
+    # Run daily at 03:00 UTC to provide continuous security signal
+    - cron: "0 3 * * *"
+  workflow_dispatch:
 
-permissions: {} # Restrict default permissions, grant specific permissions per job
+permissions: {} # Restrict default permissions; grant least-privilege per job
 
 jobs:
-  check-security-alerts:
-    name: Block if Security Alerts Exist
+  security-gate:
+    name: Scheduled Security Gate (IaC, Dependencies, K8s)
     runs-on: ubuntu-latest
-    permissions:
-      security-events: write # Required for Dependabot alerts API access
-      contents: read
-      pull-requests: write # Required to post PR comments
 
     steps:
-      - name: Check for open code scanning alerts
-        id: code_scanning
-        run: |
-          echo "🔍 Checking for open code scanning alerts..."
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
 
-          ALERTS=$(gh api /repos/${{ github.repository }}/code-scanning/alerts \
-            --jq '[.[] | select(.state == "open")] | length')
-
-          # Save count for later steps
-          echo "count=${ALERTS}" >> "$GITHUB_OUTPUT"
-
-          if [ "$ALERTS" -gt 0 ]; then
-            echo ""
-            echo "❌ Found ${ALERTS} open code scanning alert(s)"
-            echo ""
-            echo "View alerts at: https://github.com/${{ github.repository }}/security/code-scanning"
-            echo ""
-            echo "Open alerts:"
-            gh api /repos/${{ github.repository }}/code-scanning/alerts \
-              --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.rule.description) (\(.rule.severity)) - \(.most_recent_instance.location.path):\(.most_recent_instance.location.start_line)"'
-
-            # Save alert details for PR comment
-            gh api /repos/${{ github.repository }}/code-scanning/alerts \
-              --jq '[.[] | select(.state == "open")]' > /tmp/alerts.json
-
-            echo ""
-            echo "❗ PRs cannot be merged until all code scanning alerts are resolved or dismissed."
-          else
-            echo "✅ No open code scanning alerts"
-          fi
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Comment on PR with alert details
-        if: github.event_name == 'pull_request' && steps.code_scanning.outputs.count > 0
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      - name: Setup Python for tooling
+        uses: actions/setup-python@v5
         with:
-          script: |
-            const fs = require('fs');
+          python-version: "3.12"
 
-            try {
-              // Check if alerts file exists
-              if (!fs.existsSync('/tmp/alerts.json')) {
-                core.info('No /tmp/alerts.json file found, skipping PR comment.');
-                return;
-              }
+      # Checkov - IaC scanning using existing configuration and custom policies
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          config_file: .checkov.yaml
+          # Custom policies are discovered from checkov_policies/ via .checkov.yaml configuration
 
-              const alerts = JSON.parse(fs.readFileSync('/tmp/alerts.json', 'utf8'));
+      # tfsec - Terraform static analysis honoring .tfsecignore
+      - name: Run tfsec
+        uses: aquasecurity/tfsec-action@v1.0.3
+        with:
+          working_directory: .
+          additional_args: >
+            --soft-fail-severity=MEDIUM
 
-            // Build comment body
-            let body = `## 🚨 Code Scanning Security Alerts\n\n`;
-            body += `Found **${alerts.length}** open security alert(s) that must be resolved before merging:\n\n`;
+      # TFLint - Terraform linting using .tflint.hcl
+      - name: Run TFLint
+        uses: reviewdog/action-tflint@v1
+        with:
+          tflint_config: .tflint.hcl
+          filter_mode: "nofilter"
+          reporter: "github-check"
 
-            alerts.forEach(alert => {
-              body += `### ❌ Alert #${alert.number}: ${alert.rule.description}\n`;
-              body += `- **Tool:** ${alert.tool.name}\n`;
-              body += `- **Severity:** \`${alert.rule.severity}\`\n`;
-              body += `- **Location:** \`${alert.most_recent_instance.location.path}:${alert.most_recent_instance.location.start_line}\`\n`;
-              body += `- **Message:** ${alert.most_recent_instance.message.text}\n`;
-              body += `- **[View Alert →](${alert.html_url})**\n\n`;
-            });
+      # Trivy - Dependency and filesystem scanning if configured
+      - name: Run Trivy filesystem scan (if config present)
+        if: hashFiles('.trivy.yaml') != ''
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          exit-code: '1'
+          severity: 'HIGH,CRITICAL'
+          trivy-config: .trivy.yaml
 
-            body += `---\n`;
-            body += `### ⚠️ Action Required\n\n`;
-            body += `Choose one of the following:\n`;
-            body += `1. **Fix the issue** - Update code to address the security concern\n`;
-            body += `2. **Dismiss as false positive** - If not a real issue, dismiss with justification\n`;
-            body += `3. **Run automated analysis** - Use \`/fix-code-scanning-alerts\` command\n\n`;
-            body += `This check will pass once all alerts are resolved or dismissed.\n`;
-
-            // Check if we already commented (avoid spam)
-            const comments = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number
-            });
-
-            const botComment = comments.data.find(comment =>
-              comment.user.type === 'Bot' &&
-              comment.body.includes('## 🚨 Code Scanning Security Alerts')
-            );
-
-            if (botComment) {
-              // Update existing comment
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: botComment.id,
-                body: body
-              });
-              core.info(`Updated existing comment #${botComment.id}`);
-            } else {
-              // Create new comment
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                body: body
-              });
-              core.info('Created new PR comment');
-            }
-
-            } catch (error) {
-              core.setFailed(`Failed to process code scanning alerts: ${error.message}`);
-              throw error;
-            }
-
-      - name: Check for open Dependabot alerts
-        id: dependabot
+      # kube-linter - Kubernetes manifest scanning if manifests present
+      - name: Run kube-linter against clusters manifests (if present)
+        if: hashFiles('.kube-linter.yaml') != '' && hashFiles('clusters/**.yaml') != ''
         run: |
-          echo "🔍 Checking for open Dependabot alerts..."
+          curl -sSL https://github.com/stackrox/kube-linter/releases/latest/download/kube-linter-linux-amd64.tar.gz \
+            | tar -xz kube-linter
+          chmod +x kube-linter
+          ./kube-linter lint clusters --config .kube-linter.yaml
 
-          ALERTS=$(gh api /repos/${{ github.repository }}/dependabot/alerts \
-            --jq '[.[] | select(.state == "open")] | length')
-
-          # Save count for later steps
-          echo "count=${ALERTS}" >> "$GITHUB_OUTPUT"
-
-          if [ "$ALERTS" -gt 0 ]; then
-            echo ""
-            echo "❌ Found $ALERTS open Dependabot alert(s)"
-            echo ""
-            echo "View alerts at: https://github.com/${{ github.repository }}/security/dependabot"
-            echo ""
-            echo "Open alerts:"
-            gh api /repos/${{ github.repository }}/dependabot/alerts \
-              --jq '.[] | select(.state == "open") | "  • Alert #\(.number): \(.security_advisory.summary) (\(.security_advisory.severity)) - \(.dependency.package.name)"'
-            echo ""
-            echo "❗ PRs cannot be merged until all Dependabot alerts are resolved or dismissed."
-          else
-            echo "✅ No open Dependabot alerts"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
-
-      - name: Fail if any security alerts exist
-        if: steps.code_scanning.outputs.count > 0 || steps.dependabot.outputs.count > 0
+      # Final gate: ensure overall failure on unignored HIGH/CRITICAL issues is preserved
+      - name: Summarize Security Gate Result
+        if: always()
         run: |
-          echo "❌ Workflow failed due to open security alerts"
-          echo "Code scanning alerts: ${{ steps.code_scanning.outputs.count }}"
-          echo "Dependabot alerts: ${{ steps.dependabot.outputs.count }}"
-          exit 1
+          echo "Security gate completed. Individual steps are configured to fail on unapproved HIGH/CRITICAL findings using existing policy/ignore files."

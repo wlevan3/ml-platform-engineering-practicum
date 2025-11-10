@@ -3,7 +3,7 @@ FastAPI application for serving iris classification predictions.
 """
 
 from contextlib import asynccontextmanager
-from typing import Any, Dict, cast
+from typing import Any, cast
 
 from fastapi import FastAPI, HTTPException
 
@@ -99,8 +99,9 @@ async def get_model_info():
         return ModelInfo(**info)
     except Exception as e:
         raise HTTPException(
-            status_code=500, detail=f"Error retrieving model info: {str(e)}"
-        )
+            status_code=500,
+            detail=f"Error retrieving model info: {str(e)}",
+        ) from e
 
 
 @app.post("/predict", response_model=PredictionResponse, tags=["Predictions"])
@@ -125,7 +126,7 @@ async def predict(request: PredictionRequest):
         predicted_class, confidence, probabilities = model.predict(request.features)
 
         # Type narrowing: is_loaded() guarantees metadata is not None
-        metadata = cast(Dict[str, Any], model.metadata)
+        metadata = cast(dict[str, Any], model.metadata)
 
         return PredictionResponse(
             prediction=predicted_class,
@@ -134,9 +135,12 @@ async def predict(request: PredictionRequest):
             model_version=metadata["version"],
         )
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Prediction error: {str(e)}",
+        ) from e
 
 
 @app.get("/", tags=["Root"])

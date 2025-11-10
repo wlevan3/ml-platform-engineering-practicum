@@ -1,7 +1,8 @@
-#!/usr/bin/env python3
-"""
-Train a simple Random Forest classifier on the Iris dataset and save it.
-This script creates the initial model for the prediction service.
+"""Canonical training script for the Iris classification model.
+
+This module hosts the train_model implementation as the authoritative location.
+Compatibility shims (e.g. services.api.train_model) re-export from here per
+STREAMLINING_PLAN. Behavior matches the original implementation.
 """
 
 import json
@@ -13,7 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
-from services.api.security import calculate_file_hash
+from ml_platform_api.security import calculate_file_hash
 
 
 def train_model() -> None:
@@ -24,7 +25,11 @@ def train_model() -> None:
 
     # Split data
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+        stratify=y,
     )
 
     print(f"Training set: {len(X_train)} samples")
@@ -33,7 +38,10 @@ def train_model() -> None:
     # Train model
     print("\nTraining Random Forest classifier...")
     model = RandomForestClassifier(
-        n_estimators=100, max_depth=3, random_state=42, n_jobs=-1
+        n_estimators=100,
+        max_depth=3,
+        random_state=42,
+        n_jobs=-1,
     )
     model.fit(X_train, y_train)
 
@@ -45,8 +53,9 @@ def train_model() -> None:
     print("\nClassification Report:")
     print(classification_report(y_test, y_pred, target_names=iris.target_names))
 
-    # Save model
-    models_dir = Path(__file__).resolve().parent / "services" / "api" / "models"
+    # Preserve artifact location under services/api/models
+    repo_root = Path(__file__).resolve().parents[2]
+    models_dir = repo_root / "services" / "api" / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
 
     model_path = models_dir / "iris_classifier.skops"

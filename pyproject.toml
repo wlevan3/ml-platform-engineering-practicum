@@ -1,0 +1,47 @@
+[project]
+name = "ml-platform-engineering-practicum"
+version = "0.1.0"
+description = "End-to-end ML platform practicum with FastAPI service, infrastructure-as-code, and production-grade workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+  # FastAPI API stack
+  "fastapi==0.120.4",
+  "starlette==0.49.1",
+  "uvicorn[standard]==0.34.0",
+  "pydantic==2.10.5",
+  "pydantic-settings==2.7.1",
+
+  # ML stack
+  "scikit-learn==1.6.1",
+  "skops>=0.13.0",
+  "numpy==2.2.2",
+]
+
+[dependency-groups]
+dev = [
+  # Testing
+  "pytest==8.3.4",
+  "httpx==0.28.1",
+  "pytest-cov==6.0.0",
+
+  # Code quality / typing
+  "ruff==0.9.1",
+  "mypy==1.18.2",
+  "black==24.10.0",
+
+  # Git hooks
+  "pre-commit",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/wlevan3/ml-platform-engineering-practicum"
+
+# NOTE:
+# We intentionally do NOT add invalid [tool.uv] keys here.
+# Use:
+#   uv sync
+#   uv run pip install -e .
+# or configure uv (outside this file) to install this project in editable mode
+# so that src/ml_platform_api is on PYTHONPATH for `uv run pytest`.
