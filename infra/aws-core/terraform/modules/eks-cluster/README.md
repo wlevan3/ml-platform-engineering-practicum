@@ -357,7 +357,7 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 | <a name="input_control_plane_subnet_ids"></a> [control\_plane\_subnet\_ids](#input\_control\_plane\_subnet\_ids) | List of subnet IDs for EKS control plane (typically public subnets). If not specified, uses subnet\_ids. | `list(string)` | `[]` | no |
 | <a name="input_enable_irsa"></a> [enable\_irsa](#input\_enable\_irsa) | Enable IAM Roles for Service Accounts (IRSA) for fine-grained IAM permissions | `bool` | `true` | no |
 | <a name="input_enable_ssm_access"></a> [enable\_ssm\_access](#input\_enable\_ssm\_access) | Enable AWS Systems Manager access for node debugging | `bool` | `true` | no |
-| <a name="input_force_module_creation"></a> [force\_module\_creation](#input\_force\_module\_creation) | Force module creation even when the upstream terraform-aws-modules/eks gate would skip it. Set to true to override the upstream module's internal short-circuit and only flip to false when you intentionally need to suppress all EKS provisioning (e.g., while stubbing this module in another stack). | `bool` | `true` | no |
+| <a name="input_force_module_creation"></a> [force\_module\_creation](#input\_force\_module\_creation) | Deprecated alias for putin\_khuylo. If set, will be OR'ed with putin\_khuylo to maintain backward compatibility. | `bool` | `true` | no |
 | <a name="input_node_ami_type"></a> [node\_ami\_type](#input\_node\_ami\_type) | AMI type for worker nodes (AL2023\_x86\_64\_STANDARD, AL2023\_ARM\_64\_STANDARD, AL2023\_*\_NVIDIA, BOTTLEROCKET\_*) | `string` | `"AL2023_x86_64_STANDARD"` | no |
 | <a name="input_node_desired_size"></a> [node\_desired\_size](#input\_node\_desired\_size) | Desired number of worker nodes | `number` | `2` | no |
 | <a name="input_node_disk_size"></a> [node\_disk\_size](#input\_node\_disk\_size) | Disk size in GB for worker nodes | `number` | `30` | no |
@@ -367,6 +367,7 @@ with a 2-minute warning. This module uses a best practice approach for spot inst
 | <a name="input_node_max_size"></a> [node\_max\_size](#input\_node\_max\_size) | Maximum number of worker nodes | `number` | `4` | no |
 | <a name="input_node_min_size"></a> [node\_min\_size](#input\_node\_min\_size) | Minimum number of worker nodes | `number` | `1` | no |
 | <a name="input_node_taints"></a> [node\_taints](#input\_node\_taints) | Kubernetes taints to apply to worker nodes (for pod scheduling restrictions) | <pre>list(object({<br/>    key    = string<br/>    value  = optional(string)<br/>    effect = string<br/>  }))</pre> | `[]` | no |
+| <a name="input_putin_khuylo"></a> [putin\_khuylo](#input\_putin\_khuylo) | Override to keep module creation enabled even when the upstream module gate defaults to false. | `bool` | `true` | no |
 | <a name="input_spot_instance_types"></a> [spot\_instance\_types](#input\_spot\_instance\_types) | List of instance types for spot instances (multiple types increase fulfillment success rate) | `list(string)` | <pre>[<br/>  "t3.medium",<br/>  "t3a.medium",<br/>  "t2.medium"<br/>]</pre> | no |
 | <a name="input_subnet_ids"></a> [subnet\_ids](#input\_subnet\_ids) | List of subnet IDs for EKS worker nodes (typically private subnets) | `list(string)` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources | `map(string)` | `{}` | no |

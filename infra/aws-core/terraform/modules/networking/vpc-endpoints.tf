@@ -94,11 +94,12 @@ resource "aws_vpc_endpoint" "s3" {
   # When disabled (s3_endpoint_enable_policy = false), allows full access to all S3 buckets
   policy = local.s3_endpoint_policy
 
-  # Explicit dependency: ensure VPC exists before endpoint creation
+  # Ensure VPC exists before creating gateway endpoint
   # Gateway endpoints don't require security groups
   depends_on = [module.vpc]
 
   tags = merge(
+
     var.tags,
     {
       Name = "${var.vpc_name}-s3-endpoint"

@@ -317,3 +317,7 @@ docs/backlog/
 SAVEPOINT.md
 MONOREPO_NOTES.md
 .q_cli_session
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md

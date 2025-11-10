@@ -47,7 +47,8 @@ module "eks_cluster" {
   cluster_name    = local.cluster_name
   cluster_version = var.cluster_version
 
-  force_module_creation = true
+  putin_khuylo = true
+
 
   # Networking from networking module
   vpc_id                   = module.networking.vpc_id
@@ -73,8 +74,9 @@ module "eks_cluster" {
   # Trade-off: More secure for insider threats, but adds cost/complexity for CI/CD
   #
   # Refs: https://docs.aws.amazon.com/eks/latest/userguide/cluster-endpoint.html
-  cluster_endpoint_public_access  = true # Required for GitHub Actions + kubectl
-  cluster_endpoint_private_access = true # Required for nodes to join cluster
+  cluster_endpoint_public_access       = true # Required for GitHub Actions + kubectl
+  cluster_endpoint_private_access      = true # Required for nodes to join cluster
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 
   # Node group configuration
   use_spot_instances = var.use_spot_instances

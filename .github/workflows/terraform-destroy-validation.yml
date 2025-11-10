@@ -135,36 +135,32 @@ jobs:
             --output text 2>/dev/null || echo "NOT_FOUND")
 
           # NAT Gateways
-          NAT_GATEWAYS=$(aws ec2 describe-nat-gateways \
+          NAT_COUNT=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
-            --query 'NatGateways[].NatGatewayId' \
+            --query 'length(NatGateways)' \
             --output text)
-          NAT_COUNT=$(echo "$NAT_GATEWAYS" | awk 'NF {count++} END {print count+0}')
 
           # VPC Endpoints
-          VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
+          VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
-            --query 'VpcEndpoints[].VpcEndpointId' \
+            --query 'length(VpcEndpoints)' \
             --output text)
-          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | awk 'NF {count++} END {print count+0}')
 
           # Elastic IPs
-          EIPS=$(aws ec2 describe-addresses \
+          EIP_COUNT=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
-            --query 'Addresses[].AllocationId' \
+            --query 'length(Addresses)' \
             --output text)
-          EIP_COUNT=$(echo "$EIPS" | awk 'NF {count++} END {print count+0}')
 
           # Security Groups
-          SECURITY_GROUPS=$(aws ec2 describe-security-groups \
+          SG_COUNT=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
             --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
-            --query 'SecurityGroups[].GroupId' \
+            --query 'length(SecurityGroups)' \
             --output text)
-          SG_COUNT=$(echo "$SECURITY_GROUPS" | awk 'NF {count++} END {print count+0}')
 
           {
             echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"
@@ -316,7 +312,7 @@ jobs:
           ../../scripts/validate-terraform-state.sh destroy
           MAX_ATTEMPTS=3
           for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            if CLUSTER_NAME="$TEST_CLUSTER_NAME" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
+            if CLUSTER_NAME="${{ env.TEST_CLUSTER_NAME }}" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
               echo "AWS resource verification succeeded on attempt $attempt"
               success=0
               break
@@ -348,7 +344,7 @@ jobs:
             echo "## Test Details"
             echo "| Item | Value |"
             echo "|------|-------|"
-            echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
+            echo "| Test Cluster Name | \`${{ env.TEST_CLUSTER_NAME }}\` |"
             echo "| Region | \`$AWS_REGION\` |"
             # Try to get Terraform version via JSON/jq, fallback to text parsing if jq or -json is unavailable
             TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
