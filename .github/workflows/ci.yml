@@ -299,7 +299,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Run mypy
-        run: uv run mypy
+        run: uv run mypy --config mypy.ini .
 
       - name: Run pytest
         run: uv run pytest
