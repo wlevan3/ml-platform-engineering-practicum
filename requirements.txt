@@ -11,7 +11,7 @@ skops>=0.13.0  # Secure pickle-free model serialization (addresses CWE-502)
 numpy==2.2.2
 
 # Testing
-pytest==8.3.4
+pytest==9.0.0
 httpx==0.28.1
 pytest-cov==6.0.0
 
