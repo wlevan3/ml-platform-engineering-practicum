@@ -18,6 +18,8 @@
 #
 # Last updated: 2025-11-08
 # =============================================================================
+# DEPRECATED: Kept for historical reference and analysis.
+# DEPRECATED: Do not use for new workflows; see docs/CLEANUP_RUNBOOK.md for current cleanup guidance.
 
 echo "⚠️  ERROR: This script is DEPRECATED"
 echo ""

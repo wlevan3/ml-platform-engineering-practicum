@@ -1,4 +1,5 @@
 # Cleanup Prevention Strategy – Orphaned Resource Detection
+Status: Reference context for cleanup; canonical operational guidance is in docs/CLEANUP_RUNBOOK.md.
 
 This document explains how our CI/CD pipelines guard against orphaned AWS resources after Terraform destroy operations.
 

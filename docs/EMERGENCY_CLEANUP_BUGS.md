@@ -1,4 +1,5 @@
 # Emergency cleanup script bugs
+Status: Reference context for cleanup; canonical operational guidance is in docs/CLEANUP_RUNBOOK.md.
 
 This document summarizes the critical failure modes we observed while running the emergency cleanup script (`infra/aws-core/terraform/environments/dev/emergency-cleanup-improved.sh`).
 

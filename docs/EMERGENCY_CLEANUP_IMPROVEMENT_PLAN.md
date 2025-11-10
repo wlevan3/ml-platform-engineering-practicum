@@ -1,4 +1,5 @@
 # Emergency Cleanup Script Improvement Plan
+Status: Reference context for cleanup; canonical operational guidance is in docs/CLEANUP_RUNBOOK.md.
 
 **Target File**: `infra/aws-core/terraform/environments/dev/emergency-cleanup-improved.sh`
 **Current Version**: commit ba3680f

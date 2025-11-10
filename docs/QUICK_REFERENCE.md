@@ -193,10 +193,35 @@ terraform plan -out=tfplan
 
 # Apply
 terraform apply tfplan
-
-# Destroy (careful!)
-terraform destroy
 ```
+
+## Cleanup / Teardown (Canonical)
+
+Status: Canonical operational guidance is defined in docs/CLEANUP_RUNBOOK.md.
+
+For any teardown or cleanup activity:
+
+- Follow the runbook: [docs/CLEANUP_RUNBOOK.md](docs/CLEANUP_RUNBOOK.md)
+- Use these canonical entrypoints only:
+
+```bash
+# Layer A: Standard Terraform-based destroy (recommended)
+cd infra/aws-core/terraform/environments/dev
+terraform plan -destroy -out=destroy.tfplan
+terraform apply destroy.tfplan
+
+# Layer B: Manual verification helpers (from repo root)
+./scripts/validate-terraform-state.sh
+./scripts/validate-resource-tags.sh
+./scripts/verify-aws-resources-deleted.sh
+
+# Layer C: Nuclear / emergency tools (manual only, see runbook for warnings)
+platform/scripts/aws-resource-inventory.sh
+platform/scripts/aws-nuclear-cleanup.sh
+platform/scripts/verify-cleanup.sh
+```
+
+Refer to CLEANUP_RUNBOOK.md for full decision tree, safety notes, REQUIRED tag/account safeguards, and DRY_RUN usage for nuclear scripts.
 
 ## Kubernetes Workflow
 

@@ -1,7 +1,7 @@
 # Infrastructure Cleanup Runbook
 
+**Status**: Canonical runbook for teardown and cleanup flows in this repo.
 **Last Updated**: 2025-11-08
-**Status**: Production Ready
 **Audience**: Developers, Operations
 
 ---
@@ -13,17 +13,20 @@
 │
 ├─ Planned cleanup (normal workflow)?
 │  └─→ Use: terraform destroy (15-20 min, safest)
-│     └─ Go to: Path 1 below
+│     └─ Go to: Layer A (Standard Terraform-based destroy)
 │
 ├─ Emergency cleanup (deployment failed)?
 │  │
-│  ├─ Terraform state available?
-│  │  └─→ Use: terraform destroy (15-20 min)
-│  │     └─ Go to: Path 1 below
+│  │  ├─ Terraform state available?
+│  │  │  └─→ Use: terraform destroy (15-20 min)
+│  │  │     └─ Go to: Layer A
+│  │  │
+│  │  └─ Terraform state lost/corrupted?
+│  │     └─→ Manual AWS Console cleanup (30-60 min)
+│  │        └─ Go to: Layer B (Manual verification and guided teardown)
 │  │
-│  └─ Terraform state lost/corrupted?
-│     └─→ Manual AWS Console cleanup (30-60 min)
-│        └─ Go to: Path 2 below
+│  └─ Only use nuclear scripts if Layers A and B cannot be applied safely.
+│     └─ Go to: Layer C (Nuclear / emergency tools)
 │
 └─ Single stuck resource (e.g., failed node group)?
    └─→ Use: cleanup-failed-nodegroups.sh
@@ -32,7 +35,13 @@
 
 ---
 
-## Path 1: Terraform Destroy (Recommended)
+## Layer A: Standard Terraform-based Destroy (Recommended)
+
+**Canonical path**:
+
+```bash
+cd infra/aws-core/terraform/environments/dev
+```
 
 **When to use**:
 
@@ -115,25 +124,25 @@ terraform apply destroy.tfplan
 - Note any resources that fail to delete
 - Common issues: ENI cleanup delay, security group dependencies
 
-#### Step 4: Verify Complete Cleanup
+#### Step 4: Verify Complete Cleanup (Layer B helpers may also be used here)
+
+At minimum:
 
 ```bash
 # Check Terraform state is empty
 terraform state list
 # Should return: empty or only S3 backend resources
-
-# Verify AWS has zero resources
-aws ec2 describe-vpcs --region us-west-2 \
-  --filters "Name=tag:Cluster,Values=ml-platform-dev" \
-  --query 'Vpcs[].VpcId'
-# Should return: []
-
-# Check for orphaned VPC endpoints
-aws ec2 describe-vpc-endpoints --region us-west-2 \
-  --filters "Name=tag:ManagedBy,Values=Terraform" \
-  --query 'VpcEndpoints[].VpcEndpointId'
-# Should return: []
 ```
+
+Optionally, also run the primary verification helpers (see Layer B):
+
+```bash
+./scripts/validate-terraform-state.sh
+./scripts/validate-resource-tags.sh
+./scripts/verify-aws-resources-deleted.sh
+```
+
+(From repo root, adjust paths as needed.)
 
 #### Step 5: Confirm Cost Savings
 
@@ -154,12 +163,87 @@ aws ec2 describe-nat-gateways --region us-west-2 \
 
 ### Common Issues
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Error acquiring state lock" | Another terraform process running | Wait for other process to finish, or use `terraform force-unlock` |
-| "VPC has dependencies" | ENIs not deleted yet | Wait 2-3 minutes, retry destroy |
-| "Security group in use" | Cross-references between SGs | Terraform usually handles this; if not, see Path 2 |
-| "Plan shows no changes" | State already clean | Run verification commands (Step 4) |
+| Issue                       | Cause                             | Solution                                                |
+|----------------------------|-----------------------------------|---------------------------------------------------------|
+| "Error acquiring state lock" | Another terraform process running | Wait or use `terraform force-unlock` (with care)        |
+| "VPC has dependencies"       | ENIs not deleted yet              | Wait 2-3 minutes, retry destroy                         |
+| "Security group in use"      | Cross-references between SGs      | Terraform usually handles; if not, see Layer B          |
+| "Plan shows no changes"      | State already clean               | Run verification commands (Step 4 / Layer B scripts)    |
+
+---
+
+## Layer B: Manual Verification Helpers and Disaster-Recovery Guided Teardown
+
+**When to use**:
+
+- As post-destroy verification after Layer A.
+- When Terraform destroy completed but you want strong assurance that no tagged resources remain.
+- When Terraform destroy fails and you must inspect and guide manual cleanup.
+
+**Primary verification helpers (source-of-truth scripts):**
+
+From the repository root:
+
+```bash
+./scripts/validate-terraform-state.sh
+./scripts/validate-resource-tags.sh
+./scripts/verify-aws-resources-deleted.sh
+```
+
+These scripts:
+
+- Use tag-based scoping for `ml-platform-dev`.
+- Compare Terraform state vs. AWS resources.
+- Highlight lingering resources that must be removed.
+
+**Manual AWS Console / CLI (Path 2) remains available**
+
+If Terraform state is lost/corrupted or repeated destroys fail, use the manual AWS Console/CLI sequence already documented below (resource deletion order and commands). Treat that as guided, one-time disaster recovery — not the default workflow.
+
+(Existing "Path 2: Manual AWS Console (Disaster Recovery)" content below is part of Layer B and remains unchanged in behavior.)
+
+---
+
+## Layer C: Nuclear / Emergency Tools (Manual Only, Last Resort)
+
+Use these only when:
+
+- Terraform state is unavailable or irreparably wrong,
+- Layer A (standard destroy) and Layer B (verification/manual guided cleanup) cannot safely resolve issues,
+- You have explicit approval to run destructive, tag-scoped scans or cleanup.
+
+Tools (all are manual-only; not called by CI):
+
+```text
+platform/scripts/aws-resource-inventory.sh
+platform/scripts/aws-nuclear-cleanup.sh
+platform/scripts/verify-cleanup.sh
+```
+
+Key properties and expectations (see each script header for exact behavior):
+
+- Tag-based scoping is used to focus on intended resources.
+- `EXPECTED_ACCOUNT_ID` or equivalent safeguards are enforced to prevent cross-account damage.
+- `DRY_RUN` modes are available and should be used first to inspect impact.
+- These scripts are intended for expert operators; misuse can be dangerous even with safeguards.
+
+**Important**:
+
+- These nuclear tools do NOT replace `terraform destroy`.
+- They MUST NOT be wired into CI or automated workflows.
+- Treat them as emergency break-glass utilities, always cross-checking with Layer B verification scripts and AWS Console before and after use.
+
+---
+
+## Related Automation (CI) – For Awareness
+
+The `.github/workflows/terraform-destroy-validation.yml` workflow (and related automation) runs automated checks that rely on:
+
+- `scripts/validate-terraform-state.sh`
+- `scripts/validate-resource-tags.sh`
+- `scripts/verify-aws-resources-deleted.sh`
+
+If any additional CI references or helper scripts are discovered that do not exist in this repository, they require follow-up to align with this canonical runbook.
 
 ---
 
