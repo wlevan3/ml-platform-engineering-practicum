@@ -227,10 +227,10 @@ analyze_critical_resources() {
 
     echo ""
     echo "🚨 This is usually a MISTAKE. Critical infrastructure deletions should:"
-    echo "   1. Be intentional and well-planned"
-    echo "   2. Have proper backups and migration plans"
-    echo "   3. Be reviewed by multiple team members"
-    echo "   4. Consider Geschäftskontinuität (business continuity)"
+    echo "   1. Be intentional and explicitly approved."
+    echo "   2. Include verified backups and recovery plans."
+    echo "   3. Be reviewed by appropriate infrastructure and security owners."
+    echo "   4. Be executed during a controlled maintenance window."
 
     if [ "$CRITICAL_FAILURE" = "true" ]; then
       echo ""

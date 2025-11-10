@@ -161,6 +161,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "Allowed CIDRs for public EKS endpoint in dev (do NOT use 0.0.0.0/0 in shared/prod)."
+  type        = list(string)
+  default     = ["127.0.0.1/32"]
+}
+
 # ===================================================================
 # Security Module Variables
 # ===================================================================
