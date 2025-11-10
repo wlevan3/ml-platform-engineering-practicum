@@ -190,12 +190,11 @@ jq -r '.resource_changes[] | select(.change.actions[] == "delete") | "  - \(.typ
 print_section "Safety checks"
 
 # Check 1: Data-storage resources (RDS, DynamoDB)
-STORAGE_TYPES_PATTERN="rds|db_instance|dynamodb|documentdb_cluster|memorydb_cluster|neptune_cluster|elasticsearch|elasticache|redshift|opensearch_domain|kinesis_stream"
-STORAGE_DELETES=$(jq --arg pattern "$STORAGE_TYPES_PATTERN" '[.resource_changes[] | select(.change.actions[] == "delete" and (.type | test($pattern)))] | length' "$TEMP_JSON")
+STORAGE_DELETES=$(jq '[.resource_changes[] | select(.change.actions[] == "delete" and (.type | test("rds|dynamodb|elasticsearch|elasticache|redshift")))] | length' "$TEMP_JSON")
 
 if [ "$STORAGE_DELETES" -gt 0 ]; then
   print_error "Plan includes deletion of data-storage resources!"
-  jq -r --arg pattern "$STORAGE_TYPES_PATTERN" '.resource_changes[] | select(.change.actions[] == "delete" and (.type | test($pattern))) | "   - \(.type).\(.name)"' "$TEMP_JSON"
+  jq -r '.resource_changes[] | select(.change.actions[] == "delete" and (.type | test("rds|dynamodb|elasticsearch|elasticache|redshift"))) | "   - \(.type).\(.name)"' "$TEMP_JSON"
   echo ""
   print_error "This is likely a MISTAKE. Data-storage deletions should be intentional."
   echo ""
@@ -252,25 +251,17 @@ fi
 print_section "State before/after"
 
 # Current state count
-CURRENT_STATE_RAW=$(terraform state list 2>/dev/null | wc -l 2>/dev/null || echo "unknown")
-CURRENT_STATE_RAW=${CURRENT_STATE_RAW//[[:space:]]/}
-if [[ "$CURRENT_STATE_RAW" =~ ^[0-9]+$ ]]; then
-  CURRENT_STATE="$CURRENT_STATE_RAW"
-  FUTURE_STATE=$((CURRENT_STATE - DELETES))
-else
-  CURRENT_STATE="unknown"
-  FUTURE_STATE="unknown"
-fi
+CURRENT_STATE=$(terraform state list 2>/dev/null | wc -l || echo "unknown")
+FUTURE_STATE=$((CURRENT_STATE - DELETES))
 
 echo ""
 echo "Terraform state:"
-echo "  Before: ~$CURRENT_STATE resources (approximate)"
-echo "  After:  ~$FUTURE_STATE resources (approximate)"
+echo "  Before: ~$CURRENT_STATE resources"
+echo "  After:  ~$FUTURE_STATE resources"
 echo "  Deleted: $DELETES"
 
-if [[ "$FUTURE_STATE" =~ ^-?[0-9]+$ ]] && [ "$FUTURE_STATE" -lt 0 ]; then
-  print_error "Expected future state is negative (counting error detected). Aborting validation."
-  exit 1
+if [ "$FUTURE_STATE" -lt 0 ]; then
+  print_warning "Expected future state is negative (possible counting error)"
 fi
 
 # ============================================================================

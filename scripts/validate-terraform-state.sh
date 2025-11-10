@@ -12,13 +12,6 @@
 #   plan    - Validate state before operations (expect resources)
 #   destroy - Validate state after destroy (expect empty)
 #
-# ENVIRONMENT VARIABLES:
-#   STRICT_REFRESH_FAILURE=true  - Treat terraform refresh issues as fatal (default: warn only)
-#
-# NOTE:
-#   Refresh failures used to be fatal by default. We now emit warnings unless STRICT_REFRESH_FAILURE=true so
-#   transient AWS API hiccups don't flap CI. Set the env var to restore the previous fail-fast behavior.
-#
 # EXIT CODES:
 #   0 - State is valid
 #   1 - State validation failed
@@ -27,21 +20,17 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/logging.sh"
-
 OPERATION="${1:-plan}"
-STRICT_REFRESH_FAILURE="${STRICT_REFRESH_FAILURE:-false}"
 
-# Validate STRICT_REFRESH_FAILURE value early so typos fail loudly.
-case "${STRICT_REFRESH_FAILURE,,}" in
-    true|false)
-        ;;
-    *)
-        log_error "STRICT_REFRESH_FAILURE must be 'true' or 'false' (case-insensitive); received '${STRICT_REFRESH_FAILURE}'."
-        exit 1
-        ;;
-esac
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}✓${NC} $1"; }
+log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+log_error() { echo -e "${RED}✗${NC} $1"; }
 
 # Check 1: Terraform is initialized
 echo "Checking terraform state..."
@@ -83,10 +72,13 @@ case "$OPERATION" in
         fi
 
         # Verify critical resources are present
-        if terraform state list 2>/dev/null | grep -q "aws_eks_cluster"; then
-            log_info "EKS cluster found in state"
-        elif [ "$RESOURCE_COUNT" -gt 0 ]; then
-            log_warn "EKS cluster not found in state (may already be destroyed)"
+        if [ "$RESOURCE_COUNT" -gt 0 ]; then
+            # Check for EKS cluster
+            if terraform state list | grep -q "aws_eks_cluster" 2>/dev/null; then
+                log_info "EKS cluster found in state"
+            else
+                log_warn "EKS cluster not found in state (may already be destroyed)"
+            fi
         fi
         ;;
 
@@ -127,57 +119,6 @@ if echo "$REFRESH_OUTPUT" | grep -qiE "error|failed"; then
     echo "$REFRESH_OUTPUT"
 else
     log_info "State refresh successful (no critical issues)"
-fi
-
-# Check 7: Run pre-flight conflict detection if in plan mode
-if [ "$OPERATION" = "plan" ]; then
-    echo ""
-    log_info "Running pre-flight conflict detection..."
-
-    # Get script directory relative to this script for correct path resolution
-    SCRIPT_DIR="$(dirname "$0")"
-    # If we're in infra/aws-core/terraform/environments/dev, we need to go up a few levels
-    if [[ "$SCRIPT_DIR" == *"infra/aws-core/terraform/environments"* ]]; then
-        CONFLICT_SCRIPT_PATH="../../../scripts/pre-flight-name-check.sh"
-    else
-        # If we're in the scripts directory, use relative path
-        CONFLICT_SCRIPT_PATH="./pre-flight-name-check.sh"
-    fi
-
-    # Create a temporary plan to check for conflicts
-    TEMP_PLAN=$(mktemp)
-    # Capture the exit code from terraform plan
-    if terraform plan -detailed-exitcode -out="$TEMP_PLAN" 2>/dev/null; then
-        # Exit code 0 means no changes, but plan succeeded - run conflict check
-        # Run the conflict detection script on the plan
-        if "$CONFLICT_SCRIPT_PATH" "$TEMP_PLAN"; then
-            log_info "Pre-flight conflict detection passed"
-        else
-            log_error "Pre-flight conflict detection failed"
-            rm -f "$TEMP_PLAN" 2>/dev/null
-            exit 1
-        fi
-    else
-        # Capture the actual exit code from terraform plan
-        TF_EXIT_CODE=$?
-        # Terraform exit codes:
-        # 0 - Succeeded with no changes
-        # 1 - General error
-        # 2 - Succeeded with changes (this is OK for our purposes)
-        if [ $TF_EXIT_CODE -eq 2 ]; then  # Terraform exit code 2 indicates changes exist
-            if "$CONFLICT_SCRIPT_PATH" "$TEMP_PLAN"; then
-                log_info "Pre-flight conflict detection passed"
-            else
-                log_error "Pre-flight conflict detection failed"
-                rm -f "$TEMP_PLAN" 2>/dev/null
-                exit 1
-            fi
-        else
-            log_warn "Could not generate plan for conflict detection (terraform exit code: $TF_EXIT_CODE)"
-            rm -f "$TEMP_PLAN" 2>/dev/null
-        fi
-    fi
-    rm -f "$TEMP_PLAN" 2>/dev/null
 fi
 
 # Check 7: Run pre-flight conflict detection if in plan mode

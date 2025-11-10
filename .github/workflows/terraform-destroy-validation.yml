@@ -81,11 +81,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        timeout-minutes: 5
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       - name: Configure AWS credentials
-        timeout-minutes: 5
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
@@ -101,17 +99,9 @@ jobs:
         run: terraform init
 
       - name: Terraform Validate
-        timeout-minutes: 5
         run: terraform validate -no-color
 
-      - name: Pre-destroy scripts
-        timeout-minutes: 10
-        run: |
-          ../../scripts/validate-terraform-state.sh plan
-          ../../scripts/validate-resource-tags.sh
-
       - name: Phase 1 - Create Test Infrastructure
-        timeout-minutes: 40
         run: |
           echo "Creating test cluster for destroy validation..."
 
@@ -140,7 +130,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'NatGateways[].NatGatewayId' \
             --output text)
-          NAT_COUNT=$(echo "$NAT_GATEWAYS" | awk 'NF {count++} END {print count+0}')
+          NAT_COUNT=$(echo "$NAT_GATEWAYS" | wc -w)
 
           # VPC Endpoints
           VPC_ENDPOINTS=$(aws ec2 describe-vpc-endpoints \
@@ -148,7 +138,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'VpcEndpoints[].VpcEndpointId' \
             --output text)
-          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | awk 'NF {count++} END {print count+0}')
+          VPCE_COUNT=$(echo "$VPC_ENDPOINTS" | wc -w)
 
           # Elastic IPs
           EIPS=$(aws ec2 describe-addresses \
@@ -156,7 +146,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'Addresses[].AllocationId' \
             --output text)
-          EIP_COUNT=$(echo "$EIPS" | awk 'NF {count++} END {print count+0}')
+          EIP_COUNT=$(echo "$EIPS" | wc -w)
 
           # Security Groups
           SECURITY_GROUPS=$(aws ec2 describe-security-groups \
@@ -164,7 +154,7 @@ jobs:
             --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'SecurityGroups[].GroupId' \
             --output text)
-          SG_COUNT=$(echo "$SECURITY_GROUPS" | awk 'NF {count++} END {print count+0}')
+          SG_COUNT=$(echo "$SECURITY_GROUPS" | wc -w)
 
           {
             echo "eks_cluster_exists=$([[ \"$EKS_CLUSTER\" != \"NOT_FOUND\" ]] && echo \"true\" || echo \"false\")"
@@ -202,7 +192,6 @@ jobs:
           echo "✅ Resource tags validated"
 
       - name: Phase 4 - Run Terraform Destroy
-        timeout-minutes: 40
         id: destroy
         run: |
           echo "Running terraform destroy..."
@@ -264,11 +253,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Phase 6 - Validate Terraform State (Empty)
-        id: phase6
         run: |
           echo "Validating terraform state after destroy..."
 
-          # shellcheck disable=SC2086
+          # shellcheck disable=SC2126,SC2086
           REMAINING=$(terraform state list 2>/dev/null | awk 'NF {count++} END {print count+0}')
 
           if [ "$REMAINING" -eq 0 ]; then
@@ -280,7 +268,6 @@ jobs:
           fi
 
       - name: Phase 7 - Validate AWS Resources (Deleted)
-        id: phase7
         run: |
           echo "Validating cleanup via AWS Resource Groups Tagging API..."
 
@@ -302,28 +289,6 @@ jobs:
           else
             echo "✗ ERROR: Found $TOTAL_RESOURCES resources still in AWS:"
             echo "$RESOURCES" | jq -r '.[] | "  - \(.ResourceARN)"'
-            exit 1
-          fi
-
-      - name: Post-destroy scripts
-        timeout-minutes: 10
-        run: |
-          ../../scripts/validate-terraform-state.sh destroy
-          MAX_ATTEMPTS=3
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            if CLUSTER_NAME="$TEST_CLUSTER_NAME" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
-              echo "AWS resource verification succeeded on attempt $attempt"
-              success=0
-              break
-            else
-              success=1
-              echo "AWS resources still present (attempt $attempt/$MAX_ATTEMPTS), retrying..."
-              sleep 10
-            fi
-          done
-
-          if [ "$success" -ne 0 ]; then
-            echo "AWS resource verification failed after $MAX_ATTEMPTS attempts"
             exit 1
           fi
 

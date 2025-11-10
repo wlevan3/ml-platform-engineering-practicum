@@ -31,11 +31,18 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/logging.sh"
-
 CLUSTER_NAME="${CLUSTER_NAME:-ml-platform-dev}"
 REGION="${AWS_REGION:-us-west-2}"
+
+# Color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+log_info() { echo -e "${GREEN}✓${NC} $1"; }
+log_warn() { echo -e "${YELLOW}⚠${NC} $1"; }
+log_error() { echo -e "${RED}✗${NC} $1"; }
 
 echo "Verifying all AWS resources deleted for cluster: $CLUSTER_NAME"
 echo "Region: $REGION"
@@ -77,6 +84,7 @@ check_resource_type() {
 
     if [ "$RESOURCE_COUNT" -eq 0 ]; then
         log_info "$type_label: 0 found"
+        echo "$RESOURCES" | jq -r '.[] | .ResourceARN' | sed 's/^/  - /'
     else
         log_error "$type_label: Found $RESOURCE_COUNT resources (ORPHANED)"
         echo "$RESOURCES" | jq -r '.[] | .ResourceARN' | sed 's/^/  - /'
