@@ -1,3 +1,7 @@
+# NOTE: This file is maintained for compatibility only.
+# The authoritative sources of Python dependencies are pyproject.toml and uv.lock (managed via uv).
+# Do not manually edit this file; regenerate from uv if needed.
+
 # FastAPI and server
 fastapi==0.120.4
 starlette==0.49.1  # Fixes CVE-2025-62727 (Dependabot alert #2)

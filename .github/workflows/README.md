@@ -1,6 +1,41 @@
 # GitHub Actions Workflows
 
-Comprehensive documentation for all CI/CD workflows in the ML Platform Engineering Practicum project.
+This directory contains the CI/CD and security workflows for this repository. The YAML files in `.github/workflows/` are the source of truth for what currently runs in automation.
+
+## Current Workflows
+
+The following workflows exist in this repository (see each file for exact behavior):
+
+- [`ci.yml`](ci.yml:1) — Core CI pipeline (linting, tests, security and quality checks).
+- [`codeql.yml`](codeql.yml:1) — CodeQL static analysis.
+- [`scorecard.yml`](scorecard.yml:1) — OpenSSF Scorecard checks.
+- [`security-gate.yml`](security-gate.yml:1) — Security and vulnerability gate (current implementation; see file for actual enforced logic).
+- [`nightly-resource-audit.yml`](nightly-resource-audit.yml:1) — Nightly resource and hygiene audits.
+- [`terraform-plan.yml`](terraform-plan.yml:1) — Terraform plan operations.
+- [`terraform-apply.yml`](terraform-apply.yml:1) — Terraform apply operations.
+- [`terraform-destroy-validation.yml`](terraform-destroy-validation.yml:1) — Safety checks for Terraform destroy workflows.
+- [`terraform-manual.yml`](terraform-manual.yml:1) — Manual Terraform workflow entrypoints.
+- [`test-oidc-aws.yml`](test-oidc-aws.yml:1) — OIDC and AWS integration testing.
+- [`claude.yml`](claude.yml:1) — AI-assisted guidance workflow.
+- [`claude-code-review.yml`](claude-code-review.yml:1) — AI-assisted code review.
+- [`resolve-comments.yml`](resolve-comments.yml:1) — Comment resolution and automation helpers.
+
+Always consult the workflow files themselves for precise triggers, conditions, and checks.
+
+## Alignment with STREAMLINING_PLAN
+
+[`STREAMLINING_PLAN.md`](../STREAMLINING_PLAN.md:1) is the authoritative specification for:
+
+- The target CI/CD architecture and required workflows.
+- Standardizing on `uv`, `ruff`, `mypy`, and `pytest` as the canonical toolchain.
+- How security and quality gates (including future refinements to `security-gate.yml` and related workflows) should be structured.
+- The ordered migration from the current workflow set to the target model.
+
+Key points:
+
+- This directory documents the current, implemented workflows.
+- Any changes to CI, security gates, or new workflows MUST be designed to align with [`STREAMLINING_PLAN.md`](../STREAMLINING_PLAN.md:1).
+- Planned or future workflows described in the plan (or enhancements to existing ones) are authoritative only once implemented here as concrete `.yml` files.
 
 ## Table of Contents
 
@@ -97,9 +132,22 @@ gh workflow run eks-deploy.yml -f action=destroy
 
 ### ci.yml
 
-**Purpose**: Comprehensive CI pipeline for code quality, security, and testing
+**Purpose**: Core quality pipeline for this repository.
 
-**Trigger**: Pull requests, pushes to `main`
+**Trigger**: Pull requests and pushes to `main`.
+
+**Key Behavior (Phase 8 aligned)**:
+
+- Uses `uv` for Python dependency management, with `pyproject.toml` + `uv.lock` as the source of truth.
+- Runs the canonical gates:
+  - `uv sync`
+  - `uv run ruff check .`
+  - `uv run ruff format --check .`
+  - `uv run mypy`
+  - `uv run pytest`
+- May include additional non-breaking checks (e.g., IaC validation, linting) as implemented in the workflow.
+
+Ruff is the canonical linter/formatter; mypy and pytest are required. Any changes to this workflow MUST remain consistent with [`STREAMLINING_PLAN.md`](../STREAMLINING_PLAN.md:1).
 
 **Jobs**:
 
@@ -149,61 +197,45 @@ gh workflow run eks-deploy.yml -f action=destroy
 
 ### security-gate.yml
 
-**Purpose**: Block PR merges if security alerts exist
+**Purpose**: Enforce security and vulnerability posture as part of the protected branch policy.
 
-**Trigger**: Pull requests, pushes to `main`
+**Trigger**: As defined in the workflow (e.g., pull requests, pushes, or scheduled).
 
-**Checks**:
+**Behavior (conceptual)**:
 
-- CodeQL alerts
-- Dependabot alerts
+- Aggregates signals from security tooling (e.g., CodeQL alerts, Dependabot/IaC findings).
+- Intended to block merges when HIGH/CRITICAL issues exist without an approved exception.
 
-**Behavior**: Fails if any HIGH or CRITICAL alerts are open
-
----
+Treat `security-gate.yml` as part of the required security posture once wired into branch protection.
 
 ### codeql.yml
 
-**Purpose**: Static code analysis for security vulnerabilities
+**Purpose**: CodeQL static application security testing (SAST).
 
 **Trigger**:
 
-- Pull requests
+- Pull requests to `main`
 - Pushes to `main`
-- Weekly schedule (Mondays at 6:00 AM)
+- Scheduled runs
 
-**Languages**: Python, JavaScript (if applicable)
+**Notes**:
 
-**Analysis**:
-
-- Security vulnerabilities
-- Code quality issues
-- Best practice violations
-
-**Results**: Visible in "Security" tab
-
----
+- Analyzed results surface in GitHub code scanning.
+- Considered a required check for mainline quality and security once configured in branch protection.
 
 ### scorecard.yml
 
-**Purpose**: OpenSSF Scorecard security health metrics
+**Purpose**: OpenSSF Scorecard for repository-level security and hygiene.
 
 **Trigger**:
 
-- Pushes to `main` (branch filter)
-- Weekly schedule (Mondays at 8:00 AM)
+- Pushes to `main`
+- Scheduled runs
 
-**Checks**:
+**Notes**:
 
-- Branch protection
-- Dependency updates
-- Code review practices
-- Signed commits
-- Pinned dependencies
-- SAST/DAST tools
-- Vulnerability scanning
-
-**Results**: Uploaded to CodeQL for visualization
+- Evaluates practices such as branch protection, dependency pinning, and CI hardening.
+- Part of the overall security posture described in [`STREAMLINING_PLAN.md`](../STREAMLINING_PLAN.md:1).
 
 ---
 
@@ -264,6 +296,12 @@ gh workflow run test-oidc-aws.yml
 ---
 
 ## Quick Reference
+
+- Canonical Python toolchain: `uv` + `ruff` + `mypy` + `pytest`
+- Canonical API entrypoint: `apps/api/main.py` (with `services/api` retained as compatibility shims)
+- Security posture: `security-gate.yml`, `codeql.yml`, `scorecard.yml`, and related workflows cooperate to enforce quality and security baselines.
+
+For authoritative targets and expectations, see [`STREAMLINING_PLAN.md`](../STREAMLINING_PLAN.md:1).
 
 ### Trigger Workflow Manually
 

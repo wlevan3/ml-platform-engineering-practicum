@@ -16,8 +16,8 @@ The `main-protection` ruleset enforces automated security and quality checks on 
 
 The branch protection rules rely on existing CI/CD workflows that are already configured in this repository:
 
-- **`.github/workflows/ci.yml`**: Main CI pipeline containing all required status checks (Python tests, security scans,
-  Docker builds, linting)
+- **`.github/workflows/ci.yml`**: Main CI pipeline containing the primary required status checks for `main`, including the
+  uv-based `python-ci` job (running `ruff`, `mypy`, and `pytest`) as the canonical merge gate for Python code quality.
 - **`.github/workflows/codeql.yml`**: CodeQL security analysis workflow
 
 These workflow files are version-controlled and maintained as part of the repository. If you're setting up branch

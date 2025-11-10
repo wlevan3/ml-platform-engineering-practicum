@@ -1,108 +1,17 @@
-#!/bin/bash
-# =============================================================================
-# AWS Resource Verification Script (Resource Groups Tagging API)
-# =============================================================================
+#!/usr/bin/env bash
+# Thin wrapper; delegates to platform/scripts/aws-validation-tools.sh
+# Canonical implementation: platform/scripts/aws-validation-tools.sh (verify-aws-resources-deleted)
 #
-# PURPOSE:
-#   Verifies that all cluster resources are deleted from AWS
-#   Uses Resource Groups Tagging API (queries actual AWS state, not terraform state)
-#   Primary validation method (immune to state corruption)
+# Usage:
+#   CLUSTER_NAME=ml-platform-dev ./scripts/verify-aws-resources-deleted.sh
 #
-# USAGE:
-#   CLUSTER_NAME=ml-platform-dev ./verify-aws-resources-deleted.sh
-#
-# REQUIRED ENVIRONMENT VARIABLES:
-#   CLUSTER_NAME - Name of the cluster
-#   AWS_REGION   - AWS region (default: us-west-2)
-#
-# WHAT IT CHECKS:
-#   - EKS clusters
-#   - NAT Gateways
-#   - VPC Endpoints
-#   - Elastic IPs
-#   - Security Groups
-#   - EC2 Instances
-#
-# EXIT CODES:
+# Exit codes:
 #   0 - All resources deleted (0 found in AWS)
-#   1 - Resources still exist in AWS
-#
-# =============================================================================
+#   1 - Resources still exist in AWS or validation error
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/logging.sh"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &gt;&amp; /dev/null &amp;&amp; pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." &gt;&amp; /dev/null &amp;&amp; pwd)"
 
-CLUSTER_NAME="${CLUSTER_NAME:-ml-platform-dev}"
-REGION="${AWS_REGION:-us-west-2}"
-
-echo "Verifying all AWS resources deleted for cluster: $CLUSTER_NAME"
-echo "Region: $REGION"
-echo ""
-
-# Check AWS CLI is available
-if ! command -v aws &>/dev/null; then
-    log_error "AWS CLI not installed"
-    exit 1
-fi
-
-if ! command -v jq &>/dev/null; then
-    log_error "jq not installed"
-    exit 1
-fi
-
-log_info "AWS CLI and jq available"
-echo ""
-
-ORPHANED_FOUND=false
-ORPHANED_COUNT=0
-
-# Function to check resource type
-check_resource_type() {
-    local resource_type=$1
-    local type_label=$2
-
-    echo "Checking $type_label..."
-
-    # Query resources with cluster tag
-    RESOURCES=$(aws resourcegroupstaggingapi get-resources \
-        --resource-type-filter "$resource_type" \
-        --tag-filter "Key=Cluster,Values=$CLUSTER_NAME" \
-        --region "$REGION" \
-        --query 'ResourceTagMappingList' \
-        --output json 2>/dev/null || echo "[]")
-
-    RESOURCE_COUNT=$(echo "$RESOURCES" | jq 'length')
-
-    if [ "$RESOURCE_COUNT" -eq 0 ]; then
-        log_info "$type_label: 0 found"
-    else
-        log_error "$type_label: Found $RESOURCE_COUNT resources (ORPHANED)"
-        echo "$RESOURCES" | jq -r '.[] | .ResourceARN' | sed 's/^/  - /'
-        log_warn "Manual cleanup required for $type_label before verification can pass"
-        ORPHANED_FOUND=true
-        ORPHANED_COUNT=$((ORPHANED_COUNT + RESOURCE_COUNT))
-    fi
-
-    echo ""
-}
-
-# Check each resource type
-check_resource_type "eks:cluster" "EKS Clusters"
-check_resource_type "ec2:nat-gateway" "NAT Gateways"
-check_resource_type "ec2:vpc-endpoint" "VPC Endpoints"
-check_resource_type "ec2:elastic-ip" "Elastic IPs"
-check_resource_type "ec2:security-group" "Security Groups"
-check_resource_type "ec2:instance" "EC2 Instances"
-
-# Summary
-echo "=========================================="
-if [ "$ORPHANED_FOUND" = false ]; then
-    log_info "All resources deleted for cluster: $CLUSTER_NAME"
-    exit 0
-else
-    log_error "Found $ORPHANED_COUNT orphaned resources for cluster: $CLUSTER_NAME"
-    log_warn "Please clean up remaining resources before considering destroy complete."
-    exit 1
-fi
+exec "${PROJECT_ROOT}/platform/scripts/aws-validation-tools.sh" verify-aws-resources-deleted "$@"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Logging helpers shared by cleanup/validation scripts
+# Logging helpers shared by cleanup/validation scripts.
+# Thin wrapper-style utility: sourced by other scripts; no business logic here.
 
 # Guard against multiple sourcing
 if [[ -n "${ML_PLATFORM_LOGGING_SH_INCLUDED:-}" ]]; then

@@ -5,248 +5,186 @@
 > observability — with reflections on platform design.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI Pipeline](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml/badge.svg)](https://github.com/wlevan3/ml-platform-engineering-practicum/actions/workflows/ci.yml)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&amp;metric=alert_status)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&amp;metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&amp;metric=security_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=wlevan3_ml-platform-engineering-practicum&amp;metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=wlevan3_ml-platform-engineering-practicum)
 
 ## 🏆 Code Quality
 
-This project maintains high code quality standards using **SonarCloud** for continuous analysis:
+This project maintains high code quality standards using **SonarCloud** and GitHub Actions:
 
-- **Quality Gate**: ✅ Passing (A-rated on all metrics)
-- **Coverage Target**: 90% (gate requirement: 80%)
-- **Integration**: Automatic Analysis via GitHub App
-- **Philosophy**: "Clean as You Code" - focus on new code quality
+- **Quality Gate**: Enforced on new code
+- **Tooling**: `uv`, `ruff`, `mypy`, `pytest` as canonical
+- **Philosophy**: "Clean as You Code" on top of a hardened baseline
 
-All pull requests are automatically scanned for bugs, vulnerabilities, code smells, and security hotspots.
-See [SonarCloud Quality Standards](docs/SONARCLOUD_QUALITY_STANDARDS.md) for detailed metrics and thresholds.
+See [`docs/SONARCLOUD_QUALITY_STANDARDS.md`](docs/SONARCLOUD_QUALITY_STANDARDS.md:1) for detailed metrics and thresholds.
 
 ## 📋 About
 
-This repository documents my journey building a production-grade ML platform from scratch. The goal is to gain
-hands-on experience with:
+This repository documents a production-grade ML platform implementation, including:
 
-- **Infrastructure as Code** - Terraform for AWS resources
-- **Container Orchestration** - Kubernetes on AWS EKS
-- **ML Infrastructure** - Model registry, feature store, experiment tracking
-- **CI/CD & GitOps** - Automated testing, deployment pipelines
-- **Observability** - Monitoring, logging, alerting
-- **Platform Engineering** - Design patterns, best practices, trade-offs
+- **Infrastructure as Code** — Terraform for AWS resources
+- **Kubernetes on EKS** — GitOps-driven deployments
+- **ML Infrastructure** — Model registry, feature store (planned), experiment tracking
+- **CI/CD & Security** — Unified quality and security gates
+- **Platform Engineering** — Opinionated patterns and hardening
 
-## 🗂️ Project Management
+[`STREAMLINING_PLAN.md`](STREAMLINING_PLAN.md:1) is the canonical specification for:
 
-This project uses **GitHub Projects** to track all work, learnings, and progress.
+- The final repo layout (`src/`, `apps/`, `platform/`, `scripts/`, infra, and policy directories)
+- Standardizing on `uv`, `ruff`, `mypy`, and `pytest` as the unified toolchain
+- CI/CD and security workflows
+- The ordered migration phases from legacy layouts to the converged architecture
 
-📊 **[View Project Board](https://github.com/users/wlevan3/projects)**
+All structural and tooling changes MUST follow [`STREAMLINING_PLAN.md`](STREAMLINING_PLAN.md:1).
 
-### Project Structure
+## 🧱 Architecture Overview (Finalized)
 
-- **Status Board** - Track work by status (Backlog → In Progress → Done)
-- **Component Board** - Organize by platform component (EKS, Model Registry, etc.)
-- **Roadmap View** - Timeline visualization of practicum phases
-- **Learning Reflections** - Document insights and takeaways
+The repository has converged on the Phase 8 target layout.
 
-See [Project Management Guide](docs/PROJECT_MANAGEMENT.md) for detailed setup and workflows.
+**Canonical components:**
 
-## 🏗️ Architecture
+- `src/ml_platform_api/` — Canonical Python library surface for API logic (schemas, security, model loading, training helpers, etc.)
+- `apps/api/` — Canonical FastAPI application entrypoint facade
+  - Runtime entrypoint: `apps/api/main.py`
+  - Composes `src/ml_platform_api` without duplicating business logic
+- `platform/scripts/` — Shared operational and infra-support scripts
+- `scripts/` — Thin wrappers delegating to `platform/scripts` or app entrypoints
+- `infra/` — Terraform modules, environments, and infra policies
+- `clusters/` — Kubernetes cluster configuration and bootstrap manifests
+- `argocd/` — Argo CD applications and projects for GitOps
+- `policy/` — Sentinel/Rego and related policy-as-code
+- `docs/` — Architecture, security, runbooks, and workflow documentation
+- `.github/workflows/` — CI/CD, security, quality, and automation pipelines
+- `tests/` — Central tests aligned with `src/` and `apps/`
 
-The ML platform consists of these core components:
+**Compatibility shims:**
 
-- **EKS Cluster** - Kubernetes cluster for running ML workloads
-- **Model Registry** - MLflow for model versioning and tracking
-- **Feature Store** - Centralized feature management
-- **CI/CD Pipeline** - Automated testing and deployment
-- **Observability Stack** - Prometheus, Grafana, ELK stack
-
-(Architecture diagram coming soon)
+- `services/api/` — Legacy API layout preserved as a thin compatibility shim layer.
+  - Imports from `src/ml_platform_api` and mirrors legacy module paths.
+  - Must NOT be treated as the canonical implementation for new code.
+  - Existing references (e.g., `uvicorn services.api.main:app`) remain supported until a future major version removes them.
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Python 3.13+
-- Docker Desktop
-- Minikube (for local K8s deployment)
-- kubectl >= 1.28
-- `gh` CLI (for GitHub integration)
-- (Future) AWS Account, `terraform` >= 1.7.0, `aws-cli` >= 2.0, `helm` >= 3.0
+- Python 3.11+
+- Docker
+- kubectl
+- (Optional for infra) AWS Account, `terraform`, `aws-cli`, `helm`
 
-### Local Development Setup
+### Environment Setup (Canonical: uv)
 
 ```bash
-# Clone and setup
+# Clone
 git clone https://github.com/wlevan3/ml-platform-engineering-practicum.git
 cd ml-platform-engineering-practicum
-pre-commit install
 
-# Python environment (3.13 required)
-python3.13 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+# Install uv (once, if not installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Train model and run API
-python train_model.py
-uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000
+# Sync environment from pyproject.toml + uv.lock
+uv sync
 ```
 
-**Alternative:** Use `uv` package manager - see [CLAUDE.md](CLAUDE.md) for details.
+`pyproject.toml` + `uv.lock` are the authoritative sources of Python dependencies.
 
-### Docker Quick Start
+If `requirements.txt` is used, it is compatibility-only and must be treated as generated from `uv` (do not edit manually).
+
+### Running the API
+
+Canonical FastAPI app (Phase 8 end state):
 
 ```bash
-docker build -t ml-platform-api:v1.0.0 .
-docker run -p 8000:8000 ml-platform-api:v1.0.0
-
-# Test endpoints
-curl http://localhost:8000/health/ready
-curl -X POST http://localhost:8000/predict \
-  -H "Content-Type: application/json" \
-  -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
+# Run via apps/api canonical entrypoint
+uv run uvicorn apps.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**All Docker commands:** [docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md) (build, run, scan, SBOM)
-
-### Kubernetes Quick Start
+Compatibility shim (supported for existing workflows):
 
 ```bash
-# Start Minikube
-minikube start --cpus=4 --memory=6144 --driver=docker
-
-# Build, load, and deploy
-docker build -t ml-platform-api:v1.0.0 .
-minikube image load ml-platform-api:v1.0.0
-kubectl apply -f clusters/dev/bootstrap/k8s-manifests/
-
-# Test
-minikube service ml-platform-api --url  # Get service URL
-curl <SERVICE_URL>/health/ready
+# Legacy-style entrypoint using services/api shim (do not use for new integrations)
+uv run uvicorn services.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**All Kubernetes commands:** `docs/QUICK_REFERENCE.md` (deployment, validation, logs, troubleshooting)
+In both cases, the underlying implementation is provided by `src/ml_platform_api`.
+
+### Running Checks (Canonical)
+
+These commands mirror the enforced CI behavior:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy
+uv run pytest
+```
+
+All new contributions MUST pass these gates.
 
 ## 🧭 Monorepo Layout
 
 ```text
-infra/
-├── aws-core/terraform/     # Foundational AWS infrastructure (VPC, EKS, ECR)
-└── policies/               # Policy-as-code (Sentinel, OPA/Rego, Checkov)
-clusters/
-└── dev/bootstrap/          # GitOps entrypoint, bootstrap manifests (app-of-apps ready)
-argocd/
-├── applications/           # ArgoCD Application definitions (what to deploy)
-└── projects/               # ArgoCD Project definitions (where and how)
+src/
+└── ml_platform_api/       # Canonical API/library package
+
+apps/
+└── api/                   # Canonical FastAPI entrypoint (apps/api/main.py)
+
 services/
-└── api/                    # FastAPI inference service and packaged model assets
+└── api/                   # Legacy compatibility shims only (imports from src/ml_platform_api)
+
 platform/
-└── scripts/                # Shared automation (bootstrap, local deploy, diagnostics)
-docs/                       # Design docs, runbooks, and how-tos
-tests/                      # Automated tests (unit/integration)
+└── scripts/               # Shared operational tooling
+
+scripts/                   # Thin wrapper scripts only
+
+infra/                     # Terraform, infra modules, infra policies
+clusters/                  # Kubernetes manifests and cluster bootstrap
+argocd/                    # Argo CD Applications and Projects
+policy/                    # Central policy-as-code
+docs/                      # Architecture, ops, security, workflows
+.github/workflows/         # CI/CD and security workflows
+tests/                     # Automated tests
 ```
 
-Each top-level area owns a distinct concern:
+Key rules:
 
-- **infra/** – cloud resource definitions and guardrail policies
-- **clusters/** – desired Kubernetes state tracked via GitOps (Argo CD app-of-apps)
-- **services/** – product/application code, Dockerfiles, ML assets
-- **platform/** – reusable tooling shared across teams (CLI helpers, bootstrap scripts)
+- New shared Python code → `src/`
+- New runtime services/entrypoints → `apps/`
+- `services/api` is reserved for shims only; do not add new primary logic there.
 
 ## 📚 Documentation
 
-### Core Guides
+Core references:
 
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Workflow, branch strategy, commit conventions, PR checklist
-- **[docs/QUICK_REFERENCE.md](docs/QUICK_REFERENCE.md)** - Commands and shortcuts for all tools
-- **[SECURITY.md](SECURITY.md)** - Security practices, scanning tools, vulnerability management
-- **[ROADMAP.md](ROADMAP.md)** - Detailed phase-by-phase implementation plan
+- [`CONTRIBUTING.md`](CONTRIBUTING.md:1) — Workflow, gates, and contribution rules
+- [`docs/QUICK_REFERENCE.md`](docs/QUICK_REFERENCE.md:1) — Canonical commands and shortcuts
+- [`SECURITY.md`](SECURITY.md:1) — Security posture and guardrails
+- [`STREAMLINING_PLAN.md`](STREAMLINING_PLAN.md:1) — Authoritative technical spec
 
-### Specialized Docs
+## 🛠️ Tooling Summary
 
-- **[docs/PROJECT_MANAGEMENT.md](docs/PROJECT_MANAGEMENT.md)** - GitHub Projects setup
-- **[docs/SONARCLOUD_QUALITY_STANDARDS.md](docs/SONARCLOUD_QUALITY_STANDARDS.md)** - Quality metrics
-- **[docs/SBOM_GENERATION.md](docs/SBOM_GENERATION.md)** - Software Bill of Materials
-- **[docs/IMAGE_SIGNING.md](docs/IMAGE_SIGNING.md)** - Container image signing with Cosign
-- **[docs/PICKLE_SECURITY.md](docs/PICKLE_SECURITY.md)** - Model deserialization security
-- **[docs/KUBERNETES_SECURITY.md](docs/KUBERNETES_SECURITY.md)** - K8s security best practices
+- Dependencies: `uv` (`pyproject.toml` + `uv.lock`)
+- Linting/Formatting: `ruff` (`ruff check`, `ruff format`)
+- Typing: `mypy`
+- Testing: `pytest`
+- Pre-commit: Uses the same core tools; see [`.pre-commit-config.yaml`](.pre-commit-config.yaml:1)
 
-## 🛠️ Technology Stack
-
-### Infrastructure & Cloud
-
-- **AWS** - EKS, RDS, S3, IAM, VPC
-- **Terraform** - Infrastructure as Code
-- **Kubernetes** - Container orchestration
-
-### ML Platform
-
-- **MLflow** - Model registry and experiment tracking
-- **Feast** _(planned)_ - Feature store
-- **Ray** _(planned)_ - Distributed computing
-
-### CI/CD & Observability
-
-- **GitHub Actions** - CI/CD pipelines
-- **Prometheus** - Metrics collection
-- **Grafana** - Visualization
-- **ELK Stack** - Log aggregation
-
-### Development Tools
-
-- **pre-commit** - Git hooks for code quality
-- **TFLint** - Terraform linting
-- **kubeval** - Kubernetes manifest validation
-- **Black & Ruff** - Python formatting and linting
-
-## 📖 Development Workflow
-
-**Quick:** Create issue → Branch → Develop → Test → PR → CI/CD → Merge
-
-**Details:** See [CONTRIBUTING.md](CONTRIBUTING.md) for complete workflow, coding standards, and PR checklist.
-
-## 📝 Learning Philosophy
-
-This practicum emphasizes documenting learnings and design decisions. Use the **Learning Reflection**
-issue template to capture insights, challenges, trade-offs, and resources.
-
-**View learnings:** [Project Board Learning view](https://github.com/users/wlevan3/projects)
-
-## 🎯 Roadmap
-
-**Current Phase:** Transitioning from Phase 1 (Foundation ✅) to Phase 2 (EKS & Kubernetes)
-
-**Next Milestone:** EKS cluster deployment with Terraform
-
-**View detailed roadmap:** [ROADMAP.md](ROADMAP.md) - Full phase-by-phase plan with timelines and success metrics
+`black` may appear only as a transitional/legacy reference; the canonical formatter is `ruff format`.
 
 ## 🤝 Contributing
 
-This is a personal learning project, but feedback and suggestions are welcome! Feel free to:
+Feedback and PRs are welcome. All contributions MUST:
 
-- Open an issue to discuss ideas
-- Submit a PR with improvements
-- Share resources or best practices
+- Use `uv` for environment and commands
+- Pass `ruff`, `mypy`, and `pytest`
+- Respect the `src/` + `apps/` + shim pattern documented above
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md:1) for details.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🔗 Resources
-
-### Learning Resources
-
-- [AWS EKS Best Practices](https://aws.github.io/aws-eks-best-practices/)
-- [Terraform Best Practices](https://www.terraform-best-practices.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [MLOps Community](https://mlops.community/)
-
-### Related Projects
-
-- [MLflow](https://mlflow.org/)
-- [Feast Feature Store](https://feast.dev/)
-- [Kubeflow](https://www.kubeflow.org/)
-
----
-
-**Built with** 🧠 **learning** and ☕ **coffee**
+This project is licensed under the MIT License — see [`LICENSE`](LICENSE:1).

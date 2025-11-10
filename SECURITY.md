@@ -135,6 +135,53 @@ git push origin --force --all
 - Look for any suspicious activity during the exposure window
 - Set up monitoring alerts for the affected services
 
+## Security Scanning Workflows
+
+The following GitHub Actions workflows provide enforced security guardrails for this repository:
+
+- `.github/workflows/codeql.yml` — CodeQL SAST for supported languages (including Python) on:
+  - `push` to `main`
+  - `pull_request` targeting `main`
+  - scheduled runs
+- `.github/workflows/scorecard.yml` — OpenSSF Scorecard:
+  - evaluates repository security posture and hygiene
+  - runs on `push` to `main`, on schedule, and via `workflow_dispatch`
+- `.github/workflows/security-gate.yml` — Security Gate (scheduled):
+  - runs on a daily schedule and via `workflow_dispatch`
+  - executes IaC / dependency / Kubernetes scans wired to existing configuration:
+    - Checkov using `.checkov.yaml` and `checkov_policies/`
+    - tfsec honoring `.tfsecignore`
+    - TFLint using `.tflint.hcl`
+    - Trivy (when `.trivy.yaml` is present) honoring `.trivyignore`
+    - kube-linter using `.kube-linter.yaml` for `clusters/` manifests
+  - steps are configured to return non-zero on unapproved HIGH/CRITICAL findings, relying on existing ignore and policy files for legitimate suppressions
+
+## Exception and Suppression Policy
+
+Security exceptions MUST be explicit, justified, and managed via configuration — ad-hoc or undocumented bypasses are not allowed.
+
+Approved mechanisms:
+
+- Trivy: `.trivyignore`
+- tfsec: `.tfsecignore`
+- Checkov: `.checkov.yaml` and `checkov_policies/`
+- kube-linter: `.kube-linter.yaml`
+- Additional policy/allowlist definitions:
+  - `infra/policies/` (e.g., custom Checkov/OPA/Sentinel policies)
+  - `policy/` (e.g., `policy/terraform/kms.rego` and Sentinel policies)
+
+Requirements for each exception:
+
+1. Implement suppression in the appropriate policy/ignore/config file.
+2. Document rationale via:
+   - inline comment next to the rule/ignore, or
+   - a short note in the relevant README under `infra/policies` or `policy/`.
+3. Ensure exceptions are:
+   - scoped as narrowly as possible, and
+   - periodically revalidated as part of routine security review.
+
+These workflows and policies are intended to reflect the current, enforceable security posture of this repository, not future or speculative controls.
+
 ## Security Contacts
 
 For security-related questions or concerns, please contact:
