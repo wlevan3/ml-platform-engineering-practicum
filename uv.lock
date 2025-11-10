@@ -1,9 +1,5 @@
-{
-  "version": 1,
-  "origin": "ml-platform-engineering-practicum",
-  "metadata": {
-    "generated-by": "placeholder-for-uv",
-    "note": "This minimal lock file exists to establish uv.lock as a tracked, authoritative artifact. Regenerate with `uv lock`."
-  },
-  "packages": []
-}
+version = 1
+origin = "ml-platform-engineering-practicum"
+
+[packages]
+# Minimal placeholder lock; regenerate with `uv lock` as needed.
