@@ -218,6 +218,23 @@ kubectl logs <pod-name>
 kubectl logs -f <pod-name>  # follow
 ```
 
+## ArgoCD Workflow
+
+```bash
+# Apply ArgoCD Projects
+kubectl apply -f argocd/projects/
+
+# Apply ArgoCD Applications
+kubectl apply -f argocd/applications/
+
+# Check Sync Status
+argocd app get ml-platform-api
+argocd app get ml-platform-resource-quotas
+
+# View Logs
+argocd app logs ml-platform-api
+```
+
 ## AWS Common Commands
 
 ```bash

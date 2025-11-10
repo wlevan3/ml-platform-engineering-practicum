@@ -1,0 +1,15 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: ml-platform-dev
+  namespace: argocd
+spec:
+  description: "Project for the ML Platform development environment"
+  sourceRepos:
+    - 'https://github.com/wlevan3/ml-platform-engineering-practicum'
+  destinations:
+    - namespace: ml-platform-dev
+      server: 'https://kubernetes.default.svc'
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'

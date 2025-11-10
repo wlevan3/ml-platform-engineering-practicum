@@ -89,24 +89,28 @@ jobs:
           script: |
             const fs = require('fs');
             const plan = fs.readFileSync('infra/aws-core/terraform/environments/dev/plan.txt', 'utf8');
-            const output = `## Terraform Plan 📋
 
-            <details>
-            <summary>Show Plan</summary>
+            const bodyLines = [
+              '## Terraform Plan',
+              '',
+              '<details>',
+              '<summary>Show Plan</summary>',
+              '',
+              '```hcl',
+              plan,
+              '```',
+              '',
+              '</details>',
+              '',
+              `**Event**: ${process.env.GITHUB_EVENT_NAME}`,
+              `**Run**: [#${process.env.GITHUB_RUN_ID}](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`
+            ];
 
-            \`\`\`terraform
-            ${plan}
-            \`\`\`
+            const output = bodyLines.join('\n');
 
-            </details>
-
-            **Event**: \`${{ github.event_name }}\`
-            **Run**: [#${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            `;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: output
+              issue_number: context.issue.number,
+              body: output,
             });

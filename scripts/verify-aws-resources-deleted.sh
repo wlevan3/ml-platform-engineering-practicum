@@ -98,16 +98,11 @@ check_resource_type "ec2:instance" "EC2 Instances"
 
 # Summary
 echo "=========================================="
-if [ "$ORPHANED_FOUND" = true ]; then
-    log_error "Found $ORPHANED_COUNT orphaned resources in AWS"
-    echo ""
-    echo "These resources must be manually deleted:"
-    echo "  1. Delete via AWS Console or CLI"
-    echo "  2. Remove cluster tags to re-run this script"
-    echo "  3. Consider updating cleanup script to handle these resources"
-    exit 1
-else
-    log_info "All resources deleted successfully"
-    echo "Resource Groups Tagging API: 0 resources found"
+if [ "$ORPHANED_FOUND" = false ]; then
+    log_info "All resources deleted for cluster: $CLUSTER_NAME"
     exit 0
+else
+    log_error "Found $ORPHANED_COUNT orphaned resources for cluster: $CLUSTER_NAME"
+    log_warn "Please clean up remaining resources before considering destroy complete."
+    exit 1
 fi

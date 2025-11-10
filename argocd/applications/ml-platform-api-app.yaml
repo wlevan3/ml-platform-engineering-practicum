@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ml-platform-api
+  namespace: argocd
+spec:
+  project: ml-platform-dev
+  source:
+    repoURL: 'https://github.com/wlevan3/ml-platform-engineering-practicum'
+    targetRevision: HEAD
+    path: clusters/dev/bootstrap/k8s-manifests
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: ml-platform-dev
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

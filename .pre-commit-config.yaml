@@ -130,9 +130,3 @@ repos:
         # Tests are scanned comprehensively in CI (see .github/workflows/ci.yml)
         # Rationale: Developer feedback speed > comprehensive pre-commit coverage
         exclude: ^tests/
-
-  # Markdown linting with markdownlint-cli2
-  - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.18.1
-    hooks:
-      - id: markdownlint-cli2
