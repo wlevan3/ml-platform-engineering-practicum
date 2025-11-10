@@ -76,6 +76,14 @@ jobs:
           # Make script executable
           chmod +x scripts/check-resource-conflicts.sh
 
-          # Run the conflict detection script
-          # This will check the current Terraform configuration for conflicts
-          ./scripts/check-resource-conflicts.sh . || exit 1
+          # Define Terraform working directory for conflict checks
+          TF_WORKDIR="infra/aws-core/terraform/environments/dev"
+          echo "Using Terraform working directory: $TF_WORKDIR"
+
+          if [ ! -d "$TF_WORKDIR" ]; then
+            echo "Error: Terraform working directory does not exist: $TF_WORKDIR"
+            exit 1
+          fi
+
+          # Run the conflict detection script against the Terraform environment directory
+          ./scripts/check-resource-conflicts.sh "$TF_WORKDIR" || exit 1
