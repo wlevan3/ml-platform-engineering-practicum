@@ -33,7 +33,7 @@ echo "Validating resource tags for cluster: $CLUSTER_NAME (region: $REGION)"
 echo ""
 
 # Check AWS CLI is available
-if ! command -v aws &>/dev/null;
+if ! command -v aws &>/dev/null; then
     log_error "AWS CLI not installed"
     exit 1
 fi
@@ -72,13 +72,13 @@ CLUSTER_TAGS=$(aws eks describe-cluster \
     --query 'cluster.tags' \
     --output json 2>/dev/null || echo "{}")
 
-if echo "$CLUSTER_TAGS" | jq -e ".[\"Cluster\"] == \"$CLUSTER_NAME\"" &>/dev/null;
+if echo "$CLUSTER_TAGS" | jq -e ".[\"Cluster\"] == \"$CLUSTER_NAME\"" &>/dev/null; then
     log_info "EKS cluster has Cluster tag"
 else
     log_warn "EKS cluster missing Cluster tag (but may still be manageable)"
 fi
 
-if echo "$CLUSTER_TAGS" | jq -e ".[\"ManagedBy\"] == \"Terraform\"" &>/dev/null;
+if echo "$CLUSTER_TAGS" | jq -e ".[\"ManagedBy\"] == \"Terraform\"" &>/dev/null; then
     log_info "EKS cluster has ManagedBy tag"
 else
     log_warn "EKS cluster missing ManagedBy tag"
@@ -100,7 +100,7 @@ else
     TAGGED_NATS=0
     TOTAL_NATS=$(echo "$NAT_GATEWAYS" | wc -w)
 
-    for nat_id in $NAT_GATEWAYS;
+    for nat_id in $NAT_GATEWAYS; do
         if check_resource_tags "nat-gateway" "$nat_id"; then
             TAGGED_NATS=$((TAGGED_NATS + 1))
         fi
@@ -151,7 +151,7 @@ else
     TAGGED_EIPS=0
     TOTAL_EIPS=$(echo "$EIPS" | wc -w)
 
-    for eip_id in $EIPS;
+    for eip_id in $EIPS; do
         if check_resource_tags "elastic-ip" "$eip_id"; then
             TAGGED_EIPS=$((TAGGED_EIPS + 1))
         fi

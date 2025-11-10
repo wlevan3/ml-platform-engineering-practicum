@@ -97,4 +97,12 @@ check_resource_type "ec2:security-group" "Security Groups"
 check_resource_type "ec2:instance" "EC2 Instances"
 
 # Summary
-echo "==========================================
+echo "=========================================="
+if [ "$ORPHANED_FOUND" = false ]; then
+    log_info "All resources deleted for cluster: $CLUSTER_NAME"
+    exit 0
+else
+    log_error "Found $ORPHANED_COUNT orphaned resources for cluster: $CLUSTER_NAME"
+    log_warn "Please clean up remaining resources before considering destroy complete."
+    exit 1
+fi

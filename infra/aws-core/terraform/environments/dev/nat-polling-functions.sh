@@ -388,7 +388,7 @@ export -f log_info log_success log_warn log_error
 # MAIN: Allow script to be called directly
 # =============================================================================
 
-if [[ "${BASH_SOURCE[0]}" == ""); then
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     # Script is being executed directly (not sourced)
 
     case "${1:-help}" in

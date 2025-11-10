@@ -28,8 +28,7 @@ BLUE='\033[0;34m'
 NC='\033[0m'  # No Color
 
 # Configuration
-PLAN_FILE="${1:-"
-}"
+PLAN_FILE="${1:-}"
 TEMP_JSON=$(mktemp)
 TEMP_ANALYSIS=$(mktemp)
 

@@ -114,3 +114,19 @@ variable "flow_log_retention_in_days" {
   type        = number
   default     = 90
 }
+
+# ===================================================================
+# S3 VPC Endpoint Configuration
+# ===================================================================
+
+variable "s3_endpoint_enable_policy" {
+  description = "Enable least-privilege policy for S3 VPC endpoint. When false, allows full access to all S3 buckets."
+  type        = bool
+  default     = true
+}
+
+variable "s3_endpoint_allow_additional_buckets" {
+  description = "List of additional S3 bucket ARNs to allow access through the S3 VPC endpoint. Used for services like ALB logging, etc."
+  type        = list(string)
+  default     = []
+}
