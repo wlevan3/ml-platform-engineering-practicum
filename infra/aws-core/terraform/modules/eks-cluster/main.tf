@@ -8,6 +8,13 @@ locals {
     most_recent = true
     version     = null
   }
+
+  # Backwards-compatible toggle: honor both putin_khuylo and force_module_creation.
+  # Any true value keeps the upstream module enabled.
+  effective_putin_khuylo = (
+    (try(var.putin_khuylo, false) ? 1 : 0) +
+    (try(var.force_module_creation, false) ? 1 : 0)
+  ) > 0
 }
 
 module "eks" {
@@ -18,7 +25,7 @@ module "eks" {
 
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
-  putin_khuylo       = var.force_module_creation
+  putin_khuylo       = local.effective_putin_khuylo
   enabled_log_types  = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   # Networking
