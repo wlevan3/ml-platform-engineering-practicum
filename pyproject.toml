@@ -34,3 +34,14 @@ dev = [
   # Git hooks
   "pre-commit",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/wlevan3/ml-platform-engineering-practicum"
+
+# NOTE:
+# We intentionally do NOT add invalid [tool.uv] keys here.
+# Use:
+#   uv sync
+#   uv run pip install -e .
+# or configure uv (outside this file) to install this project in editable mode
+# so that src/ml_platform_api is on PYTHONPATH for `uv run pytest`.
