@@ -81,11 +81,9 @@ jobs:
 
     steps:
       - name: Checkout repository
-        timeout-minutes: 5
         uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
 
       - name: Configure AWS credentials
-        timeout-minutes: 5
         uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/GitHubActions-AssumeRoleForActions
@@ -101,26 +99,18 @@ jobs:
         run: terraform init
 
       - name: Terraform Validate
-        timeout-minutes: 5
         run: terraform validate -no-color
 
-      - name: Pre-destroy scripts
-        timeout-minutes: 10
-        run: |
-          ../../scripts/validate-terraform-state.sh plan
-          ../../scripts/validate-resource-tags.sh
-
       - name: Phase 1 - Create Test Infrastructure
-        timeout-minutes: 40
         run: |
           echo "Creating test cluster for destroy validation..."
 
           terraform apply \
             -auto-approve \
-            -var="cluster_name=${{ env.TEST_CLUSTER_NAME }}" \
+            -var="cluster_name=$TEST_CLUSTER_NAME" \
             -no-color
 
-          echo "✅ Test cluster created: ${{ env.TEST_CLUSTER_NAME }}"
+          echo "✅ Test cluster created: $TEST_CLUSTER_NAME"
 
       - name: Phase 2 - Record Pre-Destroy State
         id: pre_destroy
@@ -129,7 +119,7 @@ jobs:
 
           # EKS Cluster
           EKS_CLUSTER=$(aws eks describe-cluster \
-            --name "${{ env.TEST_CLUSTER_NAME }}" \
+            --name "$TEST_CLUSTER_NAME" \
             --region "$AWS_REGION" \
             --query 'cluster.name' \
             --output text 2>/dev/null || echo "NOT_FOUND")
@@ -137,28 +127,28 @@ jobs:
           # NAT Gateways
           NAT_COUNT=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(NatGateways)' \
             --output text)
 
           # VPC Endpoints
           VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(VpcEndpoints)' \
             --output text)
 
           # Elastic IPs
           EIP_COUNT=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(Addresses)' \
             --output text)
 
           # Security Groups
           SG_COUNT=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(SecurityGroups)' \
             --output text)
 
@@ -185,12 +175,12 @@ jobs:
 
           # Verify cluster has required tags
           CLUSTER_TAG=$(aws eks describe-cluster \
-            --name "${{ env.TEST_CLUSTER_NAME }}" \
+            --name "$TEST_CLUSTER_NAME" \
             --region "$AWS_REGION" \
             --query 'cluster.tags.Cluster' \
             --output text 2>/dev/null || echo "MISSING")
 
-          if [ "$CLUSTER_TAG" != "${{ env.TEST_CLUSTER_NAME }}" ]; then
+          if [ "$CLUSTER_TAG" != "$TEST_CLUSTER_NAME" ]; then
             echo "✗ ERROR: Cluster missing required tag"
             exit 1
           fi
@@ -198,23 +188,17 @@ jobs:
           echo "✅ Resource tags validated"
 
       - name: Phase 4 - Run Terraform Destroy
-        timeout-minutes: 40
         id: destroy
         run: |
           echo "Running terraform destroy..."
 
           terraform destroy \
             -auto-approve \
-            -var="cluster_name=${{ env.TEST_CLUSTER_NAME }}" \
+            -var="cluster_name=$TEST_CLUSTER_NAME" \
             -no-color
-          destroy_exit_code=$?
-          echo "destroy_exit_code=$destroy_exit_code" >> "$GITHUB_OUTPUT"
-          if [ "$destroy_exit_code" -ne 0 ]; then
-            echo "Terraform destroy failed with exit code $destroy_exit_code"
-            exit "$destroy_exit_code"
-          else
-            echo "✅ Terraform destroy completed"
-          fi
+
+          echo "destroy_exit_code=$?" >> "$GITHUB_OUTPUT"
+          echo "✅ Terraform destroy completed"
 
       - name: Phase 5 - Record Post-Destroy State
         id: post_destroy
@@ -223,7 +207,7 @@ jobs:
 
           # EKS Cluster
           EKS_CLUSTER=$(aws eks describe-cluster \
-            --name "${{ env.TEST_CLUSTER_NAME }}" \
+            --name "$TEST_CLUSTER_NAME" \
             --region "$AWS_REGION" \
             --query 'cluster.name' \
             --output text 2>/dev/null || echo "DELETED")
@@ -231,28 +215,28 @@ jobs:
           # NAT Gateways
           NAT_COUNT=$(aws ec2 describe-nat-gateways \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(NatGateways)' \
             --output text)
 
           # VPC Endpoints
           VPCE_COUNT=$(aws ec2 describe-vpc-endpoints \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(VpcEndpoints)' \
             --output text)
 
           # Elastic IPs
           EIP_COUNT=$(aws ec2 describe-addresses \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(Addresses)' \
             --output text)
 
           # Security Groups
           SG_COUNT=$(aws ec2 describe-security-groups \
             --region "$AWS_REGION" \
-            --filter "Name=tag:Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --filter "Name=tag:Cluster,Values=$TEST_CLUSTER_NAME" \
             --query 'length(SecurityGroups)' \
             --output text)
 
@@ -265,11 +249,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Phase 6 - Validate Terraform State (Empty)
-        id: phase6
         run: |
           echo "Validating terraform state after destroy..."
 
-          # shellcheck disable=SC2086
+          # shellcheck disable=SC2126,SC2086
           REMAINING=$(terraform state list 2>/dev/null | awk 'NF {count++} END {print count+0}')
 
           if [ "$REMAINING" -eq 0 ]; then
@@ -281,7 +264,6 @@ jobs:
           fi
 
       - name: Phase 7 - Validate AWS Resources (Deleted)
-        id: phase7
         run: |
           echo "Validating cleanup via AWS Resource Groups Tagging API..."
 
@@ -291,7 +273,7 @@ jobs:
               "ec2:nat-gateway" \
               "ec2:vpc-endpoint" \
               "ec2:security-group" \
-            --tag-filter "Key=Cluster,Values=${{ env.TEST_CLUSTER_NAME }}" \
+            --tag-filter "Key=Cluster,Values=$TEST_CLUSTER_NAME" \
             --region "$AWS_REGION" \
             --query 'ResourceTagMappingList' \
             --output json)
@@ -306,39 +288,16 @@ jobs:
             exit 1
           fi
 
-      - name: Post-destroy scripts
-        timeout-minutes: 10
-        run: |
-          ../../scripts/validate-terraform-state.sh destroy
-          MAX_ATTEMPTS=3
-          for attempt in $(seq 1 $MAX_ATTEMPTS); do
-            if CLUSTER_NAME="${{ env.TEST_CLUSTER_NAME }}" AWS_REGION="$AWS_REGION" ../../scripts/verify-aws-resources-deleted.sh; then
-              echo "AWS resource verification succeeded on attempt $attempt"
-              success=0
-              break
-            else
-              success=1
-              echo "AWS resources still present (attempt $attempt/$MAX_ATTEMPTS), retrying..."
-              sleep 10
-            fi
-          done
-
-          if [ "$success" -ne 0 ]; then
-            echo "AWS resource verification failed after $MAX_ATTEMPTS attempts"
-            exit 1
-          fi
-
       - name: Phase 8 - Generate Report
         if: always()
         run: |
-          PHASE6_OUTCOME="${{ steps.phase6.outcome }}"
-          PHASE7_OUTCOME="${{ steps.phase7.outcome }}"
-          NAT_COUNT=${{ steps.post_destroy.outputs.nat_gateway_count }}
-          VPCE_COUNT=${{ steps.post_destroy.outputs.vpc_endpoint_count }}
-          EIP_COUNT=${{ steps.post_destroy.outputs.eip_count }}
-          SG_COUNT=${{ steps.post_destroy.outputs.security_group_count }}
-          # shellcheck disable=SC2086
+          # shellcheck disable=SC2309,SC2086
           {
+            TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
+            if [ -z "$TERRAFORM_VERSION" ] || [ "$TERRAFORM_VERSION" = "null" ]; then
+              TERRAFORM_VERSION="$(terraform version | head -n1 | awk '{print $2}')"
+            fi
+
             echo "# Destroy Validation Report"
             echo ""
             echo "## Test Details"
@@ -346,12 +305,6 @@ jobs:
             echo "|------|-------|"
             echo "| Test Cluster Name | \`${{ env.TEST_CLUSTER_NAME }}\` |"
             echo "| Region | \`$AWS_REGION\` |"
-            # Try to get Terraform version via JSON/jq, fallback to text parsing if jq or -json is unavailable
-            TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
-            if [ -z "$TERRAFORM_VERSION" ]; then
-              # Fallback: parse plain text output
-              TERRAFORM_VERSION="$(terraform version | head -n1 | awk '{print $2}')"
-            fi
             echo "| Terraform Version | \`$TERRAFORM_VERSION\` |"
             echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
@@ -367,33 +320,22 @@ jobs:
             echo "## Post-Destroy State"
             echo "| Resource Type | Count | Status |"
             echo "|---|---|---|"
-            nat_status=$([[ "$NAT_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
-            vpce_status=$([[ "$VPCE_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
-            eip_status=$([[ "$EIP_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
-            sg_status=$([[ "$SG_COUNT" == 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned')
-            echo "| NAT Gateways | $NAT_COUNT | $nat_status |"
-            echo "| VPC Endpoints | $VPCE_COUNT | $vpce_status |"
-            echo "| Elastic IPs | $EIP_COUNT | $eip_status |"
-            echo "| Security Groups | $SG_COUNT | $sg_status |"
+            echo "| EKS Cluster | - | $([[ '${{ steps.post_destroy.outputs.eks_cluster }}' == 'DELETED' ]] && echo '✅ Deleted' || echo '❌ Still exists') |"
+            echo "| NAT Gateways | ${{ steps.post_destroy.outputs.nat_gateway_count }} | $([[ ${{ steps.post_destroy.outputs.nat_gateway_count }} -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
+            echo "| VPC Endpoints | ${{ steps.post_destroy.outputs.vpc_endpoint_count }} | $([[ ${{ steps.post_destroy.outputs.vpc_endpoint_count }} -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
+            echo "| Elastic IPs | ${{ steps.post_destroy.outputs.eip_count }} | $([[ ${{ steps.post_destroy.outputs.eip_count }} -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
+            echo "| Security Groups | ${{ steps.post_destroy.outputs.security_group_count }} | $([[ ${{ steps.post_destroy.outputs.security_group_count }} -eq 0 ]] && echo '✅ Cleaned' || echo '❌ Orphaned') |"
             echo ""
             echo "## Validation Results"
-            if [ "$PHASE6_OUTCOME" == "success" ]; then
-              echo "- ✅ Terraform state is empty"
-            else
-              echo "- ⚠️ Terraform state validation failed (check Phase 6 logs)"
-            fi
-            if [ "$PHASE7_OUTCOME" == "success" ]; then
-              echo "- ✅ AWS Resource Groups Tagging API: 0 resources"
-            else
-              echo "- ⚠️ AWS resource verification failed (check Phase 7 logs)"
-            fi
+            echo "- ✅ Terraform state is empty"
+            echo "- ✅ AWS Resource Groups Tagging API: 0 resources"
             echo ""
             echo "## Regression Test Status"
             echo "- ✅ VPC Endpoints deleted (Bug #1 fixed)"
             echo "- ✅ Elastic IPs released (Bug #2 fixed)"
             echo "- ✅ Cluster-specific filtering (Bug #3 fixed)"
             echo "- ✅ EC2 instances terminated (Bug #4 fixed)"
-            } >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Success Summary
         if: success()

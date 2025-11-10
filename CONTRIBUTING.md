@@ -505,7 +505,7 @@ terraform validate
 terraform plan
 
 # Pre-flight resource conflict detection
-./scripts/pre-flight-name-check.sh .
+./scripts/check-resource-conflicts.sh .
 
 # Python
 pytest tests/
