@@ -101,8 +101,16 @@ check_endpoint_policy() {
         return 1
     fi
 
-    # Check if it contains ECR bucket references in either Resource or NotResource fields
-    if echo "${POLICY_JSON}" | jq -e '.Statement[] | select((.Resource? // [])[] | contains("starport-layer-bucket") or (.NotResource? // [])[] | contains("starport-layer-bucket"))' > /dev/null; then
+    # Check if the policy contains ECR bucket references in either Resource or NotResource fields.
+    # Extract all Resource and NotResource entries from each statement, flatten them, and search for the bucket name.
+    BUCKET_PATTERN="starport-layer-bucket"
+    MATCH_COUNT=$(echo "${POLICY_JSON}" | jq --arg pattern "$BUCKET_PATTERN" '
+        [ .Statement[]?.Resource? // [] , .Statement[]?.NotResource? // [] ]
+        | flatten
+        | map(select(. | type == "string" and contains($pattern)))
+        | length
+    ')
+    if [[ "$MATCH_COUNT" -gt 0 ]]; then
         log_info "✓ Policy contains ECR bucket restrictions"
         return 0
     else
@@ -139,7 +147,7 @@ check_route_table_attachments() {
 get_ecr_bucket_name() {
     log_info "Getting ECR S3 bucket name for current region..."
 
-    REGION=$(aws configure get region 2>/dev/null || aws ec2 describe-availability-zones --output text --query 'AvailabilityZones[0].ZoneName' | sed 's/.$//')
+    REGION=$(aws configure get region 2>/dev/null || aws ec2 describe-availability-zones --query 'AvailabilityZones[0].RegionName' --output text 2>/dev/null)
     ECR_BUCKET="prod-${REGION}-starport-layer-bucket"
 
     log_info "ECR S3 bucket: ${ECR_BUCKET}"

@@ -16,11 +16,7 @@
 # Generate ECR S3 bucket ARN for the current region
 locals {
   # ECR uses region-specific S3 buckets for storing image layers
-<<<<<<< HEAD
-# The naming pattern `prod-{region}-starport-layer-bucket` is observed in practice,
-=======
   # The naming pattern `prod-{region}-starport-layer-bucket` is observed in practice,
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
   # but is not officially documented by AWS and may change in the future.
   # Please verify this pattern for your region and refer to the AWS ECR documentation
   # for updates: https://docs.aws.amazon.com/AmazonECR/latest/userguide/vpc-endpoints.html
@@ -46,11 +42,7 @@ locals {
       {
         Effect = "Allow"
         Principal = {
-<<<<<<< HEAD
-                # NOTE: Allows any AWS principal to access the allowed buckets via the VPC endpoint.
-=======
           # NOTE: Allows any AWS principal to access the allowed buckets via the VPC endpoint.
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
           # This is required for EKS nodes and other AWS services to function.
           # This policy only restricts which S3 buckets can be accessed, NOT which IAM roles/users can access them.
           # Actual authentication and principal-level restrictions are enforced via IAM policies on roles/users.
@@ -68,15 +60,7 @@ locals {
         Principal = {
           AWS = "*"
         }
-<<<<<<< HEAD
-      Action      = "s3:*"
-=======
         Action      = "s3:*"
-<<<<<<< HEAD
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
-        Resource    = "arn:aws:s3:::*"
-=======
->>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         NotResource = local.all_allowed_s3_bucket_arns
       }
     ]

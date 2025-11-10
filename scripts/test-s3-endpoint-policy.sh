@@ -124,8 +124,6 @@ test_s3_access() {
 
     log_info "Testing ${test_name}..."
 
-<<<<<<< HEAD
-<<<<<<< HEAD
     # Send the test command directly via SSM
     local send_command_output
     if ! send_command_output=$(aws ssm send-command \
@@ -149,108 +147,6 @@ test_s3_access() {
         fi\"]" \
         --output json 2>/dev/null); then
         log_error "Failed to execute test on instance ${instance_id}"
-        return 1
-    fi
-
-    # Extract command ID from the response
-    local command_id
-    command_id=$(echo "${send_command_output}" | jq -r '.Command.CommandId')
-    if [[ -z "${command_id}" || "${command_id}" == "null" ]]; then
-        log_error "Could not retrieve CommandId from send-command output"
-        return 1
-    fi
-
-    # Poll for command completion
-    local status
-    for i in {1..30}; do
-        status=$(aws ssm get-command-invocation \
-            --command-id "${command_id}" \
-            --instance-id "${instance_id}" \
-            --output json 2>/dev/null | jq -r '.Status')
-
-        if [[ "${status}" == "Success" || "${status}" == "Failed" || "${status}" == "Cancelled" || "${status}" == "TimedOut" ]]; then
-            break
-        fi
-
-        sleep 2
-    done
-
-    # Get the final result
-    local output
-    output=$(aws ssm get-command-invocation \
-        --command-id "${command_id}" \
-        --instance-id "${instance_id}" \
-        --output json 2>/dev/null)
-
-    status=$(echo "${output}" | jq -r '.Status')
-    local stdout
-    stdout=$(echo "${output}" | jq -r '.StandardOutputContent')
-
-    if [[ "${status}" == "Success" && "${stdout}" == *"SUCCESS"* ]]; then
-        log_info "✓ ${test_name} test passed"
-        return 0
-    else
-        log_error "✗ ${test_name} test failed"
-        [[ -n "${stdout}" ]] && echo -e "${YELLOW}Output:${NC}\n${stdout}"
-=======
-    # Create a temporary script to run on the instance
-    cat > /tmp/test-s3-access.sh << 'EOF'
-#!/bin/bash
-BUCKET_NAME="$1"
-EXPECTED_RESULT="$2"
-
-# Try to list the bucket
-aws s3 ls "s3://${BUCKET_NAME}/" > /dev/null 2>&1
-EXIT_CODE=$?
-
-if [[ "${EXPECTED_RESULT}" == "success" ]]; then
-    if [[ $EXIT_CODE -eq 0 ]]; then
-        echo "SUCCESS: Access granted to ${BUCKET_NAME}"
-        exit 0
-    else
-        echo "FAILURE: Access denied to ${BUCKET_NAME} (expected success)"
-        exit 1
-    fi
-else
-    if [[ $EXIT_CODE -ne 0 ]]; then
-        echo "SUCCESS: Access properly denied to ${BUCKET_NAME}"
-        exit 0
-    else
-        echo "FAILURE: Access granted to ${BUCKET_NAME} (expected denial)"
-        exit 1
-    fi
-fi
-EOF
-
-    # Run the script on the instance
-    local result
-    if result=$(aws ssm send-command \
-=======
-    # Send the test command directly via SSM
-    local send_command_output
-    if ! send_command_output=$(aws ssm send-command \
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
-        --instance-ids "${instance_id}" \
-        --document-name "AWS-RunShellScript" \
-        --parameters "commands=[\"BUCKET_NAME='${bucket_name}'; EXPECTED_RESULT='${should_succeed}'; \
-        aws s3 ls \\\"s3://\${BUCKET_NAME}/\\\" > /dev/null 2>&1; \
-        EXIT_CODE=\$?; \
-        if [[ \\\"\${EXPECTED_RESULT}\\\" == \\\"success\\\" ]]; then \
-            if [[ \$EXIT_CODE -eq 0 ]]; then \
-                echo 'SUCCESS: Access granted to \${BUCKET_NAME}'; exit 0; \
-            else \
-                echo 'FAILURE: Access denied to \${BUCKET_NAME} (expected success)'; exit 1; \
-            fi; \
-        else \
-            if [[ \$EXIT_CODE -ne 0 ]]; then \
-                echo 'SUCCESS: Access properly denied to \${BUCKET_NAME}'; exit 0; \
-            else \
-                echo 'FAILURE: Access granted to \${BUCKET_NAME} (expected denial)'; exit 1; \
-            fi; \
-        fi\"]" \
-        --output json 2>/dev/null); then
-        log_error "Failed to execute test on instance ${instance_id}"
->>>>>>> 1f2d535 (feat(security): add S3 endpoint least-privilege policy)
         return 1
     fi
 
@@ -302,38 +198,20 @@ EOF
 test_ecr_pull() {
     log_info "Testing ECR image pull from pod..."
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-# Default ECR image (can be overridden via environment)
-=======
     # Default ECR image (can be overridden via environment)
->>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
-    local ecr_image="${ECR_TEST_IMAGE:-<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest}"
+    local ecr_image="${ECR_TEST_IMAGE:-}"
 
-    # Skip if placeholders not replaced
-    if [[ "${ecr_image}" == *"<account-id>"* ]] || [[ "${ecr_image}" == *"<region>"* ]] || [[ "${ecr_image}" == *"<image-name>"* ]]; then
+    # Skip if no ECR image is configured
+    if [[ -z "${ecr_image}" ]]; then
         log_warn "Skipping ECR pull test - Set ECR_TEST_IMAGE environment variable with your ECR image details"
         log_warn "Example: export ECR_TEST_IMAGE=123456789012.dkr.ecr.us-west-2.amazonaws.com/my-app:latest"
         return 0
     fi
 
-<<<<<<< HEAD
     # Create a test pod using a private ECR image
     # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
     kubectl run s3-policy-test \
         --image="${ecr_image}" \
-=======
-=======
->>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
-    # Create a test pod using a private ECR image
-    # Private ECR images test the S3 VPC endpoint policy for ECR layer buckets
-    kubectl run s3-policy-test \
-<<<<<<< HEAD
-        --image=<account-id>.dkr.ecr.<region>.amazonaws.com/<image-name>:latest \
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
-=======
-        --image="${ecr_image}" \
->>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         --rm -i --restart=Never \
         --command -- bash -c "echo 'ECR image pull successful'" \
         > /dev/null 2>&1
@@ -346,15 +224,7 @@ test_ecr_pull() {
         return 0
     else
         log_error "✗ ECR image pull test failed"
-<<<<<<< HEAD
-<<<<<<< HEAD
         log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
-=======
-        log_warn "Note: Ensure you replace <account-id>, <region>, and <image-name> with your ECR details"
->>>>>>> 4e12310 (fix: address PR review comments for S3 endpoint policy)
-=======
-        log_warn "Note: Ensure the ECR image exists and is accessible from the cluster"
->>>>>>> 286b898 (docs: fix IAM policy example to remove invalid Resource field)
         return 1
     fi
 }

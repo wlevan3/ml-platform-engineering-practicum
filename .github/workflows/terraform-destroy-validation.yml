@@ -327,7 +327,13 @@ jobs:
             echo "|------|-------|"
             echo "| Test Cluster Name | \`$TEST_CLUSTER_NAME\` |"
             echo "| Region | \`$AWS_REGION\` |"
-            echo "| Terraform Version | \`$(terraform version -json | jq -r '.terraform_version')\` |"
+            # Try to get Terraform version via JSON/jq, fallback to text parsing if jq or -json is unavailable
+            TERRAFORM_VERSION="$(terraform version -json 2>/dev/null | jq -r '.terraform_version' 2>/dev/null)"
+            if [ -z "$TERRAFORM_VERSION" ]; then
+              # Fallback: parse plain text output
+              TERRAFORM_VERSION="$(terraform version | head -n1 | awk '{print $2}')"
+            fi
+            echo "| Terraform Version | \`$TERRAFORM_VERSION\` |"
             echo "| Run ID | [\`${{ github.run_id }}\`](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |"
             echo ""
             echo "## Pre-Destroy State"

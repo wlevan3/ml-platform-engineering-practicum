@@ -246,7 +246,7 @@ VPC (10.0.0.0/16)
 - 1-N NAT Gateways (depending on `single_nat_gateway`)
 - 1-N Elastic IPs (one per NAT gateway)
 - Route tables and associations
-- 6 VPC Endpoints (ECR API, ECR DKR, S3, STS, EC2, Autoscaling)
+- VPC Endpoints for ECR API, ECR DKR, S3, STS, EC2, and Autoscaling
 
 ## S3 VPC Endpoint Security
 
