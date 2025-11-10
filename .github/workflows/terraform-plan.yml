@@ -33,9 +33,9 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  id-token: write # Required for AWS OIDC
-  contents: read # Required to checkout
-  pull-requests: write # To comment on PR
+  id-token: write        # Required for AWS OIDC
+  contents: read         # Required to checkout
+  pull-requests: write   # To comment on PR
 
 env:
   AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
@@ -134,7 +134,7 @@ jobs:
                 analysisSection += `
             ⚠️ **CRITICAL WARNING** ⚠️
             🚨 This plan deletes **CRITICAL** infrastructure resources!
-            ${hasCriticalDeletions ? '❌ Workflow will fail due to critical resource deletions' : ''}
+            ❌ Workflow will fail due to critical resource deletions
 
             `;
               } else if (hasDeletions || hasReplacements) {

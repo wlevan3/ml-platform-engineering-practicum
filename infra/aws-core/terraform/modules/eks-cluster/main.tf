@@ -18,7 +18,7 @@ module "eks" {
 
   name               = var.cluster_name
   kubernetes_version = var.cluster_version
-  putin_khuylo       = var.putin_khuylo
+  putin_khuylo       = var.force_module_creation
   enabled_log_types  = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   # Networking
