@@ -1,14 +1,14 @@
 # FastAPI and server
-fastapi==0.120.4
-starlette==0.49.1  # Fixes CVE-2025-62727 (Dependabot alert #2)
-uvicorn[standard]==0.34.0
-pydantic==2.10.5
-pydantic-settings==2.7.1
+fastapi==0.121.2
+starlette==0.50.0  # Fixes CVE-2025-62727 (Dependabot alert #2)
+uvicorn[standard]==0.38.0
+pydantic==2.12.4
+pydantic-settings==2.12.0
 
 # ML model
-scikit-learn==1.6.1
+scikit-learn==1.7.2
 skops>=0.13.0  # Secure pickle-free model serialization (addresses CWE-502)
-numpy==2.2.2
+numpy==2.3.5
 
 # Testing
 pytest==8.3.4
@@ -17,5 +17,5 @@ pytest-cov==6.0.0
 
 # Code quality
 black==24.10.0
-ruff==0.9.1
+ruff==0.14.5
 mypy==1.18.2
