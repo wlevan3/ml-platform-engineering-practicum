@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Resolve outdated Copilot comments
-        uses: Ardiannn08/resolve-outdated-comment@a8a6455f6a1719adead680c18ec0865745990a08 # v1.1
+        uses: Ardiannn08/resolve-outdated-comment@f166e7d2da880b2410df42501a678910f2a1e6ca # v1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           filter-user: "Copilot"
